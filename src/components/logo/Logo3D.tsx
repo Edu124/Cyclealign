@@ -50,7 +50,7 @@ export function Logo3D({ size = 240, animate = true }: Props) {
   return (
     <View style={{ width: size, alignItems: 'center' }}>
       <Image
-        source={require('../../../assets/logo.png')}
+        source={require('../../../assets/logo.jpg')}
         style={{ width: size, height: size }}
         resizeMode="contain"
       />
