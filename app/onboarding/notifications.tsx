@@ -1,15 +1,17 @@
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PermissionsAndroid, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import * as Notifications from 'expo-notifications';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { palette, radius, spacing } from '@/theme';
 
 async function requestOSPermission(): Promise<boolean> {
-  if (Platform.OS === 'web') return true;
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
+  if (Platform.OS !== 'android') return true;
+  if ((Platform.Version as number) < 33) return true;
+  const result = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+  );
+  return result === PermissionsAndroid.RESULTS.GRANTED;
 }
 
 export default function NotificationsStep() {
