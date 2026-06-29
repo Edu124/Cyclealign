@@ -5,7 +5,7 @@
     "owner": "bshahan",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.jpg",
+    "icon": "./assets/logo.png",
     "scheme": "cyclealign",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -25,14 +25,14 @@
       "package": "com.cyclealign.app",
       "permissions": ["android.permission.POST_NOTIFICATIONS"],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#F7F4EF"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo.png"
     },
     "plugins": [
       "expo-router",

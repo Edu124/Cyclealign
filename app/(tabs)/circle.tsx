@@ -23,14 +23,17 @@ import { todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import type { CommunityPost, ReactionType } from '@/types/models';
 
+type Tab = 'community' | 'shop';
+
 export default function Circle() {
   const profile = useAppStore((s) => s.profile);
   const prediction = usePrediction();
   const {
-    posts, topic, dopamineItems, completedIds, loading,
+    posts, topic, completedIds, loading,
     loadAll, addPost, optimisticToggleReaction, toggleDopamineItem, setTopic,
   } = useCommunity();
 
+  const [activeTab, setActiveTab] = useState<Tab>('community');
   const [composerOpen, setComposerOpen] = useState(false);
   const [replyToTopic, setReplyToTopic] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
@@ -53,18 +56,12 @@ export default function Circle() {
 
   async function handlePost(content: string, anonymous: boolean, toTopic: boolean) {
     const topicId = toTopic ? (topic?.id ?? undefined) : undefined;
-
     if (isSupabaseConfigured) {
       const newPost = await communityLib.createPost({
-        content,
-        isAnonymous: anonymous,
-        topicId,
-        phaseKey,
-        cycleDay,
+        content, isAnonymous: anonymous, topicId, phaseKey, cycleDay,
       });
       if (newPost) addPost(newPost);
     } else {
-      // Demo mode: optimistic local post
       const demoPost: CommunityPost = {
         id: `local-${Date.now()}`,
         userId: 'local',
@@ -117,80 +114,103 @@ export default function Circle() {
           <Text style={styles.subheading}>Your community</Text>
         </View>
         <View style={styles.headerActions}>
-          {isAdmin && (
-            <TouchableOpacity
-              style={styles.adminBtn}
-              onPress={() => setAdminModalOpen(true)}
-              activeOpacity={0.8}
-            >
+          {activeTab === 'community' && isAdmin && (
+            <TouchableOpacity style={styles.adminBtn} onPress={() => setAdminModalOpen(true)} activeOpacity={0.8}>
               <Text style={styles.adminBtnText}>+ Topic</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={styles.composeBtn}
-            onPress={() => openComposer(false)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.composeBtnText}>✏️</Text>
-          </TouchableOpacity>
+          {activeTab === 'community' && (
+            <TouchableOpacity style={styles.composeBtn} onPress={() => openComposer(false)} activeOpacity={0.8}>
+              <Text style={styles.composeBtnText}>✏️</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </Animated.View>
 
-      {/* Dopamine Shop */}
-      <Animated.View entering={FadeInDown.delay(60).duration(400)}>
-        <DopamineMenuCard phaseKey={phaseKey} />
+      {/* Top tab switcher */}
+      <Animated.View entering={FadeInDown.delay(40).duration(400)} style={styles.tabSwitcher}>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'community' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('community')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]}>
+            💬  Share Thoughts
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'shop' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('shop')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'shop' && styles.tabBtnTextActive]}>
+            🛍️  Shop
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
 
-      {/* Weekly Topic */}
-      {topic && (
-        <Animated.View entering={FadeInDown.delay(120).duration(400)}>
-          <WeeklyTopicCard
-            topic={topic}
-            replyCount={topicPosts.length}
-            onReply={() => openComposer(true)}
-          />
-        </Animated.View>
+      {/* ── COMMUNITY TAB ── */}
+      {activeTab === 'community' && (
+        <>
+          {/* Weekly Topic */}
+          {topic && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+              <WeeklyTopicCard
+                topic={topic}
+                replyCount={topicPosts.length}
+                onReply={() => openComposer(true)}
+              />
+            </Animated.View>
+          )}
+
+          {/* Topic replies */}
+          {topicPosts.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(120).duration(400)}>
+              <Text style={styles.sectionLabel}>Voices on this week's topic</Text>
+              {topicPosts.map((post, i) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  index={i}
+                  onReact={(id: string, r: ReactionType) => optimisticToggleReaction(id, r)}
+                />
+              ))}
+            </Animated.View>
+          )}
+
+          {/* Community feed */}
+          <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+            <View style={styles.feedHeader}>
+              <Text style={styles.sectionLabel}>Community</Text>
+              <TouchableOpacity onPress={() => openComposer(false)}>
+                <Text style={styles.feedCta}>Share something →</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {feedPosts.length === 0 ? (
+            <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🌿</Text>
+              <Text style={styles.emptyText}>Be the first to share something with the community.</Text>
+            </Animated.View>
+          ) : (
+            feedPosts.map((post, i) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                index={i}
+                onReact={(id: string, r: ReactionType) => optimisticToggleReaction(id, r)}
+              />
+            ))
+          )}
+        </>
       )}
 
-      {/* Topic replies */}
-      {topicPosts.length > 0 && (
-        <Animated.View entering={FadeInDown.delay(160).duration(400)}>
-          <Text style={styles.sectionLabel}>Voices on this week's topic</Text>
-          {topicPosts.map((post, i) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              index={i}
-              onReact={(id: string, r: ReactionType) => optimisticToggleReaction(id, r)}
-            />
-          ))}
+      {/* ── SHOP TAB ── */}
+      {activeTab === 'shop' && (
+        <Animated.View entering={FadeInDown.delay(60).duration(400)}>
+          <DopamineMenuCard phaseKey={phaseKey} />
         </Animated.View>
-      )}
-
-      {/* Community feed */}
-      <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-        <View style={styles.feedHeader}>
-          <Text style={styles.sectionLabel}>Community</Text>
-          <TouchableOpacity onPress={() => openComposer(false)}>
-            <Text style={styles.feedCta}>Share something →</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-      {feedPosts.length === 0 ? (
-        <Animated.View entering={FadeInDown.delay(240).duration(400)} style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🌿</Text>
-          <Text style={styles.emptyText}>Be the first to share something with the community.</Text>
-        </Animated.View>
-      ) : (
-        feedPosts.map((post, i) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            index={i}
-            onReact={(id: string, r: ReactionType) => optimisticToggleReaction(id, r)}
-          />
-        ))
       )}
 
       {/* Post Composer */}
@@ -246,78 +266,55 @@ export default function Circle() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  heading: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: dash.ink,
-    letterSpacing: -0.5,
-  },
-  subheading: {
-    fontSize: 13,
-    color: dash.inkSoft,
-    marginTop: 2,
-  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  heading: { fontSize: 28, fontWeight: '800', color: dash.ink, letterSpacing: -0.5 },
+  subheading: { fontSize: 13, color: dash.inkSoft, marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  adminBtn: {
-    backgroundColor: '#F0ECEA',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
+  adminBtn: { backgroundColor: '#F0ECEA', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
   adminBtnText: { fontSize: 13, fontWeight: '600', color: dash.inkSoft },
-  composeBtn: {
-    backgroundColor: dash.sage,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  composeBtn: { backgroundColor: dash.sage, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   composeBtnText: { fontSize: 16 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: dash.inkSoft,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 4,
-  },
-  feedHeader: {
+
+  // Top tab switcher
+  tabSwitcher: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: '#F0ECEA',
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 11,
     alignItems: 'center',
   },
+  tabBtnActive: {
+    backgroundColor: dash.card,
+    shadowColor: '#2E2A26',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  tabBtnText: { fontSize: 13, fontWeight: '600', color: dash.muted },
+  tabBtnTextActive: { color: dash.ink, fontWeight: '700' },
+
+  sectionLabel: {
+    fontSize: 13, fontWeight: '700', color: dash.inkSoft,
+    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4,
+  },
+  feedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   feedCta: { fontSize: 13, color: dash.sage, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 8 },
   emptyEmoji: { fontSize: 32 },
   emptyText: { fontSize: 14, color: dash.muted, textAlign: 'center' },
+
   // Admin modal
-  adminOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  adminSheet: {
-    backgroundColor: dash.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-    gap: 14,
-  },
+  adminOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+  adminSheet: { backgroundColor: dash.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 14 },
   adminTitle: { fontSize: 17, fontWeight: '700', color: dash.ink },
-  adminInput: {
-    fontSize: 15,
-    color: dash.ink,
-    backgroundColor: '#F9F6F1',
-    borderRadius: 12,
-    padding: 12,
-  },
+  adminInput: { fontSize: 15, color: dash.ink, backgroundColor: '#F9F6F1', borderRadius: 12, padding: 12 },
   adminInputMulti: { minHeight: 80, textAlignVertical: 'top' },
   adminFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 16 },
   adminCancel: { fontSize: 15, color: dash.muted },

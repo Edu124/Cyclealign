@@ -79,15 +79,18 @@ export class LocalStatisticalEngine implements PredictionEngine {
     // Detect overdue BEFORE rolling: today has passed the expected next period
     // start but the user hasn't logged a new period yet. Per spec: expose this
     // flag so the UI can prompt — never auto-reset the cycle silently.
+    // NOTE: elapsed === cycleLength means today IS the due date, not "past" it —
+    // use strict > so we don't roll one extra cycle on the exact due day.
     const isOverdue = elapsed >= cycleLength;
-    while (elapsed >= cycleLength) {
+    while (elapsed > cycleLength) {
       cycleStart = addDaysISO(cycleStart, cycleLength);
       elapsed -= cycleLength;
     }
     // Guard against a future-dated lastPeriodStart.
     if (elapsed < 0) elapsed = 0;
 
-    const dayOfCycle = elapsed + 1; // 1-based
+    // Cap at cycleLength: on the exact due day elapsed === cycleLength → day 1 of new cycle.
+    const dayOfCycle = Math.min(elapsed + 1, cycleLength); // 1-based
     const nextPeriodStart = addDaysISO(cycleStart, cycleLength);
     const daysUntilNextPeriod = daysBetween(
       fromISODate(today),

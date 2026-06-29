@@ -31,11 +31,11 @@ export const palette = {
   surfaceAlt: '#FBF7F1',
   bg: '#F7F4EF',
 
-  // Phase colors (earthy + distinct)
-  menstrual: '#D88E6A',
-  follicular: '#8FAD77',
-  ovulation: '#E6B079',
-  luteal: '#BBA98E',
+  // Phase colors — match the intro animation pills
+  menstrual: '#E8748A',
+  follicular: '#8B7EC8',
+  ovulation: '#F5A623',
+  luteal: '#68C4B0',
 
   // Status
   success: '#5C8B74',
@@ -78,10 +78,10 @@ export const dash = {
 } as const;
 
 export const phaseColors = {
-  menstrual: { base: palette.menstrual, deep: '#B85F3C' },
-  follicular: { base: palette.follicular, deep: '#5F7D4B' },
-  ovulation: { base: palette.ovulation, deep: '#C2894E' },
-  luteal: { base: palette.luteal, deep: '#8C7A61' },
+  menstrual:  { base: palette.menstrual,  deep: '#C54D66' },
+  follicular: { base: palette.follicular, deep: '#6558A8' },
+  ovulation:  { base: palette.ovulation,  deep: '#D4850A' },
+  luteal:     { base: palette.luteal,     deep: '#419E8C' },
 } as const;
 
 /**
@@ -89,10 +89,10 @@ export const phaseColors = {
  * final brand hex from Vinnie. One per biological phase.
  */
 export const phaseBanner = {
-  menstrual: { bg: '#F7E3D9', accent: '#B85F3C' },
-  follicular: { bg: '#E8EFE1', accent: '#56723F' },
-  ovulation: { bg: '#E0ECE7', accent: '#5C8B74' },
-  luteal: { bg: '#EFE7E0', accent: '#8C7A61' },
+  menstrual:  { bg: '#FCE8ED', accent: '#C54D66' },
+  follicular: { bg: '#EEE9F8', accent: '#6558A8' },
+  ovulation:  { bg: '#FEF4E0', accent: '#D4850A' },
+  luteal:     { bg: '#E3F6F2', accent: '#419E8C' },
 } as const;
 
 /** Capacity (Component B) colours. */

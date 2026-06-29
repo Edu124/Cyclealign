@@ -4,8 +4,7 @@ import { format } from 'date-fns';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { DateField, Stepper } from '@/components/ui';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
-import { predictionEngine } from '@/lib/prediction/engine';
-import { fromISODate } from '@/lib/dates';
+import { addDaysISO, fromISODate, todayISO } from '@/lib/dates';
 import { palette, radius, spacing } from '@/theme';
 
 export default function CycleStep() {
@@ -17,13 +16,12 @@ export default function CycleStep() {
     set,
   } = useOnboarding();
 
-  const preview = lastPeriodStart
-    ? predictionEngine.predict({
-        lastPeriodStart,
-        avgCycleLength,
-        avgPeriodLength,
-      })
+  // Direct calculation: entered date + cycle length.
+  // Avoids confusing "roll-forward" behavior — users expect last_period + N days.
+  const nextPeriodISO = lastPeriodStart
+    ? addDaysISO(lastPeriodStart, avgCycleLength)
     : null;
+  const isPastDue = nextPeriodISO != null && nextPeriodISO < todayISO();
 
   function toggleUnknown() {
     set({
@@ -87,16 +85,20 @@ export default function CycleStep() {
         onChange={(v) => set({ avgPeriodLength: v })}
       />
 
-      {preview && (
-        <View style={styles.preview}>
-          <Text style={styles.previewLabel}>NEXT PERIOD EXPECTED</Text>
+      {nextPeriodISO && (
+        <View style={[styles.preview, isPastDue && styles.previewWarn]}>
+          <Text style={[styles.previewLabel, isPastDue && styles.previewLabelWarn]}>
+            {isPastDue ? 'DATE ALREADY PASSED' : 'NEXT PERIOD EXPECTED'}
+          </Text>
           <Text style={styles.previewDate}>
-            {format(fromISODate(preview.nextPeriodStart), 'EEEE, d MMMM')}
+            {format(fromISODate(nextPeriodISO), 'EEEE, d MMMM')}
           </Text>
           <Text style={styles.previewSub}>
-            {unknownCycleLength
-              ? "Estimated using a 28-day cycle — we'll refine this as you log data."
-              : "We'll refine this as you log more cycles."}
+            {isPastDue
+              ? 'Please select a more recent period start date.'
+              : unknownCycleLength
+                ? "Estimated using a 28-day cycle — we'll refine this as you log data."
+                : "We'll refine this as you log more cycles."}
           </Text>
         </View>
       )}
@@ -139,11 +141,17 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: 4,
   },
+  previewWarn: {
+    backgroundColor: '#FFF3CD',
+  },
   previewLabel: {
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
     color: palette.roseDeep,
+  },
+  previewLabelWarn: {
+    color: '#856404',
   },
   previewDate: { fontSize: 20, fontWeight: '800', color: palette.ink },
   previewSub: { fontSize: 13, color: palette.inkSoft },

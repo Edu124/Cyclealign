@@ -79,7 +79,7 @@ export default function AccountStep() {
   }
 
   function goHome() {
-    router.replace('/(tabs)/today');
+    router.replace('/onboarding/founder');
   }
 
   const handleCreate = async () => {
