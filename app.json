@@ -24,7 +24,7 @@
     "android": {
       "package": "com.cyclealign.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.jpg",
         "backgroundColor": "#F7F4EF"
       }
     },
@@ -55,7 +55,14 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-updates"
+      "expo-updates",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#C2683F"
+        }
+      ]
     ],
     "updates": {
       "url": "https://u.expo.dev/2a32fbd2-2396-48ab-bcd9-cfe4e3d053a6",

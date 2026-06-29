@@ -136,7 +136,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Dopamine Shop</Text>
+          <Text style={styles.title}>Shop</Text>
           <Text style={[styles.subtitle, { color: phaseColor }]}>
             {PHASE_LABELS[phaseKey]}
           </Text>

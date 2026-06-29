@@ -47,14 +47,6 @@ export function PostCard({ post, index, onReact }: Props) {
           <Text style={styles.authorName}>{post.displayName}</Text>
           <Text style={styles.timeAgo}>{timeAgo(post.createdAt)}</Text>
         </View>
-        {post.phaseKey && (
-          <View style={[styles.phasePill, { backgroundColor: phaseColor + '22' }]}>
-            <Text style={[styles.phaseText, { color: phaseColor }]}>
-              {PHASE_LABELS[post.phaseKey]}
-              {post.cycleDay ? ` · D${post.cycleDay}` : ''}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Content */}

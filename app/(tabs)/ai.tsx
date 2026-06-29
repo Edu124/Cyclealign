@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { palette } from '@/theme';
@@ -35,45 +35,48 @@ const FEATURES = [
 export default function AITab() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AI Coach</Text>
-        <Text style={styles.headerSub}>Personalised intelligence for every phase</Text>
-      </View>
-
-      <Animated.View entering={FadeIn.delay(100).duration(600)} style={styles.comingSoonCard}>
-        <Text style={styles.comingSoonEmoji}>✨</Text>
-        <Text style={styles.comingSoonTitle}>Coming Soon</Text>
-        <Text style={styles.comingSoonBody}>
-          CycleAlign AI is being built and tested. When it launches, it will be your
-          always-on hormonal health coach — medications, movement, nutrition and recovery,
-          all phase-matched to your body.
-        </Text>
-        <View style={styles.pill}>
-          <Text style={styles.pillText}>Available in V2</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>AI Coach</Text>
+          <Text style={styles.headerSub}>Personalised intelligence for every phase</Text>
         </View>
-      </Animated.View>
 
-      <View style={styles.featureList}>
-        {FEATURES.map((f, i) => (
-          <Animated.View
-            key={f.title}
-            entering={FadeInDown.delay(200 + i * 80).duration(400)}
-            style={styles.featureCard}
-          >
-            <Text style={styles.featureEmoji}>{f.emoji}</Text>
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{f.title}</Text>
-              <Text style={styles.featureBody}>{f.body}</Text>
-            </View>
-          </Animated.View>
-        ))}
-      </View>
+        <Animated.View entering={FadeIn.delay(100).duration(600)} style={styles.comingSoonCard}>
+          <Text style={styles.comingSoonEmoji}>✨</Text>
+          <Text style={styles.comingSoonTitle}>Coming Soon</Text>
+          <Text style={styles.comingSoonBody}>
+            CycleAlign AI is being built and tested. When it launches, it will be your
+            always-on hormonal health coach — medications, movement, nutrition and recovery,
+            all phase-matched to your body.
+          </Text>
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>Available in V2</Text>
+          </View>
+        </Animated.View>
+
+        <View style={styles.featureList}>
+          {FEATURES.map((f, i) => (
+            <Animated.View
+              key={f.title}
+              entering={FadeInDown.delay(200 + i * 80).duration(400)}
+              style={styles.featureCard}
+            >
+              <Text style={styles.featureEmoji}>{f.emoji}</Text>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>{f.title}</Text>
+                <Text style={styles.featureBody}>{f.body}</Text>
+              </View>
+            </Animated.View>
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
+  scrollContent: { paddingBottom: 120 },
   header: {
     paddingHorizontal: 22,
     paddingTop: 16,

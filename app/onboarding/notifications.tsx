@@ -1,22 +1,15 @@
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import * as Notifications from 'expo-notifications';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { palette, radius, spacing } from '@/theme';
 
 async function requestOSPermission(): Promise<boolean> {
   if (Platform.OS === 'web') return true;
-  try {
-    // expo-notifications is an optional install.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Notifs = require('expo-notifications');
-    const { status } = await Notifs.requestPermissionsAsync();
-    return status === 'granted';
-  } catch {
-    // Package not installed — store preference only.
-    return true;
-  }
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status === 'granted';
 }
 
 export default function NotificationsStep() {
