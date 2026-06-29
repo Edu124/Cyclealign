@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Component, useEffect, useRef } from 'react';
+import { Platform, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +19,23 @@ import { pullState } from '@/lib/sync';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient();
+
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 16, color: '#C2683F', textAlign: 'center' }}>
+            {'Something went wrong:\n'}{this.state.error}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * On web (desktop browser), constrain the app to a centred phone-width frame so
@@ -86,10 +103,14 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  // Hold rendering until fonts are ready so text never flashes a fallback.
-  if (!fontsLoaded && !fontError) return null;
+  // Hold rendering until fonts are ready. Show a blank-coloured view (not null)
+  // so the screen is never pure white while loading.
+  if (!fontsLoaded && !fontError) {
+    return <View style={{ flex: 1, backgroundColor: '#F7F4EF' }} />;
+  }
 
   return (
+    <ErrorBoundary>
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.bg }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
@@ -113,5 +134,6 @@ export default function RootLayout() {
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
