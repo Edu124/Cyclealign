@@ -1,6 +1,8 @@
-import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+
+// RN 0.76+ (Hermes) ships URL natively — the polyfill is not needed and
+// can conflict with the built-in implementation on new-arch builds.
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
