@@ -136,15 +136,9 @@ export default function Circle() {
         </View>
       </Animated.View>
 
-      {/* Dopamine Menu */}
+      {/* Dopamine Shop */}
       <Animated.View entering={FadeInDown.delay(60).duration(400)}>
-        <DopamineMenuCard
-          items={dopamineItems}
-          completedIds={completedIds}
-          phaseKey={phaseKey}
-          todayISO={today}
-          onToggle={toggleDopamineItem}
-        />
+        <DopamineMenuCard phaseKey={phaseKey} />
       </Animated.View>
 
       {/* Weekly Topic */}
