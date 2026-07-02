@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { BackHandler, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
 import { palette, radius, shadow, spacing } from '@/theme';
@@ -24,6 +26,12 @@ interface Props {
  */
 export function ExitFlowOverlay({ debugStage }: Props) {
   const [stage, setStage] = useState<Stage>(debugStage ?? 'closed');
+
+  // Keep the card clear of the floating tab bar and the system nav bar.
+  // Context (not the hook) so this also renders outside a tab navigator.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
+  const insets = useSafeAreaInsets();
+  const cardBottom = Math.max(tabBarHeight, insets.bottom) + spacing.lg;
 
   useFocusEffect(
     useCallback(() => {
@@ -74,7 +82,7 @@ export function ExitFlowOverlay({ debugStage }: Props) {
       />
 
       {stage === 'referral' && (
-        <Animated.View entering={FadeInUp.duration(300)} style={styles.card}>
+        <Animated.View entering={FadeInUp.duration(300)} style={[styles.card, { bottom: cardBottom }]}>
           <Pressable onPress={dismiss} hitSlop={12} style={styles.closeBtn}>
             <Text style={styles.closeBtnText}>✕</Text>
           </Pressable>
@@ -100,7 +108,7 @@ export function ExitFlowOverlay({ debugStage }: Props) {
       )}
 
       {stage === 'confirm' && (
-        <Animated.View entering={FadeIn.duration(220)} style={styles.card}>
+        <Animated.View entering={FadeIn.duration(220)} style={[styles.card, { bottom: cardBottom }]}>
           <View style={[styles.iconCircle, styles.iconCircleConfirm]}>
             <Text style={styles.emoji}>🌙</Text>
           </View>
@@ -133,7 +141,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: spacing.xl,
     backgroundColor: palette.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
