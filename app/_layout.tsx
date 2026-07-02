@@ -76,17 +76,28 @@ function useCloudHydration() {
   const { session } = useSession();
   const setProfile = useAppStore((s) => s.setProfile);
   const addCycleLog = useAppStore((s) => s.addCycleLog);
+  const completeOnboarding = useAppStore((s) => s.completeOnboarding);
   const setLog = useDailyLog((s) => s.setLog);
   const activateSubscription = useSubscription((s) => s.activate);
   const pulledRef = useRef<string | null>(null);
 
   useEffect(() => {
     const uid = session?.user?.id ?? null;
-    if (!uid || pulledRef.current === uid) return;
+    if (!uid) {
+      // Signed out — allow a fresh pull when the same user signs back in.
+      pulledRef.current = null;
+      return;
+    }
+    if (pulledRef.current === uid) return;
     pulledRef.current = uid;
 
     pullState().then(({ profile, cycleLogs, dailyLogs, subscriptionTier }) => {
-      if (profile) setProfile(profile);
+      if (profile) {
+        setProfile(profile);
+        // A cloud profile means onboarding was completed on some device —
+        // never send a returning user through onboarding again.
+        completeOnboarding();
+      }
       cycleLogs.forEach((l) => addCycleLog(l));
       Object.values(dailyLogs).forEach((l) => setLog(l));
       if (subscriptionTier === 'premium') {

@@ -7,16 +7,18 @@ import { Logo3D } from '@/components/logo/Logo3D';
 import { palette, spacing } from '@/theme';
 import { signInWithEmail, signInWithProvider } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { useAppStore } from '@/lib/stores/useAppStore';
+import { restoreFromCloud } from '@/lib/restoreSession';
 
 export default function SignIn() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
-  const onboardingComplete      = useAppStore((s) => s.onboardingComplete);
 
-  function afterSignIn() {
-    if (onboardingComplete) {
+  /** Restore the account from the cloud, then route: returning users go
+   *  straight to the app; accounts with no profile yet go to onboarding. */
+  async function afterSignIn() {
+    const hasProfile = await restoreFromCloud().catch(() => false);
+    if (hasProfile) {
       router.replace('/(tabs)/today');
     } else {
       router.replace('/onboarding/role');
@@ -26,11 +28,12 @@ export default function SignIn() {
   const handleSignIn = async () => {
     setLoading(true);
     const res = await signInWithEmail(email.trim(), password);
-    setLoading(false);
     if (!res.ok) {
+      setLoading(false);
       Alert.alert('Could not sign in', res.error);
     } else {
-      afterSignIn();
+      await afterSignIn();
+      setLoading(false);
     }
   };
 
@@ -39,7 +42,9 @@ export default function SignIn() {
     if (!res.ok) {
       Alert.alert('Sign-in', res.error ?? 'Failed');
     } else {
-      afterSignIn();
+      setLoading(true);
+      await afterSignIn();
+      setLoading(false);
     }
   };
 

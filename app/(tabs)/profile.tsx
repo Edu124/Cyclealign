@@ -250,7 +250,7 @@ export default function Profile() {
       {/* Footer */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
         <Text style={styles.version}>CycleAlign v{version}</Text>
-        <Text style={styles.copyright}>© 2026 CycleAlign</Text>
+        <Text style={styles.copyright}>© 2026 CycleAlign · made with 💛 for the women, by the women</Text>
       </Animated.View>
     </TabScreen>
   );
