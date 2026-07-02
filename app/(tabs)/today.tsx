@@ -57,7 +57,16 @@ export default function Today() {
     return (
       <>
         <TabScreen gradient={[dash.bg, dash.bg]} contentStyle={styles.empty}>
-          <Text style={styles.emptyText}>Set up your cycle to see your dashboard.</Text>
+          <Text style={styles.emptyEmoji}>🌸</Text>
+          <Text style={styles.emptyText}>
+            Tell us about your cycle and your dashboard comes to life.
+          </Text>
+          <Pressable
+            style={styles.emptyCta}
+            onPress={() => router.push('/onboarding/cycle')}
+          >
+            <Text style={styles.emptyCtaText}>Set up my cycle</Text>
+          </Pressable>
         </TabScreen>
         <ExitFlowOverlay />
       </>
@@ -175,8 +184,17 @@ export default function Today() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, gap: 16 },
-  empty: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { color: dash.inkSoft, fontSize: 16, textAlign: 'center' },
+  empty: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 14, paddingHorizontal: 32 },
+  emptyEmoji: { fontSize: 40 },
+  emptyText: { color: dash.inkSoft, fontSize: 16, textAlign: 'center', lineHeight: 23 },
+  emptyCta: {
+    backgroundColor: dash.sage,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    marginTop: 6,
+  },
+  emptyCtaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 
   overdueBanner: {
     flexDirection: 'row',

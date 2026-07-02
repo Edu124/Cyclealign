@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -13,6 +13,7 @@ import { Button, Screen, TextField } from '@/components/ui';
 import { Logo3D } from '@/components/logo/Logo3D';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { useSession } from '@/lib/stores/useSession';
 import { signUpWithEmail, signInWithProvider } from '@/lib/auth';
 import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -26,12 +27,25 @@ function webAlert(msg: string) {
 export default function AccountStep() {
   const draft = useOnboarding();
   const { setProfile, addCycleLog, completeOnboarding } = useAppStore();
+  const { session } = useSession();
+  const existingProfile = useAppStore((s) => s.profile);
 
-  const [name,     setName]     = useState(draft.name || '');
+  const [name,     setName]     = useState(draft.name || existingProfile?.name || '');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [errors,   setErrors]   = useState<{ name?: string; email?: string; password?: string }>({});
+
+  // Already signed in (e.g. redoing cycle setup from the dashboard) — don't
+  // ask for a second account. Save the updated cycle data and continue.
+  useEffect(() => {
+    if (!session) return;
+    const { profile, log } = buildProfileAndLog();
+    saveLocally(profile, log);
+    syncToSupabase(profile, log);
+    goHome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   function validate(): boolean {
     const e: typeof errors = {};

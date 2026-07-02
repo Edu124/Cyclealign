@@ -20,7 +20,8 @@ import { useSession } from '@/lib/stores/useSession';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useSubscription } from '@/lib/stores/useSubscription';
-import { pullState } from '@/lib/sync';
+import { pullState, pushCycleLog, pushProfile } from '@/lib/sync';
+import { isCompleteProfile } from '@/lib/restoreSession';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -92,13 +93,23 @@ function useCloudHydration() {
     pulledRef.current = uid;
 
     pullState().then(({ profile, cycleLogs, dailyLogs, subscriptionTier }) => {
-      if (profile) {
+      if (isCompleteProfile(profile)) {
         setProfile(profile);
-        // A cloud profile means onboarding was completed on some device —
+        // A complete cloud profile means onboarding finished on some device —
         // never send a returning user through onboarding again.
         completeOnboarding();
+        cycleLogs.forEach((l) => addCycleLog(l));
+      } else {
+        // Cloud is empty (or only holds the signup trigger's bare row). If
+        // THIS device has a completed onboarding, upload it now — this heals
+        // the email-confirmation flow where the session arrives after
+        // onboarding finished and the original upload was skipped.
+        const local = useAppStore.getState();
+        if (isCompleteProfile(local.profile)) {
+          pushProfile(local.profile).catch(() => {});
+          local.cycleLogs.forEach((l) => pushCycleLog(l).catch(() => {}));
+        }
       }
-      cycleLogs.forEach((l) => addCycleLog(l));
       Object.values(dailyLogs).forEach((l) => setLog(l));
       if (subscriptionTier === 'premium') {
         activateSubscription('monthly', null, null);

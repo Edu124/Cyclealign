@@ -31,36 +31,36 @@ interface Product {
 
 const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
   menstrual: [
-    { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak', price: 18000, tag: 'Best Seller' },
-    { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set', price: 24000 },
-    { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box', price: 12000, tag: 'Fan Fave' },
-    { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', price: 35000 },
-    { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection', price: 15000 },
-    { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe', price: 29000, tag: 'New' },
+    { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak', price: 1299, tag: 'Best Seller' },
+    { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set', price: 1699 },
+    { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box', price: 899, tag: 'Fan Fave' },
+    { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', price: 2499 },
+    { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection', price: 1099 },
+    { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe', price: 1999, tag: 'New' },
   ],
   follicular: [
-    { id: 'f1', emoji: '📓', name: 'Manifestation Journal', price: 22000, tag: 'Trending' },
-    { id: 'f2', emoji: '🎨', name: 'Art Supply Kit', price: 38000 },
-    { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set', price: 29000, tag: 'Best Seller' },
-    { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds', price: 89000 },
-    { id: 'f5', emoji: '💪', name: 'Resistance Bands Set', price: 19000 },
-    { id: 'f6', emoji: '✏️', name: 'Stationery Bundle', price: 16000, tag: 'New' },
+    { id: 'f1', emoji: '📓', name: 'Manifestation Journal', price: 1499, tag: 'Trending' },
+    { id: 'f2', emoji: '🎨', name: 'Art Supply Kit', price: 2699 },
+    { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set', price: 1999, tag: 'Best Seller' },
+    { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds', price: 5999 },
+    { id: 'f5', emoji: '💪', name: 'Resistance Bands Set', price: 1299 },
+    { id: 'f6', emoji: '✏️', name: 'Stationery Bundle', price: 1199, tag: 'New' },
   ],
   ovulation: [
-    { id: 'o1', emoji: '👗', name: 'Statement Dress', price: 75000, tag: 'Hot Pick' },
-    { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit', price: 45000, tag: 'Best Seller' },
-    { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', price: 32000 },
-    { id: 'o4', emoji: '✨', name: 'Jewelry Set', price: 48000 },
-    { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set', price: 55000, tag: 'Trending' },
-    { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag', price: 62000 },
+    { id: 'o1', emoji: '👗', name: 'Statement Dress', price: 4999, tag: 'Hot Pick' },
+    { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit', price: 3199, tag: 'Best Seller' },
+    { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', price: 2199 },
+    { id: 'o4', emoji: '✨', name: 'Jewelry Set', price: 3499 },
+    { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set', price: 3999, tag: 'Trending' },
+    { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag', price: 4499 },
   ],
   luteal: [
-    { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', price: 28000, tag: 'Self-Care' },
-    { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set', price: 42000 },
-    { id: 'l3', emoji: '📚', name: 'Novel Bundle', price: 35000, tag: 'Cozy Pick' },
-    { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks', price: 55000 },
-    { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit', price: 20000, tag: 'Best Seller' },
-    { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set', price: 33000 },
+    { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', price: 1899, tag: 'Self-Care' },
+    { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set', price: 2999 },
+    { id: 'l3', emoji: '📚', name: 'Novel Bundle', price: 2499, tag: 'Cozy Pick' },
+    { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks', price: 3999 },
+    { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit', price: 1399, tag: 'Best Seller' },
+    { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set', price: 2299 },
   ],
 };
 
@@ -79,7 +79,7 @@ const PHASE_TAGLINES: Record<PhaseKey, string> = {
 };
 
 function formatPrice(p: number) {
-  return `₩${p.toLocaleString()}`;
+  return `₹${p.toLocaleString('en-IN')}`;
 }
 
 type CheckoutStep = 'cart' | 'address' | 'payment' | 'confirm' | 'track';
