@@ -13,6 +13,7 @@ import { dash, phaseColors } from '@/theme';
 import { fromISODate } from '@/lib/dates';
 import {
   TASK_SYNC_CATEGORIES,
+  greenDates,
   scoreForDate,
   type ScoreColor,
 } from '@/lib/intelligence/taskScore';
@@ -51,7 +52,7 @@ function scoreMessage(score: ScoreColor, phaseName: string): string {
     return `You'll be in your ${phaseName} phase — a strong window for this.`;
   if (score === 'amber')
     return `You'll be in your ${phaseName} phase — manageable, but not your peak.`;
-  return `You'll be in your ${phaseName} phase — a low-capacity window. Consider rescheduling.`;
+  return `You'll be in your ${phaseName} phase — this may ask more of you than the day naturally gives.`;
 }
 
 export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) {
@@ -110,6 +111,11 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                 const ui = score ? SCORE_UI[score] : null;
                 const phaseName = PHASE_NAME[phase];
 
+                // For red events, find the next 2 green dates so we can show them directly.
+                const betterDates = score === 'red'
+                  ? greenDates(event.categoryId, prediction, 30).slice(0, 2)
+                  : [];
+
                 return (
                   <Animated.View
                     key={event.id}
@@ -156,6 +162,22 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                       <Text style={styles.scoreMsgMuted}>
                         You have something personal on this day. {PHASE_CONTEXT[phase]}. Build buffer time around it.
                       </Text>
+                    )}
+
+                    {/* Better date suggestions — shown inline for red events */}
+                    {betterDates.length > 0 && (
+                      <View style={styles.betterDates}>
+                        <Text style={styles.betterDatesLabel}>✦ Better windows</Text>
+                        <View style={styles.dateChips}>
+                          {betterDates.map((d) => (
+                            <View key={d} style={styles.dateChip}>
+                              <Text style={styles.dateChipText}>
+                                {format(fromISODate(d), 'EEE, d MMM')}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
                     )}
                   </Animated.View>
                 );
@@ -256,6 +278,16 @@ const styles = StyleSheet.create({
   scoreBadgeText: { fontSize: 11, fontWeight: '700' },
   scoreMsg: { fontSize: 12, lineHeight: 17 },
   scoreMsgMuted: { fontSize: 12, lineHeight: 17, color: dash.muted },
+  betterDates: { gap: 6, marginTop: 2 },
+  betterDatesLabel: { fontSize: 11, fontWeight: '700', color: '#56723F', letterSpacing: 0.5 },
+  dateChips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  dateChip: {
+    backgroundColor: '#E8EFE1',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  dateChipText: { fontSize: 13, fontWeight: '700', color: '#3A5C2C' },
   footer: { paddingHorizontal: 20, paddingTop: 12, alignItems: 'center' },
   footerNote: { fontSize: 12, color: dash.muted },
 });

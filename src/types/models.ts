@@ -92,6 +92,17 @@ export interface DopamineItem {
   sortOrder: number;
 }
 
+export interface BlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  body: string;
+  emoji: string;
+  accentColor: string;
+  author: string;
+  publishedAt: string;
+}
+
 export interface DailyLog {
   dateISO: string;
   energy: number; // 1..5

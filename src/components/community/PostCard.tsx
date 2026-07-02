@@ -13,7 +13,7 @@ interface Props {
 const PHASE_LABELS: Record<PhaseKey, string> = {
   menstrual:  'Menstrual',
   follicular: 'Follicular',
-  ovulation:  'Ovulation',
+  ovulation:  'Ovulatory',
   luteal:     'Luteal',
 };
 

@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Screen } from '@/components/ui';
+import { TabScreen } from '@/components/ui';
 import { MonthOutlook } from '@/components/plan/MonthOutlook';
 import { RecommendedWindows } from '@/components/plan/RecommendedWindows';
 import { PhaseTasksModal } from '@/components/plan/PhaseTasksModal';
@@ -10,23 +12,87 @@ import { DayEventsModal } from '@/components/plan/DayEventsModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCalendar } from '@/lib/stores/useCalendar';
+import { useSettings } from '@/lib/stores/useSettings';
+import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured } from '@/lib/googleCalendar';
 import { monthPlan } from '@/lib/intelligence/schedule';
 import type { RecommendedWindow } from '@/lib/intelligence/schedule';
 import { palette } from '@/theme';
 
+// Required by expo-auth-session on web so the OAuth redirect completes.
+WebBrowser.maybeCompleteAuthSession();
+
 export default function Plan() {
   const profile    = useAppStore((s) => s.profile);
   const prediction = usePrediction();
-  const { connected, events, connect, disconnect, eventsForDate } = useCalendar();
+  const {
+    connected,
+    providerLabel,
+    events,
+    connectGoogle,
+    connectDemo,
+    disconnect,
+    eventsForDate,
+  } = useCalendar();
 
+  const isV2 = useSettings((s) => s.appVersion) === 'v2';
   const [selectedWindow, setSelectedWindow] = useState<RecommendedWindow | null>(null);
   const [selectedDate, setSelectedDate]     = useState<string | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
+  // ── Google OAuth hook ─────────────────────────────────────────────────────
+  const [, googleResponse, promptGoogleAuth] = Google.useAuthRequest({
+    clientId:       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId:    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type !== 'success') return;
+    const token = googleResponse.authentication?.accessToken;
+    if (!token) return;
+    handleGoogleConnected(token);
+  }, [googleResponse]);
+
+  async function handleGoogleConnected(accessToken: string) {
+    setCalendarLoading(true);
+    try {
+      const calEvents = await fetchGoogleCalendarEvents(accessToken);
+      connectGoogle(accessToken, calEvents);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert('Sync failed', `Could not load your Google Calendar events.\n\n${msg}`);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
+  async function handleConnect(providerId: string) {
+    if (providerId === 'google') {
+      if (!isGoogleCalendarConfigured()) {
+        Alert.alert(
+          'Google Calendar not configured',
+          'Add your Google OAuth client IDs to .env.local to enable real Google Calendar sync.\n\nUsing sample events for now.',
+          [{ text: 'Use sample events', onPress: () => connectDemo('Google Calendar (demo)') }],
+        );
+        return;
+      }
+      await promptGoogleAuth();
+    } else {
+      const labels: Record<string, string> = {
+        apple:   'Apple Calendar',
+        outlook: 'Outlook',
+        demo:    'Sample Calendar',
+      };
+      connectDemo(labels[providerId] ?? 'Calendar');
+    }
+  }
 
   if (!profile || !prediction) {
     return (
-      <Screen contentStyle={styles.empty}>
+      <TabScreen contentStyle={styles.empty}>
         <Text style={styles.emptyText}>Set up your cycle to plan your month.</Text>
-      </Screen>
+      </TabScreen>
     );
   }
 
@@ -39,7 +105,7 @@ export default function Plan() {
 
   return (
     <>
-      <Screen>
+      <TabScreen>
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={styles.title}>Your plan</Text>
           <Text style={styles.subtitle}>
@@ -47,13 +113,17 @@ export default function Plan() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
-          <CalendarConnectBanner
-            connected={connected}
-            onConnect={connect}
-            onDisconnect={disconnect}
-          />
-        </Animated.View>
+        {isV2 && (
+          <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+            <CalendarConnectBanner
+              connected={connected}
+              providerLabel={providerLabel}
+              loading={calendarLoading}
+              onConnect={handleConnect}
+              onDisconnect={disconnect}
+            />
+          </Animated.View>
+        )}
 
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
           <RecommendedWindows
@@ -65,11 +135,11 @@ export default function Plan() {
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <MonthOutlook
             prediction={prediction}
-            events={connected ? events : []}
+            events={isV2 && connected ? events : []}
             onDayPress={handleDayPress}
           />
         </Animated.View>
-      </Screen>
+      </TabScreen>
 
       <PhaseTasksModal
         window={selectedWindow}

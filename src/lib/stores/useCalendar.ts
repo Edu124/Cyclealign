@@ -37,7 +37,15 @@ function seedEvents(): CalendarEvent[] {
 
 interface CalendarState {
   connected: boolean;
+  /** 'demo' | 'google' | 'apple' | 'outlook' | null */
+  providerLabel: string | null;
+  googleAccessToken: string | null;
   events: CalendarEvent[];
+  /** Connect with real Google Calendar data. */
+  connectGoogle: (accessToken: string, events: CalendarEvent[]) => void;
+  /** Connect with seeded demo data (Apple / Outlook / sample). */
+  connectDemo: (providerLabel?: string) => void;
+  /** Backwards-compat alias for connectDemo. */
   connect: () => void;
   disconnect: () => void;
   addEvent: (e: Omit<CalendarEvent, 'id'>) => void;
@@ -49,17 +57,25 @@ export const useCalendar = create<CalendarState>()(
   persist(
     (set, get) => ({
       connected: false,
+      providerLabel: null,
+      googleAccessToken: null,
       events: [],
 
-      connect: () => set({ connected: true, events: seedEvents() }),
-      disconnect: () => set({ connected: false, events: [] }),
+      connectGoogle: (accessToken, events) =>
+        set({ connected: true, providerLabel: 'Google Calendar', googleAccessToken: accessToken, events }),
+
+      connectDemo: (label = 'Calendar') =>
+        set({ connected: true, providerLabel: label, googleAccessToken: null, events: seedEvents() }),
+
+      connect: () =>
+        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, events: seedEvents() }),
+
+      disconnect: () =>
+        set({ connected: false, providerLabel: null, googleAccessToken: null, events: [] }),
 
       addEvent: (e) =>
         set((s) => ({
-          events: [
-            ...s.events,
-            { ...e, id: `ev-${Date.now()}` },
-          ],
+          events: [...s.events, { ...e, id: `ev-${Date.now()}` }],
         })),
 
       removeEvent: (id) =>
@@ -71,7 +87,12 @@ export const useCalendar = create<CalendarState>()(
     {
       name: 'cyclealign-calendar',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ connected: s.connected, events: s.events }),
+      partialize: (s) => ({
+        connected: s.connected,
+        providerLabel: s.providerLabel,
+        googleAccessToken: s.googleAccessToken,
+        events: s.events,
+      }),
     },
   ),
 );

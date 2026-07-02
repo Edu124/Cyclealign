@@ -3,6 +3,7 @@ export { Card } from './Card';
 export { Chip } from './Chip';
 export { GradientBackground } from './GradientBackground';
 export { Screen } from './Screen';
+export { TabScreen } from './TabScreen';
 export { TextField } from './TextField';
 export { Stepper } from './Stepper';
 export { CalendarPicker } from './CalendarPicker';

@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -126,6 +127,12 @@ export default function AccountStep() {
 
   return (
     <Screen contentStyle={styles.content}>
+      <Animated.View entering={FadeIn.duration(300)} style={styles.backRow}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn} activeOpacity={0.6}>
+          <Text style={styles.backArrow}>‹</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
       <Animated.View entering={FadeIn.duration(600)} style={styles.hero}>
         <Logo3D size={100} />
         <Text style={styles.title}>
@@ -207,7 +214,10 @@ export default function AccountStep() {
 }
 
 const styles = StyleSheet.create({
-  content:   { flexGrow: 1, gap: spacing.lg },
+  content:    { flexGrow: 1, gap: spacing.lg },
+  backRow:    { alignItems: 'flex-start' },
+  backBtn:    { width: 34, height: 34, borderRadius: 17, backgroundColor: palette.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.line },
+  backArrow:  { fontSize: 22, color: palette.inkSoft, lineHeight: 26 },
   hero:      { alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xl },
   title:     { fontSize: 24, fontWeight: '800', color: palette.ink, textAlign: 'center', letterSpacing: -0.3 },
   subtitle:  { fontSize: 15, color: palette.inkSoft, textAlign: 'center', lineHeight: 22, paddingHorizontal: spacing.md },

@@ -69,7 +69,7 @@ export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero }: Props) {
         <View style={styles.guideDivider} />
         <GuideItem icon="document" label="Good for" value={hero.goodFor} accent={accent} />
         <View style={styles.guideDivider} />
-        <GuideItem icon="clock" label="Avoid" value={hero.avoid} accent={accent} />
+        <GuideItem icon="clock" label="Save for later" value={hero.avoid} accent={accent} />
       </View>
     </View>
   );

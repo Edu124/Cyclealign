@@ -42,7 +42,7 @@ export function getPhases(
     },
     {
       key: 'ovulation',
-      title: 'Ovulation',
+      title: 'Ovulatory',
       subtitle: 'Peak fertility & confidence',
       range: [ovStart, ovEnd],
     },

@@ -151,6 +151,31 @@ export default function PrivacySettings() {
           </View>
         </Animated.View>
 
+        {/* GDPR — Your rights */}
+        <Animated.View entering={FadeInDown.delay(210).duration(400)}>
+          <SectionLabel>Your Rights (GDPR)</SectionLabel>
+          <View style={styles.card}>
+            <Text style={styles.gdprIntro}>
+              CycleALIGN processes health data only with your explicit consent, and cycle
+              predictions are computed on your device. Under the EU General Data Protection
+              Regulation (and equivalent laws), you have the right to:
+            </Text>
+            {GDPR_RIGHTS.map((r) => (
+              <View key={r.title} style={styles.gdprRow}>
+                <Text style={styles.gdprBullet}>{r.icon}</Text>
+                <View style={styles.gdprText}>
+                  <Text style={styles.gdprTitle}>{r.title}</Text>
+                  <Text style={styles.gdprDesc}>{r.desc}</Text>
+                </View>
+              </View>
+            ))}
+            <Text style={styles.gdprFootnote}>
+              To exercise any of these rights, email hello@cyclealign.app — we respond
+              within 30 days. Deleting your data below fulfils erasure immediately.
+            </Text>
+          </View>
+        </Animated.View>
+
         {/* Setting 4 — Delete data */}
         <Animated.View entering={FadeInDown.delay(240).duration(400)}>
           <SectionLabel>Danger Zone</SectionLabel>
@@ -179,6 +204,39 @@ export default function PrivacySettings() {
 function SectionLabel({ children }: { children: string }) {
   return <Text style={styles.sectionLabel}>{children}</Text>;
 }
+
+const GDPR_RIGHTS = [
+  {
+    icon: '📄',
+    title: 'Access',
+    desc: 'Request a copy of all personal data we hold about you.',
+  },
+  {
+    icon: '✏️',
+    title: 'Rectification',
+    desc: 'Correct anything inaccurate — your profile and cycle details are editable in-app.',
+  },
+  {
+    icon: '🗑️',
+    title: 'Erasure ("right to be forgotten")',
+    desc: 'Delete your account and every trace of your data, permanently.',
+  },
+  {
+    icon: '📦',
+    title: 'Portability',
+    desc: 'Receive your data in a machine-readable format to take elsewhere.',
+  },
+  {
+    icon: '✋',
+    title: 'Withdraw consent',
+    desc: 'Stop any processing at any time — including notifications and cloud sync.',
+  },
+  {
+    icon: '⚖️',
+    title: 'Lodge a complaint',
+    desc: 'Contact your local data-protection authority if you believe we fell short.',
+  },
+];
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
@@ -275,6 +333,20 @@ const styles = StyleSheet.create({
   radioLabel: { fontSize: 14, fontWeight: '600', color: palette.inkSoft },
   radioLabelActive: { color: palette.ink },
   radioDesc: { fontSize: 12, color: palette.muted, marginTop: 2, lineHeight: 17 },
+  gdprIntro: { fontSize: 13, color: palette.inkSoft, lineHeight: 19 },
+  gdprRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  gdprBullet: { fontSize: 16, marginTop: 1 },
+  gdprText: { flex: 1 },
+  gdprTitle: { fontSize: 14, fontWeight: '700', color: palette.ink },
+  gdprDesc: { fontSize: 12, color: palette.muted, marginTop: 2, lineHeight: 17 },
+  gdprFootnote: {
+    fontSize: 12,
+    color: palette.muted,
+    lineHeight: 17,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: 10,
+    padding: 10,
+  },
   dangerDesc: { fontSize: 14, color: palette.inkSoft, lineHeight: 20 },
   deleteBtn: {
     backgroundColor: '#FFF0ED',

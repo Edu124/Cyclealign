@@ -20,6 +20,15 @@ interface Props {
   onClose: () => void;
 }
 
+// Canonical phase names (client spec) — always the primary label.
+const PHASE_LABELS: Record<PhaseKey, string> = {
+  menstrual:  'Menstrual phase',
+  follicular: 'Follicular phase',
+  ovulation:  'Ovulatory phase',
+  luteal:     'Luteal phase',
+};
+
+// Activity descriptors — shown as the caption, never as the phase name.
 const PHASE_THEME_LABELS: Record<PhaseKey, string> = {
   menstrual:  'Reflect & Plan',
   follicular: 'Create & Start',
@@ -59,10 +68,10 @@ export function PhaseTasksModal({ window: win, role, onClose }: Props) {
             <Text style={styles.phaseIcon}>{PHASE_ICONS[win.phase]}</Text>
             <View style={styles.phaseHeaderText}>
               <Text style={[styles.phaseLabel, { color: phaseDeep }]}>
-                {PHASE_THEME_LABELS[win.phase]}
+                {PHASE_LABELS[win.phase]}
               </Text>
               <Text style={styles.phaseCaption}>
-                {win.phase.charAt(0).toUpperCase() + win.phase.slice(1)} phase · {win.activity}
+                {PHASE_THEME_LABELS[win.phase]}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>

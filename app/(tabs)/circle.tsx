@@ -9,11 +9,12 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Screen } from '@/components/ui';
+import { TabScreen } from '@/components/ui';
 import { DopamineMenuCard } from '@/components/community/DopamineMenuCard';
 import { WeeklyTopicCard } from '@/components/community/WeeklyTopicCard';
 import { PostCard } from '@/components/community/PostCard';
 import { PostComposer } from '@/components/community/PostComposer';
+import { BlogListCard } from '@/components/community/BlogListCard';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCommunity } from '@/lib/stores/useCommunity';
@@ -23,7 +24,7 @@ import { todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import type { CommunityPost, ReactionType } from '@/types/models';
 
-type Tab = 'community' | 'shop';
+type Tab = 'community' | 'blog' | 'shop';
 
 export default function Circle() {
   const profile = useAppStore((s) => s.profile);
@@ -106,7 +107,7 @@ export default function Circle() {
   }
 
   return (
-    <Screen gradient={[dash.bg, dash.bg]} contentStyle={styles.content}>
+    <TabScreen gradient={[dash.bg, dash.bg]} contentStyle={styles.content}>
       {/* Header */}
       <Animated.View entering={FadeInDown.duration(400)} style={styles.headerRow}>
         <View>
@@ -134,8 +135,17 @@ export default function Circle() {
           onPress={() => setActiveTab('community')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]}>
-            💬  Share Thoughts
+          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]} numberOfLines={1}>
+            💬 Talk
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'blog' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('blog')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'blog' && styles.tabBtnTextActive]} numberOfLines={1}>
+            📰 Blog
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -143,8 +153,8 @@ export default function Circle() {
           onPress={() => setActiveTab('shop')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'shop' && styles.tabBtnTextActive]}>
-            🛍️  Shop
+          <Text style={[styles.tabBtnText, activeTab === 'shop' && styles.tabBtnTextActive]} numberOfLines={1}>
+            🛍️ Shop
           </Text>
         </TouchableOpacity>
       </Animated.View>
@@ -206,6 +216,14 @@ export default function Circle() {
         </>
       )}
 
+      {/* ── BLOG TAB ── */}
+      {activeTab === 'blog' && (
+        <Animated.View entering={FadeInDown.delay(60).duration(400)} style={{ gap: 12 }}>
+          <Text style={styles.sectionLabel}>From the founder</Text>
+          <BlogListCard />
+        </Animated.View>
+      )}
+
       {/* ── SHOP TAB ── */}
       {activeTab === 'shop' && (
         <Animated.View entering={FadeInDown.delay(60).duration(400)}>
@@ -260,7 +278,7 @@ export default function Circle() {
           </View>
         </View>
       </Modal>
-    </Screen>
+    </TabScreen>
   );
 }
 

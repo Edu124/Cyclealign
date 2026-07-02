@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -18,7 +19,10 @@ export async function signUpWithEmail(
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {
+      data: { name },
+      emailRedirectTo: Linking.createURL('/'),
+    },
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

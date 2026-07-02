@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Card, Screen } from '@/components/ui';
+import { Card, TabScreen } from '@/components/ui';
 import { PhaseTimeline } from '@/components/cycle/PhaseTimeline';
 import { PhaseCard } from '@/components/cycle/PhaseCard';
 import { usePrediction } from '@/lib/hooks/usePrediction';
@@ -14,11 +14,11 @@ export default function Phases() {
 
   if (!profile || !prediction) {
     return (
-      <Screen contentStyle={styles.empty}>
+      <TabScreen contentStyle={styles.empty}>
         <Text style={styles.emptyText}>
           Set up your cycle to explore your phases.
         </Text>
-      </Screen>
+      </TabScreen>
     );
   }
 
@@ -26,7 +26,7 @@ export default function Phases() {
   const activeKey = prediction.currentPhase;
 
   return (
-    <Screen>
+    <TabScreen>
       <Animated.View entering={FadeInDown.duration(500)}>
         <Text style={styles.title}>Your phases</Text>
         <Text style={styles.subtitle}>
@@ -61,7 +61,7 @@ export default function Phases() {
           </Animated.View>
         ))}
       </View>
-    </Screen>
+    </TabScreen>
   );
 }
 

@@ -1,5 +1,11 @@
 import { Component, useEffect, useRef } from 'react';
 import { Platform, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import { supabase } from '@/lib/supabase';
+
+// Required for expo-auth-session OAuth redirects to complete on web.
+WebBrowser.maybeCompleteAuthSession();
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -90,10 +96,32 @@ function useCloudHydration() {
   }, [session?.user?.id]);
 }
 
+function useAuthDeepLink() {
+  useEffect(() => {
+    async function handleUrl(url: string) {
+      // email confirmation: cyclealign://?code=xxx
+      // oauth callback:     cyclealign://?code=xxx
+      if (!url.includes('code=')) return;
+      try {
+        const { searchParams } = new URL(url);
+        const code = searchParams.get('code');
+        if (code) await supabase.auth.exchangeCodeForSession(code);
+      } catch {}
+    }
+
+    // App opened from cold via deep link
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+    // App already open and receives a deep link
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => sub.remove();
+  }, []);
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   useWebPhoneFrame();
   useCloudHydration();
+  useAuthDeepLink();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -130,6 +158,11 @@ export default function RootLayout() {
             <Stack.Screen name="privacy-settings" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="terms"             options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="paywall"           options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="founder-letter"    options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="exit-preview"      options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="blog/[id]"         options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="ai-coach"          options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="flash-sale"        options={{ animation: 'slide_from_bottom' }} />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>

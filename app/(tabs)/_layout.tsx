@@ -1,9 +1,27 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/ui/TabBarIcon';
+import { useSettings } from '@/lib/stores/useSettings';
 import { dash } from '@/theme';
 
+const CONTENT_HEIGHT = 52; // icon + label, excludes safe-area padding
+const TOP_PADDING = 12;
+// Standard Android 3-button nav bar height. Some OEM skins under-report this
+// in safe-area insets, so we floor to it instead of trusting insets.bottom alone.
+const ANDROID_NAV_BAR_FLOOR = 48;
+
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Circle (community) is a V2 feature — the tab is hidden entirely in V1.
+  const isV2 = useSettings((s) => s.appVersion) === 'v2';
+  // Grow the bottom padding with the device's real safe-area inset so the tab
+  // bar never sits under (or overlaps) the phone's own nav buttons/gesture bar.
+  const bottomPadding =
+    Platform.OS === 'ios'
+      ? insets.bottom + 8
+      : Math.max(insets.bottom, ANDROID_NAV_BAR_FLOOR) + 4;
+
   return (
     <Tabs
       screenOptions={{
@@ -18,9 +36,9 @@ export default function TabsLayout() {
           borderTopWidth: 0,
           borderTopLeftRadius: 26,
           borderTopRightRadius: 26,
-          height: Platform.OS === 'ios' ? 90 : 74,
-          paddingTop: 12,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 14,
+          height: CONTENT_HEIGHT + TOP_PADDING + bottomPadding,
+          paddingTop: TOP_PADDING,
+          paddingBottom: bottomPadding,
           shadowColor: '#2E2A26',
           shadowOpacity: 0.08,
           shadowRadius: 16,
@@ -54,13 +72,14 @@ export default function TabsLayout() {
         name="circle"
         options={{
           title: 'Circle',
+          href: isV2 ? undefined : null,
           tabBarIcon: ({ color }) => <TabBarIcon name="community" color={color} />,
         }}
       />
       <Tabs.Screen
         name="ai"
         options={{
-          title: 'AI',
+          title: 'Discover',
           tabBarIcon: ({ color }) => <TabBarIcon name="ai" color={color} />,
         }}
       />

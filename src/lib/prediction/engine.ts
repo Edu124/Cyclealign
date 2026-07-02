@@ -44,7 +44,11 @@ export function effectiveCycleLength(
     .filter(Boolean)
     .sort();
 
-  if (starts.length >= 2) {
+  // Require at least 3 logged starts (= 2 real gaps) before trusting the
+  // historical average. A single gap between 2 logs is too noisy — e.g. the
+  // onboarding date + one new log gives a gap equal to however long ago onboarding
+  // was, which can wildly differ from the user's stated 28-day default.
+  if (starts.length >= 3) {
     const gaps: number[] = [];
     for (let i = 1; i < starts.length; i++) {
       const gap = daysBetween(fromISODate(starts[i - 1]), fromISODate(starts[i]));

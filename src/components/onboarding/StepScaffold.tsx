@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -44,8 +45,13 @@ export function StepScaffold({
 
   return (
     <Screen contentStyle={styles.content}>
-      <View style={styles.progressTrack}>
-        <Animated.View style={[styles.progressFill, barStyle]} />
+      <View style={styles.topRow}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn} activeOpacity={0.6}>
+          <Text style={styles.backArrow}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressFill, barStyle]} />
+        </View>
       </View>
       <Text style={styles.stepText}>
         Step {step} of {total}
@@ -77,7 +83,28 @@ export function StepScaffold({
 
 const styles = StyleSheet.create({
   content: { gap: spacing.lg, flexGrow: 1 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: palette.line,
+  },
+  backArrow: {
+    fontSize: 22,
+    color: palette.inkSoft,
+    lineHeight: 26,
+  },
   progressTrack: {
+    flex: 1,
     height: 8,
     borderRadius: radius.pill,
     backgroundColor: palette.line,

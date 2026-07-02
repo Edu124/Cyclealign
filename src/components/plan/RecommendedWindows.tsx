@@ -2,7 +2,17 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { format } from 'date-fns';
 import { phaseColors, palette, radius, spacing } from '@/theme';
 import type { RecommendedWindow } from '@/lib/intelligence/schedule';
+import type { PhaseKey } from '@/types/models';
 import { fromISODate, daysBetween } from '@/lib/dates';
+
+// Canonical phase names (client spec) — the ONLY phase-naming system shown to
+// users. Activity phrases like "Pitch & present" describe work, never phases.
+const PHASE_LABEL: Record<PhaseKey, string> = {
+  menstrual:  'Menstrual',
+  follicular: 'Follicular',
+  ovulation:  'Ovulatory',
+  luteal:     'Luteal',
+};
 
 interface Props {
   windows: RecommendedWindow[];
@@ -42,7 +52,7 @@ export function RecommendedWindows({ windows, onSelectWindow }: Props) {
               <View style={[styles.bar, { backgroundColor: color }]} />
               <View style={styles.rowText}>
                 <Text style={styles.activity}>{w.activity}</Text>
-                <Text style={styles.theme}>{w.theme} phase</Text>
+                <Text style={styles.theme}>{PHASE_LABEL[w.phase]} phase</Text>
               </View>
               <View style={styles.rowRight}>
                 <Text style={[styles.dates, { color }]}>

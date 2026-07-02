@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 const DEMO_TOPIC: WeeklyTopic = {
   id: 'demo-topic-1',
   title: 'What do you let go of when your energy drops?',
-  body: "During low-capacity phases, our bodies ask us to slow down. What's one thing you've learned to release — without guilt?",
+  body: "During slower phases, our bodies ask us to ease the pace. What's one thing you've learned to release — without guilt?",
   isActive: true,
   weekStart: new Date().toISOString().split('T')[0],
   createdAt: new Date().toISOString(),

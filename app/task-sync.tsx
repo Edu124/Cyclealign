@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +10,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DateField } from '@/components/ui';
 import { Icon } from '@/components/dashboard/Icon';
 import { usePrediction } from '@/lib/hooks/usePrediction';
@@ -51,7 +50,6 @@ export default function TaskSync() {
   const [result, setResult] = useState<{ phase: CapacityPhase; score: ScoreColor | null } | null>(
     null,
   );
-  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   if (!prediction) {
     return (
@@ -112,40 +110,54 @@ export default function TaskSync() {
                   <Text style={styles.ctaText}>Save task</Text>
                 </Pressable>
               )}
-              {result.score === 'amber' && (
-                <View style={styles.ctaRow}>
-                  <Pressable style={[styles.cta, styles.ctaFlex, { backgroundColor: ui!.fg }]} onPress={save}>
-                    <Text style={styles.ctaText}>Keep this date</Text>
-                  </Pressable>
-                  <Pressable style={[styles.cta, styles.ctaFlex, styles.ctaGhost]} onPress={() => setResult(null)}>
-                    <Text style={[styles.ctaText, { color: dash.ink }]}>Find a better date</Text>
-                  </Pressable>
-                </View>
-              )}
-              {result.score === 'red' && (
-                <View style={styles.ctaRow}>
-                  <Pressable style={[styles.cta, styles.ctaFlex, { backgroundColor: ui!.fg }]} onPress={() => setRescheduleOpen(true)}>
-                    <Text style={styles.ctaText}>Reschedule</Text>
-                  </Pressable>
-                  <Pressable style={[styles.cta, styles.ctaFlex, styles.ctaGhost]} onPress={save}>
-                    <Text style={[styles.ctaText, { color: dash.ink }]}>Keep anyway</Text>
-                  </Pressable>
-                </View>
-              )}
+              {result.score !== 'green' && (() => {
+                // Any non-green day: recommend the next green windows for this
+                // category so she can move the task with one tap.
+                const betterDates = category ? greenDates(category, prediction, 30).slice(0, 3) : [];
+                return (
+                  <>
+                    {betterDates.length > 0 && (
+                      <View style={styles.betterDatesBox}>
+                        <Text style={styles.betterDatesTitle}>
+                          ✦ Better windows for this task — tap to move it
+                        </Text>
+                        <View style={styles.betterDatesList}>
+                          {betterDates.map((d) => (
+                            <Pressable
+                              key={d}
+                              style={styles.betterDateChip}
+                              onPress={() => {
+                                setDateISO(d);
+                                setResult(scoreForDate(category!, d, prediction));
+                              }}
+                            >
+                              <Text style={styles.betterDateText}>
+                                {format(fromISODate(d), 'EEE, d MMM')}
+                              </Text>
+                              <Text style={styles.betterDateArrow}>→</Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                    <Pressable
+                      style={[
+                        styles.cta,
+                        result.score === 'amber' ? { backgroundColor: ui!.fg } : styles.ctaGhost,
+                      ]}
+                      onPress={save}
+                    >
+                      <Text style={[styles.ctaText, result.score === 'red' && { color: dash.ink }]}>
+                        {result.score === 'amber' ? 'Keep this date' : 'Keep this date anyway'}
+                      </Text>
+                    </Pressable>
+                  </>
+                );
+              })()}
             </Animated.View>
           )}
         </ScrollView>
 
-        <RescheduleModal
-          visible={rescheduleOpen}
-          dates={category ? greenDates(category, prediction, 30) : []}
-          onClose={() => setRescheduleOpen(false)}
-          onPick={(iso) => {
-            setRescheduleOpen(false);
-            setDateISO(iso);
-            setResult(scoreForDate(category!, iso, prediction));
-          }}
-        />
       </SafeAreaView>
     );
   }
@@ -159,7 +171,7 @@ export default function TaskSync() {
           Pick a category only — your task stays private. We'll score it against your cycle.
         </Text>
 
-        <Text style={styles.stepLabel}>What kind of task?</Text>
+        <Text style={styles.stepLabel}>Step 1 · What kind of task?</Text>
         <View style={styles.grid}>
           {TASK_SYNC_CATEGORIES.map((c) => {
             const active = category === c.id;
@@ -178,10 +190,10 @@ export default function TaskSync() {
           })}
         </View>
 
-        <Text style={styles.stepLabel}>When are you planning it?</Text>
+        <Text style={styles.stepLabel}>Step 2 · When are you planning it?</Text>
         <DateField value={dateISO} onChange={setDateISO} placeholder="Pick a date" />
 
-        <Text style={styles.stepLabel}>Private label (optional)</Text>
+        <Text style={styles.stepLabel}>Step 3 · Private label (optional)</Text>
         <TextInput
           placeholder="Add a private label (optional)"
           placeholderTextColor={dash.muted}
@@ -211,7 +223,7 @@ function message(score: ScoreColor, phase: string): string {
     return `You'll be in your ${phase} phase — this is a strong window for this type of task.`;
   if (score === 'amber')
     return `Manageable, but not your peak window. You'll be in your ${phase} phase on this date.`;
-  return `This is a high-effort task in a low-capacity window. You'll be in your ${phase} phase on this date. Want to reschedule?`;
+  return `This might ask more of you than this window naturally gives. You'll be in your ${phase} phase on this date — want to look at a better day?`;
 }
 
 function Header({ onBack, title }: { onBack: () => void; title: string }) {
@@ -223,46 +235,6 @@ function Header({ onBack, title }: { onBack: () => void; title: string }) {
       <Text style={styles.headerTitle}>{title}</Text>
       <View style={styles.back} />
     </View>
-  );
-}
-
-function RescheduleModal({
-  visible,
-  dates,
-  onClose,
-  onPick,
-}: {
-  visible: boolean;
-  dates: string[];
-  onClose: () => void;
-  onPick: (iso: string) => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Animated.View entering={FadeIn.duration(160)} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View entering={FadeInDown.springify().damping(16)} style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Better dates ahead</Text>
-          <Text style={styles.sheetSub}>Green windows for this task in the next 30 days</Text>
-          {dates.length === 0 ? (
-            <Text style={styles.empty}>No green windows in the next 30 days.</Text>
-          ) : (
-            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-              <View style={styles.dateList}>
-                {dates.map((d) => (
-                  <Pressable key={d} style={styles.dateChip} onPress={() => onPick(d)}>
-                    <Text style={styles.dateChipText}>
-                      {format(fromISODate(d), 'EEEE, d MMM')}
-                    </Text>
-                    <Icon name="chevronRight" color={dash.sage} size={16} />
-                  </Pressable>
-                ))}
-              </View>
-            </ScrollView>
-          )}
-        </Animated.View>
-      </Animated.View>
-    </Modal>
   );
 }
 
@@ -331,26 +303,24 @@ const styles = StyleSheet.create({
   resultGlyph: { fontSize: 34, fontWeight: '800' },
   resultTitle: { fontFamily: fonts.headingBold, fontSize: 24, color: dash.ink },
   resultMsg: { fontSize: 16, lineHeight: 24, color: dash.ink, textAlign: 'center' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(46,42,37,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: dash.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingBottom: 36,
-    gap: 6,
+  betterDatesBox: {
+    width: '100%',
+    backgroundColor: '#E8EFE1',
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
   },
-  sheetTitle: { fontFamily: fonts.heading, fontSize: 20, color: dash.ink },
-  sheetSub: { fontSize: 14, color: dash.inkSoft, marginBottom: 8 },
-  dateList: { gap: 10 },
-  dateChip: {
+  betterDatesTitle: { fontSize: 13, fontWeight: '700', color: '#3A5C2C' },
+  betterDatesList: { gap: 8 },
+  betterDateChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: dash.sageTint,
-    borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  dateChipText: { fontSize: 15, fontWeight: '600', color: dash.sageDeep },
+  betterDateText: { fontSize: 15, fontWeight: '600', color: '#3A5C2C' },
+  betterDateArrow: { fontSize: 16, color: '#56723F', fontWeight: '700' },
 });

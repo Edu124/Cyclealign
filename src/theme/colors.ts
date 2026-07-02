@@ -31,11 +31,12 @@ export const palette = {
   surfaceAlt: '#FBF7F1',
   bg: '#F7F4EF',
 
-  // Phase colors — match the intro animation pills
-  menstrual: '#E8748A',
-  follicular: '#8B7EC8',
-  ovulation: '#F5A623',
-  luteal: '#68C4B0',
+  // Phase colors — client's traffic-light system: red = rest, amber =
+  // transition, green = peak. Follicular and luteal intentionally share amber.
+  menstrual: '#D95F52',   // red
+  follicular: '#EDA639',  // amber
+  ovulation: '#7FAA5A',   // green
+  luteal: '#EDA639',      // amber
 
   // Status
   success: '#5C8B74',
@@ -78,21 +79,21 @@ export const dash = {
 } as const;
 
 export const phaseColors = {
-  menstrual:  { base: palette.menstrual,  deep: '#C54D66' },
-  follicular: { base: palette.follicular, deep: '#6558A8' },
-  ovulation:  { base: palette.ovulation,  deep: '#D4850A' },
-  luteal:     { base: palette.luteal,     deep: '#419E8C' },
+  menstrual:  { base: palette.menstrual,  deep: '#B04437' },
+  follicular: { base: palette.follicular, deep: '#C1801E' },
+  ovulation:  { base: palette.ovulation,  deep: '#557E38' },
+  luteal:     { base: palette.luteal,     deep: '#C1801E' },
 } as const;
 
 /**
- * Phase Banner background tokens (Component A). PLACEHOLDER values — pending the
- * final brand hex from Vinnie. One per biological phase.
+ * Phase Banner background tokens (Component A) — soft tints of the
+ * red/amber/green traffic-light phase system.
  */
 export const phaseBanner = {
-  menstrual:  { bg: '#FCE8ED', accent: '#C54D66' },
-  follicular: { bg: '#EEE9F8', accent: '#6558A8' },
-  ovulation:  { bg: '#FEF4E0', accent: '#D4850A' },
-  luteal:     { bg: '#E3F6F2', accent: '#419E8C' },
+  menstrual:  { bg: '#FBE9E6', accent: '#B04437' },
+  follicular: { bg: '#FBF0DC', accent: '#C1801E' },
+  ovulation:  { bg: '#EBF2E2', accent: '#557E38' },
+  luteal:     { bg: '#FBF0DC', accent: '#C1801E' },
 } as const;
 
 /** Capacity (Component B) colours. */

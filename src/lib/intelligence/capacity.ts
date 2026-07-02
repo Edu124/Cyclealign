@@ -115,7 +115,7 @@ export const PHASE_CONTEXT: Record<CapacityPhase, string> = {
   follicular: 'a rising-energy, creative window',
   ovulatory: 'your peak, high-visibility window',
   luteal_early: 'a focused, detail-oriented window',
-  luteal_late: 'a winding-down, lower-capacity window',
+  luteal_late: 'a winding-down window where gentleness works best',
 };
 
 /** Short note under the big energy label (Home hero). */
