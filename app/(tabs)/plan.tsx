@@ -14,6 +14,7 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCalendar } from '@/lib/stores/useCalendar';
 import { useSettings } from '@/lib/stores/useSettings';
 import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured } from '@/lib/googleCalendar';
+import { fetchAppleCalendarEvents, isAppleCalendarSupported } from '@/lib/appleCalendar';
 import { monthPlan } from '@/lib/intelligence/schedule';
 import type { RecommendedWindow } from '@/lib/intelligence/schedule';
 import { palette } from '@/theme';
@@ -29,6 +30,7 @@ export default function Plan() {
     providerLabel,
     events,
     connectGoogle,
+    connectAppleCalendar,
     connectDemo,
     disconnect,
     eventsForDate,
@@ -67,6 +69,19 @@ export default function Plan() {
     }
   }
 
+  async function handleAppleConnected() {
+    setCalendarLoading(true);
+    try {
+      const calEvents = await fetchAppleCalendarEvents();
+      connectAppleCalendar(calEvents);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert('Sync failed', `Could not load your Apple Calendar events.\n\n${msg}`);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
   async function handleConnect(providerId: string) {
     if (providerId === 'google') {
       if (!isGoogleCalendarConfigured()) {
@@ -78,9 +93,11 @@ export default function Plan() {
         return;
       }
       await promptGoogleAuth();
+    } else if (providerId === 'apple' && isAppleCalendarSupported()) {
+      await handleAppleConnected();
     } else {
       const labels: Record<string, string> = {
-        apple:   'Apple Calendar',
+        apple:   'Apple Calendar (demo)',
         outlook: 'Outlook',
         demo:    'Sample Calendar',
       };

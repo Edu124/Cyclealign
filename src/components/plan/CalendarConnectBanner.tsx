@@ -4,7 +4,7 @@ import { dash } from '@/theme';
 
 const CALENDAR_PROVIDERS = [
   { id: 'google',  label: 'Google Calendar',         icon: '📅', desc: 'Sync real events from your Google account' },
-  { id: 'apple',   label: 'Apple Calendar',           icon: '🍎', desc: 'iCloud & on-device events (sample data in preview)' },
+  { id: 'apple',   label: 'Apple Calendar',           icon: '🍎', desc: 'Real events from your iPhone’s Calendar app (iOS only)' },
   { id: 'outlook', label: 'Outlook / Microsoft 365',  icon: '📧', desc: 'Work or personal Microsoft account (sample data in preview)' },
   { id: 'demo',    label: 'Try with sample events',   icon: '✨', desc: 'Preview how cycle scoring looks — no sign-in needed' },
 ];
