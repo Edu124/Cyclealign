@@ -1,7 +1,9 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { formatDistanceToNow } from 'date-fns';
 import { dash, phaseColors, spacing } from '@/theme';
+import { useModeration } from '@/lib/stores/useModeration';
+import { reportPost } from '@/lib/moderation';
 import type { CommunityPost, PhaseKey, ReactionType } from '@/types/models';
 
 interface Props {
@@ -33,6 +35,35 @@ function timeAgo(iso: string): string {
 
 export function PostCard({ post, index, onReact }: Props) {
   const phaseColor = post.phaseKey ? phaseColors[post.phaseKey].base : dash.muted;
+  const { blockUser, markReported, reportedPostIds } = useModeration();
+  const isReported = reportedPostIds.includes(post.id);
+
+  function handleReport() {
+    markReported(post.id);
+    reportPost(post.id).catch(() => {});
+    if (Platform.OS === 'web') {
+      window.alert("Thanks — we'll review this post.");
+    } else {
+      Alert.alert('Report received', "Thanks — we'll review this post.");
+    }
+  }
+
+  function handleHideUser() {
+    blockUser(post.userId);
+  }
+
+  function openMenu() {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Report this post as inappropriate?')) handleReport();
+      else if (window.confirm(`Hide all posts from ${post.displayName}?`)) handleHideUser();
+      return;
+    }
+    Alert.alert('Post options', undefined, [
+      { text: 'Report post', onPress: handleReport, style: 'destructive' },
+      { text: `Hide posts from ${post.displayName}`, onPress: handleHideUser },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(350)} style={styles.card}>
@@ -47,6 +78,14 @@ export function PostCard({ post, index, onReact }: Props) {
           <Text style={styles.authorName}>{post.displayName}</Text>
           <Text style={styles.timeAgo}>{timeAgo(post.createdAt)}</Text>
         </View>
+        {isReported && (
+          <View style={styles.reportedPill}>
+            <Text style={styles.reportedText}>Reported</Text>
+          </View>
+        )}
+        <TouchableOpacity onPress={openMenu} hitSlop={10} style={styles.menuBtn}>
+          <Text style={styles.menuDots}>⋯</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -104,6 +143,22 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 15, fontWeight: '700' },
   authorMeta: { flex: 1 },
+  menuBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuDots: { fontSize: 18, color: dash.muted, fontWeight: '700', lineHeight: 20 },
+  reportedPill: {
+    backgroundColor: '#F7E3D9',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 2,
+  },
+  reportedText: { fontSize: 10, fontWeight: '700', color: '#B85F3C' },
   authorName: {
     fontSize: 14,
     fontWeight: '600',

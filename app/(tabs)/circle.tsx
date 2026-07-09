@@ -18,6 +18,7 @@ import { BlogListCard } from '@/components/community/BlogListCard';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCommunity } from '@/lib/stores/useCommunity';
+import { useModeration } from '@/lib/stores/useModeration';
 import * as communityLib from '@/lib/community';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { todayISO } from '@/lib/dates';
@@ -52,8 +53,12 @@ export default function Circle() {
     loadAll(phaseKey, today);
   }, [phaseKey, today]);
 
-  const topicPosts = posts.filter((p) => p.topicId === topic?.id);
-  const feedPosts  = posts.filter((p) => !p.topicId);
+  // Hidden users' posts never render on this device (guideline 1.2).
+  const blockedUserIds = useModeration((s) => s.blockedUserIds);
+  const visiblePosts = posts.filter((p) => !blockedUserIds.includes(p.userId));
+
+  const topicPosts = visiblePosts.filter((p) => p.topicId === topic?.id);
+  const feedPosts  = visiblePosts.filter((p) => !p.topicId);
 
   async function handlePost(content: string, anonymous: boolean, toTopic: boolean) {
     const topicId = toTopic ? (topic?.id ?? undefined) : undefined;
