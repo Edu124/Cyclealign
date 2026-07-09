@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, Modal, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -177,9 +177,16 @@ export default function Profile() {
           <View style={styles.divider} />
           <LinkRow label="Terms & Conditions" onPress={() => router.push('/terms')} />
           <View style={styles.divider} />
-          <LinkRow label="Go Premium 🌿"      onPress={() => router.push('/paywall')} />
-          <View style={styles.divider} />
-          <LinkRow label="Contact Us"         onPress={() => Linking.openURL('mailto:hello@cyclealign.app')} />
+          {/* Premium uses an external payment link — not allowed on iOS
+              (App Store guideline 3.1.1). Hidden there until Apple IAP is
+              integrated; Android (direct APK) keeps it. */}
+          {Platform.OS !== 'ios' && (
+            <>
+              <LinkRow label="Go Premium 🌿" onPress={() => router.push('/paywall')} />
+              <View style={styles.divider} />
+            </>
+          )}
+          <LinkRow label="Contact Us"         onPress={() => Linking.openURL('mailto:cyclealign@gmail.com')} />
         </Card>
       </Animated.View>
 
