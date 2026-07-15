@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
 import { inferCategory } from './googleCalendar';
+import { toISODate } from './dates';
 
 export function isAppleCalendarSupported(): boolean {
   return Platform.OS === 'ios';
@@ -20,7 +21,9 @@ async function requestPermission(): Promise<boolean> {
 
 function mapDeviceEvent(e: Calendar.Event): CalendarEvent {
   const start = new Date(e.startDate);
-  const dateISO = start.toISOString().split('T')[0];
+  // Local calendar date, not UTC — toISOString() shifts events before
+  // UTC offset hours (and most all-day events) onto the previous day.
+  const dateISO = toISODate(start);
   const timeLabel = e.allDay
     ? 'All day'
     : start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
