@@ -14,6 +14,7 @@
  *      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=xxxx.apps.googleusercontent.com
  */
 
+import { Platform } from 'react-native';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
 
 // ── Category inference ────────────────────────────────────────────────────────
@@ -126,11 +127,18 @@ export async function fetchGoogleCalendarEvents(
   return (data.items ?? []).map(mapGoogleEvent);
 }
 
-/** Returns true if Google Calendar client IDs are present in env. */
+/**
+ * Returns true if the Google OAuth client ID for THIS platform is present.
+ * expo-auth-session picks the client by platform, so having only the web or
+ * Android ID must not count on iOS — starting the flow with a mismatched
+ * client type makes Google reject the redirect with an auth error.
+ */
 export function isGoogleCalendarConfigured(): boolean {
-  return !!(
-    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
-  );
+  if (Platform.OS === 'ios') {
+    return !!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  }
+  if (Platform.OS === 'android') {
+    return !!process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  }
+  return !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 }

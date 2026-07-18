@@ -10,14 +10,18 @@ interface SettingsState {
   /** App experience switch. V2 features land behind this flag. */
   appVersion: AppVersion;
   set: (partial: Partial<Pick<SettingsState, 'retailTherapy' | 'appVersion'>>) => void;
+  /** Back to defaults — settings are device-local, so a new account must not inherit them. */
+  reset: () => void;
 }
+
+const defaults = { retailTherapy: true, appVersion: 'v1' as AppVersion };
 
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      retailTherapy: true,
-      appVersion: 'v1',
+      ...defaults,
       set: (partial) => set(partial),
+      reset: () => set(defaults),
     }),
     {
       name: 'cyclealign-settings',

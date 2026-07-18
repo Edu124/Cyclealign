@@ -86,9 +86,14 @@ export default function Plan() {
     if (providerId === 'google') {
       if (!isGoogleCalendarConfigured()) {
         Alert.alert(
-          'Google Calendar not configured',
-          'Add your Google OAuth client IDs to .env.local to enable real Google Calendar sync.\n\nUsing sample events for now.',
-          [{ text: 'Use sample events', onPress: () => connectDemo('Google Calendar (demo)') }],
+          'Google Calendar unavailable',
+          isAppleCalendarSupported()
+            ? 'Google Calendar sync is not available on this device yet. Connect Apple Calendar to use your real events, or preview with sample events.'
+            : 'Google Calendar sync is not available on this device yet. You can preview with sample events instead.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Use sample events', onPress: () => connectDemo('Google Calendar (demo)') },
+          ],
         );
         return;
       }

@@ -9,6 +9,8 @@ export type { DailyLog };
 interface DailyLogState {
   logs: Record<string, DailyLog>;
   setLog: (log: DailyLog) => void;
+  /** Wipe local logs — health data must not survive into another account's session. */
+  reset: () => void;
 }
 
 export const useDailyLog = create<DailyLogState>()(
@@ -19,6 +21,7 @@ export const useDailyLog = create<DailyLogState>()(
         set((s) => ({ logs: { ...s.logs, [log.dateISO]: log } }));
         pushDailyLog(log).catch(() => {}); // fire-and-forget
       },
+      reset: () => set({ logs: {} }),
     }),
     {
       name: 'cyclealign-daily-logs',

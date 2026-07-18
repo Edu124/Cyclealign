@@ -8,6 +8,8 @@ import { palette, spacing } from '@/theme';
 import { signInWithEmail, signInWithProvider } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { restoreFromCloud } from '@/lib/restoreSession';
+import { useSettings } from '@/lib/stores/useSettings';
+import { useDailyLog } from '@/lib/stores/useDailyLog';
 
 export default function SignIn() {
   const [email, setEmail]       = useState('');
@@ -21,6 +23,10 @@ export default function SignIn() {
     if (hasProfile) {
       router.replace('/(tabs)/today');
     } else {
+      // Brand-new account: clear device-local leftovers from any previous
+      // user of this device (v2 flag, health logs) before onboarding.
+      useSettings.getState().reset();
+      useDailyLog.getState().reset();
       router.replace('/onboarding/role');
     }
   }

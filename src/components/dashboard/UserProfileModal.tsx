@@ -16,6 +16,9 @@ import { signOut } from '@/lib/auth';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useCalendar } from '@/lib/stores/useCalendar';
+import { useSettings } from '@/lib/stores/useSettings';
+import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { useSubscription } from '@/lib/stores/useSubscription';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/models';
 
@@ -41,6 +44,11 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
     reset();
     resetOnboarding();
     disconnect();
+    // Device-local stores must not leak into the next account on this device:
+    // settings (v2 flag), health logs, and premium status all reset to defaults.
+    useSettings.getState().reset();
+    useDailyLog.getState().reset();
+    useSubscription.getState().downgrade();
     await signOut();
     router.replace('/');
   }
