@@ -12,7 +12,7 @@ import { DayEventsModal } from '@/components/plan/DayEventsModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCalendar } from '@/lib/stores/useCalendar';
-import { useSettings } from '@/lib/stores/useSettings';
+import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured } from '@/lib/googleCalendar';
 import { fetchAppleCalendarEvents, isAppleCalendarSupported } from '@/lib/appleCalendar';
 import { monthPlan } from '@/lib/intelligence/schedule';
@@ -36,16 +36,21 @@ export default function Plan() {
     eventsForDate,
   } = useCalendar();
 
-  const isV2 = useSettings((s) => s.appVersion) === 'v2';
+  const isV2 = useIsV2();
   const [selectedWindow, setSelectedWindow] = useState<RecommendedWindow | null>(null);
   const [selectedDate, setSelectedDate]     = useState<string | null>(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
   // ── Google OAuth hook ─────────────────────────────────────────────────────
+  // useAuthRequest THROWS at mount (crashing the whole screen) when the
+  // client ID for the current platform is undefined. The placeholder keeps the
+  // screen alive; promptGoogleAuth is only reachable behind
+  // isGoogleCalendarConfigured(), which checks the real per-platform ID.
+  const PLACEHOLDER_ID = 'unconfigured.apps.googleusercontent.com';
   const [, googleResponse, promptGoogleAuth] = Google.useAuthRequest({
-    clientId:       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId:    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    clientId:       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? PLACEHOLDER_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? PLACEHOLDER_ID,
+    iosClientId:    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? PLACEHOLDER_ID,
     scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
   });
 

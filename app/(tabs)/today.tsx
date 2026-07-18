@@ -18,7 +18,7 @@ import { analyzeLogs } from '@/lib/intelligence/logInsights';
 import { useRetailTherapyTrigger } from '@/lib/retailTherapy/useRetailTherapyTrigger';
 import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
 import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
-import { useSettings } from '@/lib/stores/useSettings';
+import { useIsV2 } from '@/lib/hooks/useIsV2';
 import {
   CAPACITY,
   FOCUS_TILES,
@@ -38,7 +38,7 @@ export default function Today() {
   const logInsight = prediction ? analyzeLogs(dailyLogs, prediction) : null;
 
   // V2-gated features (AI coach entry point).
-  const isV2 = useSettings((s) => s.appVersion) === 'v2';
+  const isV2 = useIsV2();
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   useRetailTherapyTrigger(prediction);

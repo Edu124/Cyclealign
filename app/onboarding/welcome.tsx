@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Button, Screen } from '@/components/ui';
 import { Logo3D } from '@/components/logo/Logo3D';
+import { useSettings } from '@/lib/stores/useSettings';
 import { palette, spacing } from '@/theme';
 
 /**
@@ -10,6 +12,14 @@ import { palette, spacing } from '@/theme';
  * No data is collected here.
  */
 export default function Welcome() {
+  // Every fresh journey starts from here — first install, new account after a
+  // signup at the end of onboarding, or a returning login. Settings are
+  // device-local, so without this a previous user's v2 flag would carry over
+  // into the new account.
+  useEffect(() => {
+    useSettings.getState().reset();
+  }, []);
+
   return (
     <Screen scroll={false} contentStyle={styles.content}>
       <View style={styles.hero}>

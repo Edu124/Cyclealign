@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/ui/TabBarIcon';
-import { useSettings } from '@/lib/stores/useSettings';
+import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { dash } from '@/theme';
 
 const CONTENT_HEIGHT = 52; // icon + label, excludes safe-area padding
@@ -14,7 +14,7 @@ const ANDROID_NAV_BAR_FLOOR = 48;
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   // Circle (community) is a V2 feature — the tab is hidden entirely in V1.
-  const isV2 = useSettings((s) => s.appVersion) === 'v2';
+  const isV2 = useIsV2();
   // Grow the bottom padding with the device's real safe-area inset so the tab
   // bar never sits under (or overlaps) the phone's own nav buttons/gesture bar.
   const bottomPadding =
