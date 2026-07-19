@@ -34,3 +34,5 @@ secrets/
 
 # Tests
 coverage/
+
+supabase/.temp/
