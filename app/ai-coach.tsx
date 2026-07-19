@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  AI_DAILY_LIMIT,
+  aiDailyLimit,
   askCoach,
   fetchHistory,
   getUsedToday,
@@ -21,6 +21,7 @@ import {
 } from '@/lib/aiCoach';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { useSubscription } from '@/lib/stores/useSubscription';
 import { recentLogSummary } from '@/lib/intelligence/logInsights';
 import { palette, radius, spacing } from '@/theme';
 
@@ -54,13 +55,14 @@ export default function AICoachScreen() {
   const [sending, setSending] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const premium = useSubscription((s) => s.isPremium());
 
   useEffect(() => {
     Promise.all([fetchHistory(), getUsedToday()]).then(([history, used]) => {
       setMessages(history);
-      setRemaining(Math.max(0, AI_DAILY_LIMIT - used));
+      setRemaining(Math.max(0, aiDailyLimit(premium) - used));
     });
-  }, []);
+  }, [premium]);
 
   useEffect(() => {
     const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);

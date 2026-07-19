@@ -33,8 +33,9 @@ export function SplashLogo({ onFinish, size = 220 }: Props) {
       duration: 900,
       easing: Easing.out(Easing.back(1.4)),
     });
-    const t = setTimeout(() => onFinish?.(), 2200);
-    return () => clearTimeout(t);
+    // No artificial hold — route on as soon as the app is ready. The splash
+    // stays visible only for however long hydration actually takes.
+    onFinish?.();
   }, [onFinish, opacity, scale]);
 
   const logoStyle = useAnimatedStyle(() => ({
@@ -50,7 +51,7 @@ export function SplashLogo({ onFinish, size = 220 }: Props) {
           <Logo3D size={size} />
         </Animated.View>
         <Animated.Text
-          entering={FadeIn.delay(1100).duration(700)}
+          entering={FadeIn.duration(400)}
           style={styles.tagline}
         >
           In tune with your cycle

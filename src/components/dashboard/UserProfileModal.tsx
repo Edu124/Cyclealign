@@ -1,4 +1,5 @@
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -28,8 +29,21 @@ interface Props {
   onClose: () => void;
 }
 
-function webConfirm(msg: string) {
-  return Platform.OS === 'web' ? window.confirm(msg) : false;
+// window.confirm/alert only exist on web; on native they made every button in
+// this modal a silent no-op (logout and delete-data were unreachable on phones).
+function crossConfirm(title: string, msg: string): Promise<boolean> {
+  if (Platform.OS === 'web') return Promise.resolve(window.confirm(msg));
+  return new Promise((resolve) =>
+    Alert.alert(title, msg, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'OK', style: 'destructive', onPress: () => resolve(true) },
+    ]),
+  );
+}
+
+function crossAlert(msg: string) {
+  if (Platform.OS === 'web') window.alert(msg);
+  else Alert.alert('Account', msg);
 }
 
 export function UserProfileModal({ visible, profile, onClose }: Props) {
@@ -54,31 +68,31 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
   }
 
   const handleLogout = async () => {
-    if (webConfirm('Log out of CycleAlign? You will return to the Welcome screen.')) {
+    if (await crossConfirm('Log out', 'Log out of CycleAlign? You will return to the Welcome screen.')) {
       await doSignOut();
     }
   };
 
   const handleDelete = async () => {
-    if (webConfirm('Delete all data? This permanently removes your profile and cycle history. This cannot be undone.')) {
+    if (await crossConfirm('Delete all data', 'This permanently removes your profile and cycle history. This cannot be undone.')) {
       await doSignOut();
     }
   };
 
   const handleChangePassword = async () => {
     if (!profile.email) {
-      window.alert('No email address on file. Please re-create your account with an email.');
+      crossAlert('No email address on file. Please re-create your account with an email.');
       return;
     }
     if (!isSupabaseConfigured) {
-      window.alert(`A password reset link would be sent to ${profile.email} once the backend is connected.`);
+      crossAlert(`A password reset link would be sent to ${profile.email} once the backend is connected.`);
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(profile.email);
     if (error) {
-      window.alert('Could not send reset email: ' + error.message);
+      crossAlert('Could not send reset email: ' + error.message);
     } else {
-      window.alert(`Password reset link sent to ${profile.email}. Check your inbox.`);
+      crossAlert(`Password reset link sent to ${profile.email}. Check your inbox.`);
     }
   };
 

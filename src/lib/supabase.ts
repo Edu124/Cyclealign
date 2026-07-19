@@ -26,6 +26,11 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // OAuth (Google/Apple) returns a ?code= param that
+      // exchangeCodeForSession redeems — that only happens in PKCE mode.
+      // The default implicit flow returns tokens in the URL fragment, which
+      // the native flow never parses, so sign-in silently produced no session.
+      flowType: 'pkce',
     },
   },
 );

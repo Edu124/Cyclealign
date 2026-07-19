@@ -4,6 +4,12 @@ import { todayISO } from '@/lib/dates';
 import type { PhaseKey } from '@/types/models';
 
 export const AI_DAILY_LIMIT = 5;
+export const AI_DAILY_LIMIT_PREMIUM = 25;
+
+/** Daily question cap for the user's tier — must mirror the ai-coach function. */
+export function aiDailyLimit(premium: boolean): number {
+  return premium ? AI_DAILY_LIMIT_PREMIUM : AI_DAILY_LIMIT;
+}
 
 export interface CoachMessage {
   id: string;

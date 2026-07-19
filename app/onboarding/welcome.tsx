@@ -27,7 +27,7 @@ export default function Welcome() {
           <Logo3D size={210} />
         </Animated.View>
         <Animated.View
-          entering={FadeInDown.delay(300).duration(600)}
+          entering={FadeInDown.duration(500)}
           style={styles.taglineWrap}
         >
           <Text style={styles.taglineGreeting}>Dear ladies,</Text>
@@ -36,7 +36,7 @@ export default function Welcome() {
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(600).duration(600)}
+        entering={FadeInDown.duration(500)}
         style={styles.cta}
       >
         <Button label="Get started" onPress={() => router.push('/onboarding/role')} />

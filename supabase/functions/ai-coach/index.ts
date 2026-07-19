@@ -10,7 +10,10 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const DAILY_LIMIT = 5;
+// Per-tier daily question caps, enforced server-side. The subscriptions table
+// is service-role-writable only, so users cannot self-upgrade.
+const DAILY_LIMIT_FREE = 5;
+const DAILY_LIMIT_PREMIUM = 25;
 const MODEL = Deno.env.get('AI_COACH_MODEL') ?? 'claude-haiku-4-5-20251001';
 const HISTORY_WINDOW = 12; // messages of context sent to the model
 
@@ -61,7 +64,17 @@ Deno.serve(async (req) => {
   const trimmed = String(message ?? '').trim().slice(0, 1000);
   if (!trimmed) return json({ error: 'Empty message' }, 400);
 
-  // ── 2. Enforce the daily limit (UTC day) ───────────────────────────────────
+  // ── 2. Enforce the daily limit for the user's tier (UTC day) ───────────────
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('tier, expiry_date')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isPremium =
+    sub?.tier === 'premium' && (!sub.expiry_date || sub.expiry_date >= todayStr);
+  const dailyLimit = isPremium ? DAILY_LIMIT_PREMIUM : DAILY_LIMIT_FREE;
+
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
   const { count } = await supabase
@@ -72,8 +85,8 @@ Deno.serve(async (req) => {
     .gte('created_at', dayStart.toISOString());
 
   const used = count ?? 0;
-  if (used >= DAILY_LIMIT) {
-    return json({ limitReached: true, remaining: 0 }, 429);
+  if (used >= dailyLimit) {
+    return json({ limitReached: true, remaining: 0, limit: dailyLimit }, 429);
   }
 
   // ── 3. Build context: recent history + cycle situation ────────────────────
@@ -130,5 +143,5 @@ Deno.serve(async (req) => {
     { user_id: user.id, role: 'assistant', content: reply },
   ]);
 
-  return json({ reply, remaining: DAILY_LIMIT - used - 1 });
+  return json({ reply, remaining: dailyLimit - used - 1, limit: dailyLimit });
 });

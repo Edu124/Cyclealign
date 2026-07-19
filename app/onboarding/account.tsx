@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   StyleSheet,
@@ -20,8 +21,11 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 import type { CycleLog, Profile } from '@/types/models';
 import { palette, spacing } from '@/theme';
 
-function webAlert(msg: string) {
+function notify(msg: string) {
+  // window.alert works on web; Alert.alert works on iOS/Android. The old
+  // web-only helper made every native sign-in failure silent.
   if (Platform.OS === 'web') window.alert(msg);
+  else Alert.alert('Sign-in', msg);
 }
 
 export default function AccountStep() {
@@ -117,15 +121,15 @@ export default function AccountStep() {
     goHome();
   };
 
-  const handleGoogle = async () => {
+  const handleProvider = async (p: 'google' | 'apple') => {
     if (!isSupabaseConfigured) {
-      webAlert('Google sign-in is available once the backend is connected.');
+      notify('Social sign-in is available once the backend is connected.');
       return;
     }
     setLoading(true);
-    const res = await signInWithProvider('google');
+    const res = await signInWithProvider(p);
     setLoading(false);
-    if (!res.ok) { webAlert(res.error ?? 'Sign-in failed'); return; }
+    if (!res.ok) { notify(res.error ?? 'Sign-in failed'); return; }
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
@@ -210,7 +214,12 @@ export default function AccountStep() {
         <Button
           label="Continue with Google"
           variant="secondary"
-          onPress={handleGoogle}
+          onPress={() => handleProvider('google')}
+        />
+        <Button
+          label="Continue with Apple"
+          variant="secondary"
+          onPress={() => handleProvider('apple')}
         />
 
         <Pressable onPress={handleSkip} hitSlop={12}>
