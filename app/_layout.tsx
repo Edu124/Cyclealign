@@ -125,8 +125,10 @@ function useAuthDeepLink() {
       // oauth callback:     cyclealign://?code=xxx
       if (!url.includes('code=')) return;
       try {
-        const { searchParams } = new URL(url);
-        const code = searchParams.get('code');
+        // Linking.parse, not new URL(...).searchParams — Hermes does not
+        // implement searchParams, so that throws on-device.
+        const { queryParams } = Linking.parse(url);
+        const code = typeof queryParams?.code === 'string' ? queryParams.code : null;
         if (code) await supabase.auth.exchangeCodeForSession(code);
       } catch {}
     }
