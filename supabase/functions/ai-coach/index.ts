@@ -50,11 +50,14 @@ Deno.serve(async (req) => {
   if (!anthropicKey) return json({ error: 'AI not configured' }, 500);
 
   // ── 1. Authenticate the caller ─────────────────────────────────────────────
+  // NOTE: no user Authorization header on this client. Overriding it made
+  // every DB request run as the *user* role — inserts into ai_messages (which
+  // only the service role may write) silently failed, so history never
+  // persisted and the daily limit was never enforced.
   const authHeader = req.headers.get('Authorization') ?? '';
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
   );
   const jwt = authHeader.replace('Bearer ', '');
   const { data: { user } } = await supabase.auth.getUser(jwt);
@@ -138,10 +141,11 @@ Deno.serve(async (req) => {
   const reply: string = aiData.content?.[0]?.text ?? "I'm here — could you rephrase that?";
 
   // ── 5. Persist both sides of the exchange ──────────────────────────────────
-  await supabase.from('ai_messages').insert([
+  const { error: insertErr } = await supabase.from('ai_messages').insert([
     { user_id: user.id, role: 'user', content: trimmed },
     { user_id: user.id, role: 'assistant', content: reply },
   ]);
+  if (insertErr) console.error('ai_messages insert failed:', insertErr.message);
 
   return json({ reply, remaining: dailyLimit - used - 1, limit: dailyLimit });
 });
