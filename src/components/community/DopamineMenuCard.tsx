@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated as RNAnimated,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -25,42 +26,49 @@ interface Product {
   id: string;
   emoji: string;
   name: string;
+  /** Fictional brand — no real trademarks in the dopamine shop. */
+  brand: string;
   price: number;
   tag?: string;
+  /** Product photo (Unsplash CDN); emoji doubles as loading/failure fallback. */
+  image: string;
 }
+
+const img = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=600&q=80&auto=format&fit=crop`;
 
 const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
   menstrual: [
-    { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak', price: 1299, tag: 'Best Seller' },
-    { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set', price: 1699 },
-    { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box', price: 899, tag: 'Fan Fave' },
-    { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', price: 2499 },
-    { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection', price: 1099 },
-    { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe', price: 1999, tag: 'New' },
+    { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak',     brand: 'Bloom & Ember',    price: 1299, tag: 'Best Seller', image: img('1507652313519-d4e9174996dd') },
+    { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set',     brand: 'Bloom & Ember',    price: 1699,                    image: img('1602874801007-bd458bb1b8b6') },
+    { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box',  brand: 'Cocoa Theory',     price: 899,  tag: 'Fan Fave',    image: img('1511381939415-e44015466834') },
+    { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', brand: 'Cloud Nine Living', price: 2499,                    image: img('1559454403-b8fb88521f11') },
+    { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection',  brand: 'Steep Story',      price: 1099,                    image: img('1544787219-7f47ccb76574') },
+    { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe',     brand: 'Hearth & Haven',   price: 1999, tag: 'New',         image: img('1584100936595-c0654b55a2e2') },
   ],
   follicular: [
-    { id: 'f1', emoji: '📓', name: 'Manifestation Journal', price: 1499, tag: 'Trending' },
-    { id: 'f2', emoji: '🎨', name: 'Art Supply Kit', price: 2699 },
-    { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set', price: 1999, tag: 'Best Seller' },
-    { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds', price: 5999 },
-    { id: 'f5', emoji: '💪', name: 'Resistance Bands Set', price: 1299 },
-    { id: 'f6', emoji: '✏️', name: 'Stationery Bundle', price: 1199, tag: 'New' },
+    { id: 'f1', emoji: '📓', name: 'Manifestation Journal', brand: 'Paper Petal', price: 1499, tag: 'Trending',    image: img('1517842645767-c639042777db') },
+    { id: 'f2', emoji: '🎨', name: 'Art Supply Kit',        brand: 'Studio Muse', price: 2699,                    image: img('1513364776144-60967b0f800f') },
+    { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set',      brand: 'Leaf & Letter', price: 1999, tag: 'Best Seller', image: img('1485955900006-10f4d324d411') },
+    { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds',      brand: 'Auralite',    price: 5999,                    image: img('1590658268037-6bf12165a8df') },
+    { id: 'f5', emoji: '💪', name: 'Home Workout Set',      brand: 'FormaFit',    price: 1299,                    image: img('1517836357463-d25dfeac3438') },
+    { id: 'f6', emoji: '✏️', name: 'Stationery Bundle',     brand: 'Paper Petal', price: 1199, tag: 'New',         image: img('1456735190827-d1262f71b8a3') },
   ],
   ovulation: [
-    { id: 'o1', emoji: '👗', name: 'Statement Dress', price: 4999, tag: 'Hot Pick' },
-    { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit', price: 3199, tag: 'Best Seller' },
-    { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', price: 2199 },
-    { id: 'o4', emoji: '✨', name: 'Jewelry Set', price: 3499 },
-    { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set', price: 3999, tag: 'Trending' },
-    { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag', price: 4499 },
+    { id: 'o1', emoji: '👗', name: 'Statement Set',        brand: 'Maison Rosette', price: 4999, tag: 'Hot Pick',    image: img('1515886657613-9f3515b0c78f') },
+    { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit',      brand: 'Lumi Beauty',    price: 3199, tag: 'Best Seller', image: img('1522335789203-aabd1fc54bc9') },
+    { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', brand: 'Petal Post',     price: 2199,                    image: img('1490750967868-88aa4486c946') },
+    { id: 'o4', emoji: '✨', name: 'Pearl Jewelry Set',    brand: 'Gilt & Grace',   price: 3499,                    image: img('1515562141207-7a88fb7ce338') },
+    { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set',    brand: 'Aster Skin',     price: 3999, tag: 'Trending',    image: img('1608571423902-eed4a5ad8108') },
+    { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag',   brand: 'Maison Rosette', price: 4499,                    image: img('1591561954557-26941169b49e') },
   ],
   luteal: [
-    { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', price: 1899, tag: 'Self-Care' },
-    { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set', price: 2999 },
-    { id: 'l3', emoji: '📚', name: 'Novel Bundle', price: 2499, tag: 'Cozy Pick' },
-    { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks', price: 3999 },
-    { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit', price: 1399, tag: 'Best Seller' },
-    { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set', price: 2299 },
+    { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', brand: 'Aster Skin',       price: 1899, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
+    { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set',   brand: 'Cloud Nine Living', price: 2999,                   image: img('1522771739844-6a9f6d5f14af') },
+    { id: 'l3', emoji: '📚', name: 'Novel Bundle',         brand: 'Fable & Fern',     price: 2499, tag: 'Cozy Pick',  image: img('1463320726281-696a485928c7') },
+    { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks',    brand: 'FormaFit',         price: 3999,                   image: img('1544367567-0f2fcb009e0b') },
+    { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit',      brand: 'Steep Story',      price: 1399, tag: 'Best Seller', image: img('1576092768241-dec231879fc3') },
+    { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set',     brand: 'Bloom & Ember',    price: 2299,                   image: img('1540555700478-4be289fbecef') },
   ],
 };
 
@@ -99,6 +107,8 @@ interface Props {
 
 export function DopamineMenuCard({ phaseKey }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Products whose photo failed to load fall back to the emoji tile.
+  const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [address, setAddress] = useState({ name: '', street: '', city: '' });
@@ -182,13 +192,27 @@ export function DopamineMenuCard({ phaseKey }: Props) {
               entering={FadeInDown.delay(i * 50).duration(300)}
               style={styles.productCard}
             >
-              {product.tag && (
-                <View style={[styles.tagPill, { backgroundColor: phaseColor + '22' }]}>
-                  <Text style={[styles.tagText, { color: phaseColor }]}>{product.tag}</Text>
-                </View>
-              )}
-              <Text style={styles.productEmoji}>{product.emoji}</Text>
-              <Text style={styles.productName}>{product.name}</Text>
+              <View style={styles.productImageWrap}>
+                <Text style={styles.productEmoji}>{product.emoji}</Text>
+                {!imgFailed[product.id] && (
+                  <Image
+                    source={{ uri: product.image }}
+                    style={styles.productImage}
+                    resizeMode="cover"
+                    onError={() =>
+                      setImgFailed((f) => ({ ...f, [product.id]: true }))
+                    }
+                  />
+                )}
+                {product.tag && (
+                  <View style={[styles.tagPill, { backgroundColor: '#FFFFFFEE' }]}>
+                    <Text style={[styles.tagText, { color: phaseColor }]}>{product.tag}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.productBody}>
+              <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+              <Text style={styles.productBrand}>{product.brand}</Text>
               <Text style={[styles.productPrice, { color: phaseColor }]}>{formatPrice(product.price)}</Text>
               {inCart ? (
                 <View style={styles.qtyRow}>
@@ -208,6 +232,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
                   <Text style={[styles.addBtnText, { color: phaseColor }]}>Add to Cart</Text>
                 </Pressable>
               )}
+              </View>
             </Animated.View>
           );
         })}
@@ -535,11 +560,20 @@ const styles = StyleSheet.create({
   noticePill: { backgroundColor: '#FFF8E7', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 },
   noticeText: { fontSize: 12, color: '#9A7B2E', textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
-  productCard: { width: '47%', backgroundColor: '#F9F6F1', borderRadius: 14, padding: 12, gap: 6 },
-  tagPill: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, marginBottom: 2 },
+  productCard: { width: '47%', backgroundColor: '#F9F6F1', borderRadius: 14, overflow: 'hidden' },
+  productImageWrap: {
+    height: 110,
+    backgroundColor: '#F0EBE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  productBody: { padding: 12, gap: 4 },
+  tagPill: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   tagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
-  productEmoji: { fontSize: 28 },
+  productEmoji: { fontSize: 30 },
   productName: { fontSize: 13, fontWeight: '600', color: dash.ink, lineHeight: 17 },
+  productBrand: { fontSize: 11, color: dash.muted },
   productPrice: { fontSize: 14, fontWeight: '700' },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   qtyBtn: { width: 28, height: 28, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
