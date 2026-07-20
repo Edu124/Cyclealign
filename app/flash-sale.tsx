@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -7,6 +7,7 @@ import {
   SALE_CATALOG,
   STOREFRONT_META,
   formatPrice,
+  ratingFor,
   type SaleItem,
 } from '@/lib/retailTherapy/catalog';
 import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
@@ -31,6 +32,8 @@ export default function FlashSale() {
   const { saleEndsAt, saleStorefront, orders, placeOrder } = useRetailTherapy();
   const [bag, setBag] = useState<string[]>([]);
   const [placed, setPlaced] = useState(false);
+  // Items whose product photo failed to load fall back to the emoji tile.
+  const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
 
   const live = saleIsLive(saleEndsAt);
   const meta = STOREFRONT_META[saleStorefront];
@@ -126,32 +129,57 @@ export default function FlashSale() {
           <View style={styles.grid}>
             {items.map((item, i) => {
               const inBag = bag.includes(item.id);
+              const rating = ratingFor(item.id);
+              const pctOff = Math.round((1 - item.salePrice / item.price) * 100);
               return (
                 <Animated.View
                   key={item.id}
                   entering={FadeInDown.delay(i * 60).duration(350)}
                   style={[styles.card, inBag && styles.cardActive]}
                 >
-                  {item.tag && (
-                    <View style={styles.tagPill}>
-                      <Text style={styles.tagText}>{item.tag}</Text>
-                    </View>
-                  )}
-                  <Text style={styles.itemEmoji}>{item.emoji}</Text>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemBrand}>{item.brand}</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceWas}>{formatPrice(item.price)}</Text>
-                    <Text style={styles.priceNow}>{formatPrice(item.salePrice)}</Text>
+                  {/* Product photo — emoji tile shows while loading / on failure */}
+                  <View style={styles.imageWrap}>
+                    <Text style={styles.itemEmoji}>{item.emoji}</Text>
+                    {!imgFailed[item.id] && (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.itemImage}
+                        resizeMode="cover"
+                        onError={() =>
+                          setImgFailed((f) => ({ ...f, [item.id]: true }))
+                        }
+                      />
+                    )}
+                    {item.tag && (
+                      <View style={styles.tagPill}>
+                        <Text style={styles.tagText}>{item.tag}</Text>
+                      </View>
+                    )}
                   </View>
-                  <Pressable
-                    style={[styles.addBtn, inBag && styles.addBtnActive]}
-                    onPress={() => toggle(item)}
-                  >
-                    <Text style={[styles.addBtnText, inBag && styles.addBtnTextActive]}>
-                      {inBag ? '✓ In bag' : 'Add to bag'}
-                    </Text>
-                  </Pressable>
+
+                  <View style={styles.cardBody}>
+                    <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={styles.itemBrand}>{item.brand}</Text>
+                    <View style={styles.ratingRow}>
+                      <Text style={styles.ratingStars}>★ {rating.stars.toFixed(1)}</Text>
+                      <Text style={styles.ratingCount}>({rating.count})</Text>
+                    </View>
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceNow}>{formatPrice(item.salePrice)}</Text>
+                      <Text style={styles.priceWas}>{formatPrice(item.price)}</Text>
+                      <View style={styles.offPill}>
+                        <Text style={styles.offText}>{pctOff}% off</Text>
+                      </View>
+                    </View>
+                    <Pressable
+                      style={[styles.addBtn, inBag && styles.addBtnActive]}
+                      onPress={() => toggle(item)}
+                    >
+                      <Text style={[styles.addBtnText, inBag && styles.addBtnTextActive]}>
+                        {inBag ? '✓ In bag' : 'Add to bag'}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </Animated.View>
               );
             })}
@@ -251,28 +279,47 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1.5,
     borderColor: palette.line,
-    padding: 14,
-    gap: 5,
+    overflow: 'hidden',
   },
   cardActive: { borderColor: dash.clay },
+  imageWrap: {
+    height: 130,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  cardBody: { padding: 12, gap: 4 },
   tagPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#F7E3D9',
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FFFFFFEE',
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
   tagText: { fontSize: 9, fontWeight: '800', color: dash.clay, letterSpacing: 0.4 },
-  itemEmoji: { fontSize: 30 },
+  itemEmoji: { fontSize: 34 },
   itemName: { fontSize: 14, fontWeight: '700', color: palette.ink, lineHeight: 18 },
   itemBrand: { fontSize: 11, color: palette.muted },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 2 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  ratingStars: { fontSize: 12, fontWeight: '800', color: '#B07A2E' },
+  ratingCount: { fontSize: 11, color: palette.muted },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' },
   priceWas: {
     fontSize: 12,
     color: palette.muted,
     textDecorationLine: 'line-through',
   },
-  priceNow: { fontSize: 16, fontWeight: '800', color: dash.clay },
+  priceNow: { fontSize: 17, fontWeight: '800', color: palette.ink },
+  offPill: {
+    backgroundColor: '#E8EFE1',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  offText: { fontSize: 10, fontWeight: '800', color: '#56723F' },
   addBtn: {
     borderRadius: 10,
     borderWidth: 1.5,
