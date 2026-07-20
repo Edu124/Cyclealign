@@ -47,6 +47,17 @@ export async function signInWithProvider(
   if (!isSupabaseConfigured) {
     return { ok: false, error: 'Supabase is not configured (running in demo mode).' };
   }
+  try {
+    return await startOAuthFlow(provider);
+  } catch (err: unknown) {
+    // Callers alert on !ok; a throw here used to vanish as an unhandled
+    // rejection, making failures look like "nothing happened".
+    const msg = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
+    return { ok: false, error: msg };
+  }
+}
+
+async function startOAuthFlow(provider: 'google' | 'apple'): Promise<AuthResult> {
   const redirectTo = makeRedirectUri({ scheme: 'cyclealign' });
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
@@ -59,14 +70,25 @@ export async function signInWithProvider(
   if (result.type !== 'success') {
     return { ok: false, error: 'Sign-in was cancelled.' };
   }
-  // Exchange the returned code for a session.
-  const url = result.url;
-  const params = new URL(url).searchParams;
-  const code = params.get('code');
-  if (code) {
-    const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-    if (exErr) return { ok: false, error: exErr.message };
+
+  // Parse the return URL with expo-linking: Hermes does not implement
+  // URL.searchParams, so `new URL(url).searchParams` throws on-device —
+  // which silently killed the flow right after the browser closed.
+  const { queryParams } = Linking.parse(result.url);
+  const code =
+    typeof queryParams?.code === 'string' ? queryParams.code : null;
+  const oauthError =
+    typeof queryParams?.error_description === 'string'
+      ? queryParams.error_description
+      : null;
+
+  if (oauthError) return { ok: false, error: oauthError };
+  if (!code) {
+    return { ok: false, error: 'Sign-in did not complete. Please try again.' };
   }
+
+  const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+  if (exErr) return { ok: false, error: exErr.message };
   return { ok: true };
 }
 
