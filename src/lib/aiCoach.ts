@@ -58,15 +58,29 @@ async function getDemoCount(): Promise<number> {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+/**
+ * Wait for the persisted session to finish loading before querying.
+ * ai_messages is RLS-filtered by auth.uid(): a query that races session
+ * hydration runs unauthenticated, sees zero rows, and the remaining-count
+ * pill "resets" to the full limit on reopen.
+ */
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id ?? null;
+}
+
 /** Questions already used today (for the remaining-count pill on open). */
 export async function getUsedToday(): Promise<number> {
   if (!isSupabaseConfigured) return getDemoCount();
+  const userId = await currentUserId();
+  if (!userId) return 0;
 
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
   const { count } = await supabase
     .from('ai_messages')
     .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
     .eq('role', 'user')
     .gte('created_at', dayStart.toISOString());
   return count ?? 0;
@@ -75,9 +89,12 @@ export async function getUsedToday(): Promise<number> {
 /** Chat history for the signed-in user (most recent last). */
 export async function fetchHistory(): Promise<CoachMessage[]> {
   if (!isSupabaseConfigured) return [];
+  const userId = await currentUserId();
+  if (!userId) return [];
   const { data } = await supabase
     .from('ai_messages')
     .select('id, role, content')
+    .eq('user_id', userId)
     .order('created_at', { ascending: true })
     .limit(50);
   return (data ?? []) as CoachMessage[];
