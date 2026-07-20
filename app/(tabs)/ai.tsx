@@ -37,12 +37,58 @@ function IconPostpartum({ color }: { color: string }) {
   );
 }
 
-function IconPeriod({ color }: { color: string }) {
+function IconWearable({ color }: { color: string }) {
   return (
     <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
-      <Path d="M17 6C17 6 10 14 10 20a7 7 0 0 0 14 0C24 14 17 6 17 6Z"
+      <Path d="M12 9h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3V12a3 3 0 0 1 3-3Z"
         stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
-      <Path d="M13 20a4 4 0 0 0 4 4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M13 9V4.5h8V9M13 25v4.5h8V25" stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+      <Path d="M12.5 17h2.5l1.5-3 2.5 6 1.5-3h1" stroke={color} strokeWidth={1.8}
+        strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconMentalHealth({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Path d="M17 15c-2.5-4.5-1.5-8.5 0-10.5C18.5 6.5 19.5 10.5 17 15Z"
+        stroke={color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d="M17 16c-3-3-7-3.5-9.5-2C9 17.5 12.5 19.5 17 18.5M17 16c3-3 7-3.5 9.5-2C25 17.5 21.5 19.5 17 18.5"
+        stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M9 24c2.5 2.5 13.5 2.5 16 0M12 28.5c2 1.3 8 1.3 10 0"
+        stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function IconMoods({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Circle cx={17} cy={17} r={11} stroke={color} strokeWidth={2.2} />
+      <Path d="M12.5 14.5v1.5M21.5 14.5v1.5" stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+      <Path d="M12 21c1.5 1.8 3.3 2.6 5 2.6s3.5-.8 5-2.6" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M26.5 6.5l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z" fill={color} opacity={0.7} />
+    </Svg>
+  );
+}
+
+function IconSleep({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Path d="M24 21.5A10 10 0 1 1 12.5 8a8 8 0 0 0 11.5 13.5Z"
+        stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+      <Path d="M21 6h5l-5 5h5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconExpert({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Path d="M27 8a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h2v5l6-5h6a3 3 0 0 0 3-3V8Z"
+        stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+      <Path d="M12 11.5h10M12 15.5h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -71,28 +117,60 @@ const FEATURES = [
     Icon: IconDecision,
   },
   {
+    id: 'wearable',
+    label: 'Sync My\nWearable Data',
+    intro: 'Connect your watch or band — sleep, heart rate and readiness, read through the lens of your cycle.',
+    circleBg: '#D9E6F2',
+    iconColor: '#4A7BA6',
+    Icon: IconWearable,
+  },
+  {
+    id: 'mental',
+    label: 'Support My\nMental Health',
+    intro: 'Phase-aware check-ins, grounding exercises and gentle support on the heavier days.',
+    circleBg: '#E6DFF2',
+    iconColor: palette.lavenderDeep,
+    Icon: IconMentalHealth,
+  },
+  {
     id: 'postpartum',
     label: 'Recovering\nPostpartum Stress',
     intro: 'Gentle, phase-aware guidance to support your body and mind after childbirth.',
     circleBg: '#D4E2C5',
-    iconColor: palette.lavenderDeep,
+    iconColor: '#56723F',
     Icon: IconPostpartum,
   },
   {
-    id: 'period',
-    label: 'Period\nTracking',
-    intro: 'Log your cycle in seconds and get predictions that get smarter over time.',
-    circleBg: palette.blush,
-    iconColor: palette.roseDeep,
-    Icon: IconPeriod,
+    id: 'moods',
+    label: 'Understand\nMy Moods',
+    intro: 'See why you feel the way you do — your mood patterns, decoded against your hormones.',
+    circleBg: '#F9E3D3',
+    iconColor: '#C2683F',
+    Icon: IconMoods,
   },
   {
-    id: 'diet',
-    label: 'Diet Planning\nas per Cycle',
+    id: 'sleep',
+    label: 'Improve\nMy Sleep',
+    intro: 'Wind-down routines and rest insights tuned to each phase of your cycle.',
+    circleBg: '#DAD8EE',
+    iconColor: '#6B64B8',
+    Icon: IconSleep,
+  },
+  {
+    id: 'nutrition',
+    label: 'Nutrition Guidance\nas per Cycle',
     intro: 'Simple food suggestions tailored to what your body craves in each phase.',
     circleBg: '#D0EDE4',
     iconColor: palette.tealDeep,
     Icon: IconDiet,
+  },
+  {
+    id: 'expert',
+    label: 'Talk with\nan Expert',
+    intro: 'Book time with a certified gynaecologist, nutritionist or coach — right from the app.',
+    circleBg: palette.blush,
+    iconColor: palette.roseDeep,
+    Icon: IconExpert,
   },
 ];
 
