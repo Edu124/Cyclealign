@@ -1,12 +1,10 @@
 import { useSettings } from '@/lib/stores/useSettings';
-import { useSubscription } from '@/lib/stores/useSubscription';
 
 /**
- * V2 features are Premium-only. The device flag alone must not unlock them —
- * a lapsed subscription (or a stale persisted flag) falls back to V1.
+ * Single source of truth for V2 gating. Currently the toggle is free for
+ * everyone; when V2 becomes Premium-only again, re-add the subscription
+ * check here (`&& useSubscription((s) => s.isPremium())`).
  */
 export function useIsV2(): boolean {
-  const v2Selected = useSettings((s) => s.appVersion) === 'v2';
-  const premium = useSubscription((s) => s.isPremium());
-  return v2Selected && premium;
+  return useSettings((s) => s.appVersion) === 'v2';
 }

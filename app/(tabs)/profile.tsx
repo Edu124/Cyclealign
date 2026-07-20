@@ -7,7 +7,6 @@ import { Card, TabScreen } from '@/components/ui';
 import { palette, phaseColors, spacing } from '@/theme';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
-import { useSubscription } from '@/lib/stores/useSubscription';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { signOut } from '@/lib/auth';
 
@@ -35,20 +34,10 @@ export default function Profile() {
   const retailTherapy = useSettings((s) => s.retailTherapy);
   const appVersion = useSettings((s) => s.appVersion);
   const setSettings = useSettings((s) => s.set);
-  const premium = useSubscription((s) => s.isPremium());
 
+  // Free switch for now — when V2 goes Premium-only, restore the
+  // subscription check here and in useIsV2.
   function selectVersion(v: 'v1' | 'v2') {
-    if (v === 'v2' && !premium) {
-      Alert.alert(
-        'V2 is a Premium feature',
-        'Early access to the V2 experience — calendar sync, AI coach and more — is part of CycleAlign Premium.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Go Premium 🌿', onPress: () => router.push('/paywall') },
-        ],
-      );
-      return;
-    }
     setSettings({ appVersion: v });
   }
 
