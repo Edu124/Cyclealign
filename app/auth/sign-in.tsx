@@ -8,6 +8,7 @@ import { palette, spacing } from '@/theme';
 import { signInWithEmail, signInWithProvider } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { restoreFromCloud } from '@/lib/restoreSession';
+import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { useSettings } from '@/lib/stores/useSettings';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 
@@ -15,6 +16,7 @@ export default function SignIn() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
+  const googleSignIn = useGoogleSignIn();
 
   /** Restore the account from the cloud, then route: returning users go
    *  straight to the app; accounts with no profile yet go to onboarding. */
@@ -44,7 +46,9 @@ export default function SignIn() {
   };
 
   const handleProvider = async (p: 'google' | 'apple') => {
-    const res = await signInWithProvider(p);
+    // Google goes straight to Google (branded consent, no supabase.co detour);
+    // Apple still uses the Supabase browser flow until the native module ships.
+    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithProvider(p);
     if (!res.ok) {
       Alert.alert('Sign-in', res.error ?? 'Failed');
     } else {

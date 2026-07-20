@@ -16,6 +16,7 @@ import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSession } from '@/lib/stores/useSession';
 import { signUpWithEmail, signInWithProvider } from '@/lib/auth';
+import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import type { CycleLog, Profile } from '@/types/models';
@@ -33,6 +34,7 @@ export default function AccountStep() {
   const { setProfile, addCycleLog, completeOnboarding } = useAppStore();
   const { session } = useSession();
   const existingProfile = useAppStore((s) => s.profile);
+  const googleSignIn = useGoogleSignIn();
 
   const [name,     setName]     = useState(draft.name || existingProfile?.name || '');
   const [email,    setEmail]    = useState('');
@@ -127,7 +129,7 @@ export default function AccountStep() {
       return;
     }
     setLoading(true);
-    const res = await signInWithProvider(p);
+    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithProvider(p);
     setLoading(false);
     if (!res.ok) { notify(res.error ?? 'Sign-in failed'); return; }
     const { profile, log } = buildProfileAndLog();
