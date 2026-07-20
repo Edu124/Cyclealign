@@ -36,11 +36,12 @@ export function useGoogleSignIn() {
       if (!idToken) {
         return { ok: false, error: 'Google did not return a token. Please try again.' };
       }
-      const nonce = (request as { nonce?: string } | null)?.nonce;
+      // No nonce forwarded: expo-auth-session's nonce reaches the token in a
+      // shape GoTrue can't verify ("Nonces mismatch"), so the Supabase Google
+      // provider must have "Skip nonce checks" enabled.
       const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
-        ...(nonce ? { nonce } : {}),
       });
       if (error) return { ok: false, error: error.message };
       return { ok: true };
