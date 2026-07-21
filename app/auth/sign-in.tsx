@@ -5,7 +5,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Screen, TextField } from '@/components/ui';
 import { Logo3D } from '@/components/logo/Logo3D';
 import { palette, spacing } from '@/theme';
-import { signInWithEmail, signInWithProvider } from '@/lib/auth';
+import { signInWithEmail } from '@/lib/auth';
+import { signInWithApple } from '@/lib/appleSignIn';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { restoreFromCloud } from '@/lib/restoreSession';
 import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
@@ -46,9 +47,9 @@ export default function SignIn() {
   };
 
   const handleProvider = async (p: 'google' | 'apple') => {
-    // Google goes straight to Google (branded consent, no supabase.co detour);
-    // Apple still uses the Supabase browser flow until the native module ships.
-    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithProvider(p);
+    // Both providers authenticate directly (Google id-token / Apple native
+    // sheet) and exchange the token with Supabase — no supabase.co detour.
+    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithApple();
     if (!res.ok) {
       Alert.alert('Sign-in', res.error ?? 'Failed');
     } else {

@@ -15,7 +15,8 @@ import { Logo3D } from '@/components/logo/Logo3D';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSession } from '@/lib/stores/useSession';
-import { signUpWithEmail, signInWithProvider } from '@/lib/auth';
+import { signUpWithEmail } from '@/lib/auth';
+import { signInWithApple } from '@/lib/appleSignIn';
 import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -129,7 +130,7 @@ export default function AccountStep() {
       return;
     }
     setLoading(true);
-    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithProvider(p);
+    const res = p === 'google' ? await googleSignIn.signIn() : await signInWithApple();
     setLoading(false);
     if (!res.ok) { notify(res.error ?? 'Sign-in failed'); return; }
     const { profile, log } = buildProfileAndLog();
