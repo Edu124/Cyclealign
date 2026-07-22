@@ -1,13 +1,20 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { dash } from '@/theme';
 
-const CALENDAR_PROVIDERS = [
+const ALL_PROVIDERS = [
   { id: 'google',  label: 'Google Calendar',         icon: '📅', desc: 'Sync real events from your Google account' },
-  { id: 'apple',   label: 'Apple Calendar',           icon: '🍎', desc: 'Real events from your iPhone’s Calendar app (iOS only)' },
+  { id: 'apple',   label: 'Apple Calendar',           icon: '🍎', desc: 'Real events from your iPhone’s Calendar app' },
   { id: 'outlook', label: 'Outlook / Microsoft 365',  icon: '📧', desc: 'Work or personal Microsoft account (sample data in preview)' },
   { id: 'demo',    label: 'Try with sample events',   icon: '✨', desc: 'Preview how cycle scoring looks — no sign-in needed' },
 ];
+
+// iPhones get exactly one, native option — Apple Calendar. Everything the
+// other rows offered on iOS was either a browser detour or sample data.
+const CALENDAR_PROVIDERS =
+  Platform.OS === 'ios'
+    ? ALL_PROVIDERS.filter((p) => p.id === 'apple')
+    : ALL_PROVIDERS.filter((p) => p.id !== 'apple');
 
 interface Props {
   connected: boolean;

@@ -6,6 +6,7 @@ import { Button, Screen } from '@/components/ui';
 import { Logo3D } from '@/components/logo/Logo3D';
 import { useSettings } from '@/lib/stores/useSettings';
 import { palette, spacing } from '@/theme';
+import { fonts } from '@/theme/fonts';
 
 /**
  * Screen 1 — Welcome Splash. App logo fades in, brand tagline, and two CTAs.
@@ -62,10 +63,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   taglineQuote: {
+    // Playfair Display, matching every other heading in the app.
+    fontFamily: fonts.headingBold,
     textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 27,
-    fontWeight: '600',
+    fontSize: 21,
+    lineHeight: 30,
     color: palette.ink,
     paddingHorizontal: spacing.lg,
   },
