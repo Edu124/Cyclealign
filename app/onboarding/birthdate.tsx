@@ -8,8 +8,8 @@ export default function BirthdateStep() {
 
   return (
     <StepScaffold
-      step={3}
-      total={4}
+      step={2}
+      total={5}
       title="When were you born?"
       subtitle="Your age helps us tailor insights to your stage of life."
       nextDisabled={!birthDate}

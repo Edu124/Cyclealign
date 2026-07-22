@@ -13,11 +13,11 @@ export default function RoleStep() {
   return (
     <StepScaffold
       step={1}
-      total={4}
+      total={5}
       title="Every woman leads something."
       subtitle="What does your leadership look like right now?"
       nextDisabled={!role}
-      onNext={() => router.push('/onboarding/cycle')}
+      onNext={() => router.push('/onboarding/birthdate')}
     >
       <View style={styles.options}>
         {ROLE_OPTIONS.map((opt, i) => {

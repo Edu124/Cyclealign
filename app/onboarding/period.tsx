@@ -169,8 +169,8 @@ export default function PeriodStep() {
 
   return (
     <StepScaffold
-      step={3}
-      total={4}
+      step={4}
+      total={5}
       title="When did your last period start?"
       subtitle="We'll use this to pinpoint exactly where you are in your cycle right now."
       nextDisabled={!lastPeriodStart}

@@ -71,7 +71,7 @@ export default function AccountStep() {
       name:           name.trim() || 'Friend',
       email:          email.trim() || undefined,
       gender:         'female',
-      birthDate:      '',
+      birthDate:      draft.birthDate ?? '',
       avgCycleLength:  draft.avgCycleLength,
       avgPeriodLength: draft.avgPeriodLength,
       role:            draft.role ?? undefined,

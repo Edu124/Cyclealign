@@ -21,8 +21,8 @@ export default function CycleStep() {
 
   return (
     <StepScaffold
-      step={2}
-      total={4}
+      step={3}
+      total={5}
       title="About your cycle"
       subtitle="This helps us map your phases accurately. You can always update these later."
       onNext={() => router.push('/onboarding/period')}

@@ -11,6 +11,7 @@ import { TodayFocusCard } from '@/components/dashboard/TodayFocusCard';
 import { TodayTasksCard } from '@/components/dashboard/TodayTasksCard';
 import { QuickLogCard } from '@/components/dashboard/QuickLogCard';
 import { LogInsightCard } from '@/components/dashboard/LogInsightCard';
+import { LifeStageCard } from '@/components/dashboard/LifeStageCard';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
@@ -140,6 +141,10 @@ export default function Today() {
             <LogInsightCard insight={logInsight} />
           </Animated.View>
         )}
+
+        <Animated.View entering={FadeInDown.delay(140).duration(450)}>
+          <LifeStageCard />
+        </Animated.View>
 
         {isV2 && (
           <Animated.View entering={FadeInDown.delay(150).duration(450)}>

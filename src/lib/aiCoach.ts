@@ -24,6 +24,9 @@ export interface CoachContext {
   /** Compact recent Quick Log summary (see recentLogSummary) — lets the coach
    *  answer from her actual logged state, not just the textbook phase. */
   logSummary?: string;
+  /** Age-based life-stage context (see lifeStage.ts coachContext) so advice
+   *  fits her stage of life, not just her cycle day. */
+  lifeStage?: string;
 }
 
 export interface CoachReply {

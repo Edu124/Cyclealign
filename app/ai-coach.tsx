@@ -23,6 +23,7 @@ import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useSubscription } from '@/lib/stores/useSubscription';
 import { recentLogSummary } from '@/lib/intelligence/logInsights';
+import { useLifeStage } from '@/lib/hooks/useLifeStage';
 import { palette, radius, spacing } from '@/theme';
 
 const PHASE_GREETING: Record<string, string> = {
@@ -56,6 +57,7 @@ export default function AICoachScreen() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const premium = useSubscription((s) => s.isPremium());
+  const lifeStage = useLifeStage();
 
   useEffect(() => {
     Promise.all([fetchHistory(), getUsedToday()]).then(([history, used]) => {
@@ -86,6 +88,7 @@ export default function AICoachScreen() {
         dayOfCycle: prediction?.dayOfCycle,
         cycleLength: prediction?.cycleLength,
         logSummary: recentLogSummary(dailyLogs),
+        lifeStage: lifeStage?.stage.coachContext,
       });
       if (res.limitReached) {
         setRemaining(0);

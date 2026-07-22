@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabase.auth.getUser(jwt);
   if (!user) return json({ error: 'Not signed in' }, 401);
 
-  const { message, phase, dayOfCycle, cycleLength, logSummary } = await req.json();
+  const { message, phase, dayOfCycle, cycleLength, logSummary, lifeStage } = await req.json();
   const trimmed = String(message ?? '').trim().slice(0, 1000);
   if (!trimmed) return json({ error: 'Empty message' }, 400);
 
@@ -113,6 +113,12 @@ Deno.serve(async (req) => {
   // phase expectations when they disagree.
   if (typeof logSummary === 'string' && logSummary.trim()) {
     context += `\nHER RECENT SELF-LOGGED CHECK-INS: ${logSummary.trim().slice(0, 400)}. If her logged energy conflicts with the textbook expectation for her phase, trust her logs.`;
+  }
+
+  // Age-based life stage — tune advice to her stage of life (teens, peak
+  // years, late reproductive, perimenopause window, post-menopause).
+  if (typeof lifeStage === 'string' && lifeStage.trim()) {
+    context += `\nHER LIFE STAGE: ${lifeStage.trim().slice(0, 400)}`;
   }
 
   // ── 4. Call the model ──────────────────────────────────────────────────────

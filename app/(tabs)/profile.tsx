@@ -3,11 +3,13 @@ import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, T
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Card, TabScreen } from '@/components/ui';
+import { Card, DateField, TabScreen } from '@/components/ui';
 import { palette, phaseColors, spacing } from '@/theme';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
 import { usePrediction } from '@/lib/hooks/usePrediction';
+import { useLifeStage } from '@/lib/hooks/useLifeStage';
+import { pushProfile } from '@/lib/sync';
 import { signOut } from '@/lib/auth';
 
 const PHASE_LABELS: Record<string, string> = {
@@ -34,6 +36,19 @@ export default function Profile() {
   const retailTherapy = useSettings((s) => s.retailTherapy);
   const appVersion = useSettings((s) => s.appVersion);
   const setSettings = useSettings((s) => s.set);
+  const setProfile = useAppStore((s) => s.setProfile);
+  const lifeStage = useLifeStage();
+  const [birthDraft, setBirthDraft] = useState<string | null>(null);
+
+  // Backfill for accounts created before the birthday step existed: picking a
+  // date saves it to the profile and syncs to the cloud immediately.
+  function saveBirthday(iso: string) {
+    setBirthDraft(iso);
+    if (!profile) return;
+    const updated = { ...profile, birthDate: iso };
+    setProfile(updated);
+    pushProfile(updated).catch(() => {});
+  }
 
   // Free switch for now — when V2 goes Premium-only, restore the
   // subscription check here and in useIsV2.
@@ -116,6 +131,35 @@ export default function Profile() {
                 ? `${prediction.daysUntilNextPeriod} days`
                 : 'approx. today'}
             </Text>
+          </Card>
+        </Animated.View>
+      )}
+
+      {/* Life stage / birthday */}
+      {profile && (
+        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <Card>
+            <Text style={styles.cardLabel}>LIFE STAGE</Text>
+            {lifeStage ? (
+              <Text style={styles.phaseText}>
+                {lifeStage.stage.emoji} {lifeStage.stage.label} · age {lifeStage.age}
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.nextPeriod}>
+                  Add your birthday to unlock stage-of-life insights — recommendations
+                  that evolve as you do.
+                </Text>
+                <DateField
+                  label="Date of birth"
+                  placeholder="Tap to choose your birth date"
+                  value={birthDraft}
+                  onChange={saveBirthday}
+                  disableFuture
+                  initialView="years"
+                />
+              </>
+            )}
           </Card>
         </Animated.View>
       )}
