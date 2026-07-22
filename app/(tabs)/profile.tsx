@@ -236,7 +236,7 @@ export default function Profile() {
               <View style={styles.divider} />
             </>
           )}
-          <LinkRow label="Contact Us"         onPress={() => Linking.openURL('mailto:cyclealign@gmail.com')} />
+          <LinkRow label="Contact Us"         onPress={() => Linking.openURL('mailto:hellocyclealign@gmail.com')} />
         </Card>
       </Animated.View>
 
