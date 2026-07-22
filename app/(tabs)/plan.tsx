@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, StyleSheet, Text } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -35,6 +36,44 @@ export default function Plan() {
     disconnect,
     eventsForDate,
   } = useCalendar();
+
+  // ── Auto re-sync ──────────────────────────────────────────────────────────
+  // The connect flow takes a one-time snapshot; without this, events created
+  // AFTER connecting never appear. Re-sync silently whenever the screen gains
+  // focus or the app returns to the foreground (throttled to 30s), keeping the
+  // existing snapshot when a refresh fails (e.g. expired Google token).
+  const lastSyncRef = useRef(0);
+  const refreshEvents = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSyncRef.current < 30_000) return;
+    const state = useCalendar.getState();
+    if (!state.connected) return;
+    if (state.providerLabel === 'Apple Calendar' && isAppleCalendarSupported()) {
+      lastSyncRef.current = now;
+      fetchAppleCalendarEvents()
+        .then((evts) => useCalendar.getState().connectAppleCalendar(evts))
+        .catch(() => {});
+    } else if (state.providerLabel === 'Google Calendar' && state.googleAccessToken) {
+      lastSyncRef.current = now;
+      const token = state.googleAccessToken;
+      fetchGoogleCalendarEvents(token)
+        .then((evts) => useCalendar.getState().connectGoogle(token, evts))
+        .catch(() => {});
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshEvents();
+    }, [refreshEvents]),
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') refreshEvents();
+    });
+    return () => sub.remove();
+  }, [refreshEvents]);
 
   const isV2 = useIsV2();
   const [selectedWindow, setSelectedWindow] = useState<RecommendedWindow | null>(null);
