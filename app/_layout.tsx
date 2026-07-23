@@ -124,6 +124,11 @@ function useAuthDeepLink() {
       // email confirmation: cyclealign://?code=xxx
       // oauth callback:     cyclealign://?code=xxx
       if (!url.includes('code=')) return;
+      // Google OAuth redirects (…:/oauthredirect?code=…) carry a GOOGLE
+      // authorization code that expo-auth-session exchanges itself — feeding
+      // it to Supabase's exchange would fail and interfere. Only handle
+      // Supabase's own links (email confirmation / browser OAuth callback).
+      if (url.includes('oauthredirect')) return;
       try {
         // Linking.parse, not new URL(...).searchParams — Hermes does not
         // implement searchParams, so that throws on-device.
