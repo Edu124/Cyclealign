@@ -8,6 +8,7 @@
     "icon": "./assets/logo.png",
     "scheme": [
       "cyclealign",
+      "com.cyclealign.app",
       "com.googleusercontent.apps.638994695623-jkr4kfhh6llmst30qrklntcejonid414"
     ],
     "userInterfaceStyle": "automatic",
