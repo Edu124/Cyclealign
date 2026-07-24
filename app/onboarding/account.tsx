@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Platform,
@@ -43,10 +43,16 @@ export default function AccountStep() {
   const [loading,  setLoading]  = useState(false);
   const [errors,   setErrors]   = useState<{ name?: string; email?: string; password?: string }>({});
 
+  // One-shot guard: the session often arrives AFTER an explicit success path
+  // has already navigated onward; without this, the effect fired again and
+  // sent users back to the founder page a second time.
+  const completedRef = useRef(false);
+
   // Already signed in (e.g. redoing cycle setup from the dashboard) — don't
   // ask for a second account. Save the updated cycle data and continue.
   useEffect(() => {
-    if (!session) return;
+    if (!session || completedRef.current) return;
+    completedRef.current = true;
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     syncToSupabase(profile, log);
@@ -117,6 +123,7 @@ export default function AccountStep() {
       }
     }
 
+    completedRef.current = true;
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
@@ -133,6 +140,7 @@ export default function AccountStep() {
     const res = p === 'google' ? await googleSignIn.signIn() : await signInWithApple();
     setLoading(false);
     if (!res.ok) { notify(res.error ?? 'Sign-in failed'); return; }
+    completedRef.current = true;
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
@@ -140,6 +148,7 @@ export default function AccountStep() {
   };
 
   const handleSkip = () => {
+    completedRef.current = true;
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     syncToSupabase(profile, log);
