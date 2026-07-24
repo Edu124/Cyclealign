@@ -9,11 +9,12 @@ const ALL_PROVIDERS = [
   { id: 'demo',    label: 'Try with sample events',   icon: '✨', desc: 'Preview how cycle scoring looks — no sign-in needed' },
 ];
 
-// iPhones get exactly one, native option — Apple Calendar. Everything the
-// other rows offered on iOS was either a browser detour or sample data.
+// iPhones offer the two real integrations (Apple native + Google OAuth);
+// other platforms get Google/Outlook/samples — the Apple row can only work
+// on Apple hardware.
 const CALENDAR_PROVIDERS =
   Platform.OS === 'ios'
-    ? ALL_PROVIDERS.filter((p) => p.id === 'apple')
+    ? ALL_PROVIDERS.filter((p) => p.id === 'apple' || p.id === 'google')
     : ALL_PROVIDERS.filter((p) => p.id !== 'apple');
 
 interface Props {

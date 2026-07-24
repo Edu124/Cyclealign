@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, StyleSheet, Text } from 'react-native';
+import { Alert, AppState, Platform, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
@@ -74,6 +74,16 @@ export default function Plan() {
     });
     return () => sub.remove();
   }, [refreshEvents]);
+
+  // Purge stale "(demo)" connections persisted by old app versions on iOS —
+  // they masked the real connect flow (banner showed connected, so tapping
+  // never asked permission) and kept showing sample events forever.
+  useEffect(() => {
+    const s = useCalendar.getState();
+    if (Platform.OS === 'ios' && s.connected && s.providerLabel?.includes('(demo)')) {
+      s.disconnect();
+    }
+  }, []);
 
   const isV2 = useIsV2();
   const [selectedWindow, setSelectedWindow] = useState<RecommendedWindow | null>(null);
