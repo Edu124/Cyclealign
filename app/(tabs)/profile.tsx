@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card, DateField, TabScreen } from '@/components/ui';
@@ -28,6 +29,12 @@ const PHASE_EMOJI: Record<string, string> = {
 
 export default function Profile() {
   const version = Constants.expoConfig?.version ?? '1.0.0';
+  // Which JS is actually running: "built-in" = the binary's embedded bundle,
+  // otherwise the publish time of the applied OTA update. This is the ground
+  // truth for "did the update land on this device?".
+  const codeStamp = Updates.isEmbeddedLaunch || !Updates.createdAt
+    ? 'built-in code'
+    : `update ${Updates.createdAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
   const profile = useAppStore((s) => s.profile);
   const prediction = usePrediction();
   const phase = prediction?.currentPhase ?? null;
@@ -306,7 +313,7 @@ export default function Profile() {
 
       {/* Footer */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
-        <Text style={styles.version}>CycleAlign v{version}</Text>
+        <Text style={styles.version}>CycleAlign v{version} · {codeStamp}</Text>
         <Text style={styles.copyright}>© 2026 CycleAlign · made with 💛 for the women, by the women</Text>
       </Animated.View>
     </TabScreen>

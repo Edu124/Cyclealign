@@ -15,29 +15,29 @@ const IOS_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? PLACEHOLDER_ID;
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
 /**
- * Direct-to-Google sign-in exchanged with supabase.auth.signInWithIdToken —
- * same session and user rows as the browser flow, no supabase.co detour.
+ * Direct-to-Google sign-in exchanged with supabase.auth.signInWithIdToken.
  *
- * Flow per platform, dictated by Google:
- *  - iOS/Android (installed-app clients): authorization-code + PKCE, then the
- *    token endpoint returns the id_token. Google rejects the implicit
- *    id_token response for these client types ("unsupported_response_type").
- *  - Web: implicit id_token — allowed for web clients, and avoids needing the
- *    client secret that a web-client code exchange would demand.
+ * Native (iOS/Android): authorization-code + PKCE — Google's required flow
+ * for installed apps. shouldAutoExchangeCode is disabled so OUR exchange is
+ * the only consumer of the one-time code (the library's auto-exchange racing
+ * ours meant one of the two always failed with invalid_grant).
+ * Web: implicit id_token (allowed for web clients; needs no client secret).
  *
- * Requires all client IDs in Supabase → Auth → Google → Client IDs.
+ * Errors carry [G*] tags so field reports identify the failing step.
  */
 export function useGoogleSignIn() {
-  const config = {
+  const [codeRequest, , promptCode] = Google.useAuthRequest({
     clientId: WEB_ID,
     androidClientId: ANDROID_ID,
     iosClientId: IOS_ID,
     scopes: ['openid', 'profile', 'email'],
-  };
-
-  // Both hooks mount unconditionally (rules of hooks); platform picks at call.
-  const [codeRequest, , promptCode] = Google.useAuthRequest(config);
-  const [, , promptIdToken] = Google.useIdTokenAuthRequest(config);
+    shouldAutoExchangeCode: false,
+  });
+  const [, , promptIdToken] = Google.useIdTokenAuthRequest({
+    clientId: WEB_ID,
+    androidClientId: ANDROID_ID,
+    iosClientId: IOS_ID,
+  });
 
   async function signIn(): Promise<AuthResult> {
     if (!isSupabaseConfigured) {
@@ -48,37 +48,44 @@ export function useGoogleSignIn() {
         const res = await promptIdToken();
         if (res?.type !== 'success') return { ok: false, error: 'Sign-in was cancelled.' };
         const idToken = (res.params as Record<string, string>)?.id_token;
-        if (!idToken) return { ok: false, error: 'Google did not return a token. Please try again.' };
+        if (!idToken) return { ok: false, error: 'Google did not return a token. [G0]' };
         return exchangeWithSupabase(idToken);
       }
 
-      // Native: code + PKCE.
       const res = await promptCode();
       if (res?.type !== 'success') return { ok: false, error: 'Sign-in was cancelled.' };
 
-      // The Google provider may auto-exchange the code; fall back to a manual
-      // exchange when it hasn't (no client secret needed for app clients).
-      let idToken = res.authentication?.idToken ?? null;
       const code = (res.params as Record<string, string>)?.code;
-      if (!idToken && code && codeRequest) {
+      if (!code) {
+        return { ok: false, error: 'Google did not return a sign-in code. [G1]' };
+      }
+
+      let idToken: string | null = null;
+      try {
         const tokens = await exchangeCodeAsync(
           {
             clientId: Platform.OS === 'ios' ? IOS_ID : ANDROID_ID,
             code,
-            redirectUri: codeRequest.redirectUri,
-            extraParams: codeRequest.codeVerifier
+            redirectUri: codeRequest?.redirectUri ?? '',
+            extraParams: codeRequest?.codeVerifier
               ? { code_verifier: codeRequest.codeVerifier }
               : {},
           },
           { tokenEndpoint: GOOGLE_TOKEN_ENDPOINT },
         );
         idToken = tokens.idToken ?? null;
+      } catch (exchangeErr: unknown) {
+        const msg = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);
+        return { ok: false, error: `Could not complete sign-in (${msg}). [G2]` };
       }
-      if (!idToken) return { ok: false, error: 'Google did not return a token. Please try again.' };
+
+      if (!idToken) {
+        return { ok: false, error: 'Google did not return a token. [G3]' };
+      }
       return exchangeWithSupabase(idToken);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
-      return { ok: false, error: msg };
+      return { ok: false, error: `${msg} [G4]` };
     }
   }
 
@@ -86,13 +93,12 @@ export function useGoogleSignIn() {
 }
 
 async function exchangeWithSupabase(idToken: string): Promise<AuthResult> {
-  // Nonce is not forwarded: the libraries' nonce shapes don't survive the
-  // round-trip verifiably, so the Supabase Google provider runs with
+  // Nonce is not forwarded — the Supabase Google provider runs with
   // "Skip nonce checks" enabled.
   const { error } = await supabase.auth.signInWithIdToken({
     provider: 'google',
     token: idToken,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: `${error.message} [G5]` };
   return { ok: true };
 }
