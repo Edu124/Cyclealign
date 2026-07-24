@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Screen, TextField } from '@/components/ui';
@@ -95,11 +95,15 @@ export default function SignIn() {
           variant="secondary"
           onPress={() => handleProvider('google')}
         />
-        <Button
-          label="Continue with Apple"
-          variant="secondary"
-          onPress={() => handleProvider('apple')}
-        />
+        {/* Apple sign-in is native-iOS only; the Android/web fallback would
+            need a separately maintained Apple Services ID + rotating key. */}
+        {Platform.OS === 'ios' && (
+          <Button
+            label="Continue with Apple"
+            variant="secondary"
+            onPress={() => handleProvider('apple')}
+          />
+        )}
 
         {!isSupabaseConfigured && (
           <Pressable onPress={() => router.replace('/onboarding/welcome')}>

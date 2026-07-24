@@ -219,11 +219,15 @@ export default function AccountStep() {
           variant="secondary"
           onPress={() => handleProvider('google')}
         />
-        <Button
-          label="Continue with Apple"
-          variant="secondary"
-          onPress={() => handleProvider('apple')}
-        />
+        {/* Apple sign-in is native-iOS only; the Android/web fallback would
+            need a separately maintained Apple Services ID + rotating key. */}
+        {Platform.OS === 'ios' && (
+          <Button
+            label="Continue with Apple"
+            variant="secondary"
+            onPress={() => handleProvider('apple')}
+          />
+        )}
 
         <Pressable onPress={handleSkip} hitSlop={12}>
           <Text style={styles.skipText}>Skip — continue without an account →</Text>
