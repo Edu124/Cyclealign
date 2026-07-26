@@ -55,7 +55,14 @@ export async function fetchAppleCalendarEvents(): Promise<CalendarEvent[]> {
     );
   }
 
-  const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+  // Skip system noise calendars: subscribed holiday feeds ("Indian Holidays",
+  // "US Holidays", …) and the auto-generated Birthdays calendar. Those aren't
+  // plannable tasks, so scoring them against cycle phases is nonsense.
+  const calendars = (await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT)).filter(
+    (c) =>
+      c.type !== Calendar.CalendarType.BIRTHDAYS &&
+      !/holiday/i.test(c.title ?? ''),
+  );
   const calendarIds = calendars.map((c) => c.id);
   if (calendarIds.length === 0) return [];
 

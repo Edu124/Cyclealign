@@ -12,7 +12,9 @@ import { CalendarConnectBanner } from '@/components/plan/CalendarConnectBanner';
 import { DayEventsModal } from '@/components/plan/DayEventsModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
-import { useCalendar } from '@/lib/stores/useCalendar';
+import { useCalendar, type CalendarEvent } from '@/lib/stores/useCalendar';
+import { useTasks } from '@/lib/stores/useTasks';
+import { TASK_SYNC_CATEGORIES } from '@/lib/intelligence/taskScore';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured } from '@/lib/googleCalendar';
 import { fetchAppleCalendarEvents, isAppleCalendarSupported } from '@/lib/appleCalendar';
@@ -34,8 +36,22 @@ export default function Plan() {
     connectAppleCalendar,
     connectDemo,
     disconnect,
-    eventsForDate,
   } = useCalendar();
+
+  // Planned tasks (Home → Plan a task) surface in the calendar automatically,
+  // alongside any synced events — they share the same category taxonomy.
+  const tasks = useTasks((s) => s.tasks);
+  const taskEvents: CalendarEvent[] = tasks.map((t) => ({
+    id: `task-${t.id}`,
+    title:
+      t.label?.trim() ||
+      (TASK_SYNC_CATEGORIES.find((c) => c.id === t.category)?.label ?? 'Planned task'),
+    categoryId: t.category,
+    dateISO: t.dateISO,
+    timeLabel: 'Planned',
+    isPrivate: t.category === 'PERSONAL',
+  }));
+  const allEvents = [...events, ...taskEvents];
 
   // ── Auto re-sync ──────────────────────────────────────────────────────────
   // The connect flow takes a one-time snapshot; without this, events created
@@ -175,7 +191,7 @@ export default function Plan() {
   const { recommendedWindows } = monthPlan(prediction);
 
   function handleDayPress(dateISO: string) {
-    if (!connected) return;
+    if (!allEvents.some((e) => e.dateISO === dateISO)) return;
     setSelectedDate(dateISO);
   }
 
@@ -211,7 +227,7 @@ export default function Plan() {
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <MonthOutlook
             prediction={prediction}
-            events={isV2 && connected ? events : []}
+            events={isV2 ? (connected ? allEvents : taskEvents) : taskEvents}
             onDayPress={handleDayPress}
           />
         </Animated.View>
@@ -225,7 +241,7 @@ export default function Plan() {
 
       <DayEventsModal
         dateISO={selectedDate}
-        events={selectedDate ? eventsForDate(selectedDate) : []}
+        events={selectedDate ? allEvents.filter((e) => e.dateISO === selectedDate) : []}
         prediction={prediction}
         onClose={() => setSelectedDate(null)}
       />

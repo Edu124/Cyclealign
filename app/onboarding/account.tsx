@@ -18,6 +18,7 @@ import { useSession } from '@/lib/stores/useSession';
 import { signUpWithEmail } from '@/lib/auth';
 import { signInWithApple } from '@/lib/appleSignIn';
 import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
+import { sendWelcomeNotification } from '@/lib/notifications';
 import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import type { CycleLog, Profile } from '@/types/models';
@@ -127,6 +128,7 @@ export default function AccountStep() {
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
+    sendWelcomeNotification(profile.name);
     setLoading(false);
     goHome();
   };
@@ -144,6 +146,7 @@ export default function AccountStep() {
     const { profile, log } = buildProfileAndLog();
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
+    sendWelcomeNotification(profile.name);
     goHome();
   };
 

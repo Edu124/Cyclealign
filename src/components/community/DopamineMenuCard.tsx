@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { dash, phaseColors, spacing } from '@/theme';
+import { ratingFor } from '@/lib/retailTherapy/catalog';
+import { sendOrderNotification } from '@/lib/notifications';
 import type { PhaseKey } from '@/types/models';
 
 interface CartItem {
@@ -72,6 +74,65 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
   ],
 };
 
+// Food mode — pure craving-fulfilment, phase-tuned like everything else.
+const PHASE_FOODS: Record<PhaseKey, Product[]> = {
+  menstrual: [
+    { id: 'fm1', emoji: '🍫', name: 'Dark Chocolate Ritual',   brand: 'Cocoa Theory',     price: 349, tag: 'Most craved', image: img('1511381939415-e44015466834') },
+    { id: 'fm2', emoji: '🍜', name: 'Comfort Ramen Bowl',      brand: 'Midnight Kitchen', price: 429,                    image: img('1569718212165-3a8278d5f624') },
+    { id: 'fm3', emoji: '🧀', name: 'Molten Mac & Cheese',     brand: 'Midnight Kitchen', price: 379,                    image: img('1543339494-b4cd4f7ba686') },
+    { id: 'fm4', emoji: '🫖', name: 'Chamomile Calm Tea',      brand: 'Steep Story',      price: 199,                    image: img('1576092768241-dec231879fc3') },
+    { id: 'fm5', emoji: '🍪', name: 'Warm Cookies & Chai',     brand: 'Steep Story',      price: 249, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
+    { id: 'fm6', emoji: '🎁', name: 'Midnight Chocolate Box',  brand: 'Cocoa Theory',     price: 549,                    image: img('1481391319762-47dff72954d9') },
+  ],
+  follicular: [
+    { id: 'ff1', emoji: '☕', name: 'Oat Latte Boost',         brand: 'Steep Story',      price: 229, tag: 'Trending',    image: img('1512568400610-62da28bc8a13') },
+    { id: 'ff2', emoji: '🧋', name: 'Brown Sugar Boba',        brand: 'Midnight Kitchen', price: 269,                    image: img('1558857563-b371033873b8') },
+    { id: 'ff3', emoji: '🍕', name: 'Garden Veggie Pizza',     brand: 'Midnight Kitchen', price: 499,                    image: img('1513104890138-7c749659a591') },
+    { id: 'ff4', emoji: '🍰', name: 'Berry Cheesecake Slice',  brand: 'Midnight Kitchen', price: 329,                    image: img('1524351199678-941a58a3df50') },
+    { id: 'ff5', emoji: '🍵', name: 'Green Tea Ritual',        brand: 'Steep Story',      price: 189,                    image: img('1576092768241-dec231879fc3') },
+    { id: 'ff6', emoji: '🍫', name: 'Energy Chocolate Chunks', brand: 'Cocoa Theory',     price: 299, tag: 'New',         image: img('1511381939415-e44015466834') },
+  ],
+  ovulation: [
+    { id: 'fo1', emoji: '🍰', name: 'Celebration Cheesecake',  brand: 'Midnight Kitchen', price: 599, tag: 'Hot Pick',    image: img('1524351199678-941a58a3df50') },
+    { id: 'fo2', emoji: '🧋', name: 'Boba Date Flight',        brand: 'Midnight Kitchen', price: 349,                    image: img('1558857563-b371033873b8') },
+    { id: 'fo3', emoji: '🍕', name: 'Wood-fired Pizza Night',  brand: 'Midnight Kitchen', price: 649,                    image: img('1513104890138-7c749659a591') },
+    { id: 'fo4', emoji: '☕', name: 'Latte Art Date',          brand: 'Steep Story',      price: 259,                    image: img('1512568400610-62da28bc8a13') },
+    { id: 'fo5', emoji: '🎁', name: 'Chocolate Tasting Box',   brand: 'Cocoa Theory',     price: 699, tag: 'Fan Fave',    image: img('1481391319762-47dff72954d9') },
+    { id: 'fo6', emoji: '🫖', name: 'High Tea Set',            brand: 'Steep Story',      price: 449,                    image: img('1544787219-7f47ccb76574') },
+  ],
+  luteal: [
+    { id: 'fl1', emoji: '🧀', name: 'Extra-Cheese Mac',        brand: 'Midnight Kitchen', price: 399, tag: 'Most craved', image: img('1543339494-b4cd4f7ba686') },
+    { id: 'fl2', emoji: '🍜', name: 'Cozy Ramen Supreme',      brand: 'Midnight Kitchen', price: 469,                    image: img('1569718212165-3a8278d5f624') },
+    { id: 'fl3', emoji: '🍰', name: 'Salted Caramel Cheesecake', brand: 'Midnight Kitchen', price: 379,                  image: img('1524351199678-941a58a3df50') },
+    { id: 'fl4', emoji: '🍫', name: 'Midnight Chocolate Chunks', brand: 'Cocoa Theory',   price: 329,                    image: img('1511381939415-e44015466834') },
+    { id: 'fl5', emoji: '🍕', name: 'Comfort Pizza',           brand: 'Midnight Kitchen', price: 549,                    image: img('1513104890138-7c749659a591') },
+    { id: 'fl6', emoji: '🍪', name: 'Masala Chai & Cookies',   brand: 'Steep Story',      price: 229, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
+  ],
+};
+
+// ── Filter & sort (Amazon-style) ──────────────────────────────────────────────
+
+type SortKey = 'featured' | 'priceAsc' | 'priceDesc' | 'rating';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'featured',  label: 'Featured' },
+  { key: 'priceAsc',  label: 'Price: Low to High' },
+  { key: 'priceDesc', label: 'Price: High to Low' },
+  { key: 'rating',    label: 'Top Rated' },
+];
+
+const PRICE_RANGES: { key: string; label: string; min: number; max: number }[] = [
+  { key: 'p1', label: 'Under ₹500',      min: 0,    max: 499 },
+  { key: 'p2', label: '₹500 – ₹1,000',   min: 500,  max: 1000 },
+  { key: 'p3', label: '₹1,000 – ₹2,000', min: 1000, max: 2000 },
+  { key: 'p4', label: 'Over ₹2,000',     min: 2000, max: Infinity },
+];
+
+const RATING_OPTIONS: { key: string; label: string; min: number }[] = [
+  { key: 'r45', label: '4.5★ & up', min: 4.5 },
+  { key: 'r40', label: '4.0★ & up', min: 4.0 },
+];
+
 const PHASE_LABELS: Record<PhaseKey, string> = {
   menstrual: 'Rest & Restore',
   follicular: 'Create & Explore',
@@ -114,7 +175,47 @@ export function DopamineMenuCard({ phaseKey }: Props) {
   const [address, setAddress] = useState({ name: '', street: '', city: '' });
   const [orderNumber] = useState(() => `CA${Math.floor(100000 + Math.random() * 900000)}`);
 
-  const products = PHASE_PRODUCTS[phaseKey];
+  // ── Mode, filter & sort ────────────────────────────────────────────────────
+  const [mode, setMode] = useState<'shop' | 'food'>('shop');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('featured');
+  const [brandFilter, setBrandFilter] = useState<string[]>([]);
+  const [priceFilter, setPriceFilter] = useState<string | null>(null);
+  const [ratingFilter, setRatingFilter] = useState<string | null>(null);
+
+  const catalog = mode === 'shop' ? PHASE_PRODUCTS[phaseKey] : PHASE_FOODS[phaseKey];
+  const allBrands = [...new Set(catalog.map((p) => p.brand))];
+
+  function switchMode(m: 'shop' | 'food') {
+    if (m === mode) return;
+    setMode(m);
+    // Brands differ between catalogs — stale filters would empty the grid.
+    setBrandFilter([]);
+    setPriceFilter(null);
+    setRatingFilter(null);
+  }
+
+  const activeFilterCount =
+    brandFilter.length + (priceFilter ? 1 : 0) + (ratingFilter ? 1 : 0);
+
+  let products = catalog.filter((p) => {
+    if (brandFilter.length > 0 && !brandFilter.includes(p.brand)) return false;
+    if (priceFilter) {
+      const range = PRICE_RANGES.find((r) => r.key === priceFilter)!;
+      if (p.price < range.min || p.price > range.max) return false;
+    }
+    if (ratingFilter) {
+      const opt = RATING_OPTIONS.find((r) => r.key === ratingFilter)!;
+      if (ratingFor(p.id).stars < opt.min) return false;
+    }
+    return true;
+  });
+  if (sortKey === 'priceAsc') products = [...products].sort((a, b) => a.price - b.price);
+  if (sortKey === 'priceDesc') products = [...products].sort((a, b) => b.price - a.price);
+  if (sortKey === 'rating')
+    products = [...products].sort((a, b) => ratingFor(b.id).stars - ratingFor(a.id).stars);
+
   const phaseColor = phaseColors[phaseKey].base;
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -155,23 +256,59 @@ export function DopamineMenuCard({ phaseKey }: Props) {
   function placeOrder() {
     setStep('confirm');
     setCart([]);
+    sendOrderNotification();
   }
 
   return (
     <View style={styles.card}>
-      {/* Header */}
+      {/* Header: title + the 4 controls (mode toggle · filter · sort · cart) */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Shop</Text>
+          <Text style={styles.title}>{mode === 'shop' ? 'Shop' : 'Food'}</Text>
           <Text style={[styles.subtitle, { color: phaseColor }]}>
-            {PHASE_LABELS[phaseKey]}
+            {mode === 'shop' ? PHASE_LABELS[phaseKey] : 'Cravings, phase-tuned'}
           </Text>
         </View>
-        {cartCount > 0 && (
-          <Pressable style={[styles.cartBtn, { backgroundColor: phaseColor }]} onPress={openCheckout}>
-            <Text style={styles.cartBtnText}>🛒 {cartCount}</Text>
+        <View style={styles.controls}>
+          <View style={styles.modeToggle}>
+            {(['shop', 'food'] as const).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => switchMode(m)}
+                style={[styles.modeBtn, mode === m && { backgroundColor: phaseColor }]}
+              >
+                <Text style={styles.modeBtnEmoji}>{m === 'shop' ? '🛍️' : '🍜'}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable style={styles.iconBtn} onPress={() => setFilterOpen(true)}>
+            <Text style={styles.iconBtnGlyph}>☰</Text>
+            {activeFilterCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: phaseColor }]}>
+                <Text style={styles.badgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
           </Pressable>
-        )}
+          <Pressable style={styles.iconBtn} onPress={() => setSortOpen(true)}>
+            <Text style={styles.iconBtnGlyph}>⇅</Text>
+            {sortKey !== 'featured' && (
+              <View style={[styles.badge, { backgroundColor: phaseColor }]}>
+                <Text style={styles.badgeText}>•</Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            style={[styles.iconBtn, cartCount === 0 && styles.iconBtnDim]}
+            onPress={() => cartCount > 0 && openCheckout()}
+          >
+            <Text style={styles.iconBtnGlyph}>🛒</Text>
+            {cartCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: phaseColor }]}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       <Text style={styles.tagline}>{PHASE_TAGLINES[phaseKey]}</Text>
@@ -238,6 +375,15 @@ export function DopamineMenuCard({ phaseKey }: Props) {
         })}
       </View>
 
+      {products.length === 0 && (
+        <View style={styles.emptyFilter}>
+          <Text style={styles.emptyFilterText}>Nothing matches these filters.</Text>
+          <Pressable onPress={() => { setBrandFilter([]); setPriceFilter(null); setRatingFilter(null); }}>
+            <Text style={[styles.emptyFilterClear, { color: phaseColor }]}>Clear filters</Text>
+          </Pressable>
+        </View>
+      )}
+
       {cartCount > 0 && (
         <Animated.View entering={FadeIn.duration(300)}>
           <Pressable style={[styles.checkoutCta, { backgroundColor: phaseColor }]} onPress={openCheckout}>
@@ -247,6 +393,116 @@ export function DopamineMenuCard({ phaseKey }: Props) {
           </Pressable>
         </Animated.View>
       )}
+
+      {/* Filter sheet (Amazon-style) */}
+      <Modal visible={filterOpen} animationType="slide" transparent onRequestClose={() => setFilterOpen(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setFilterOpen(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Filters</Text>
+              <Pressable
+                onPress={() => { setBrandFilter([]); setPriceFilter(null); setRatingFilter(null); }}
+                hitSlop={8}
+              >
+                <Text style={[styles.sheetClear, { color: phaseColor }]}>Clear all</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.sheetSection}>Brand</Text>
+            <View style={styles.chipWrap}>
+              {allBrands.map((b) => {
+                const on = brandFilter.includes(b);
+                return (
+                  <Pressable
+                    key={b}
+                    onPress={() =>
+                      setBrandFilter((f) => (on ? f.filter((x) => x !== b) : [...f, b]))
+                    }
+                    style={[styles.filterChip, on && { backgroundColor: phaseColor + '22', borderColor: phaseColor }]}
+                  >
+                    <Text style={[styles.filterChipText, on && { color: phaseColor, fontWeight: '800' }]}>
+                      {on ? '✓ ' : ''}{b}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sheetSection}>Price</Text>
+            <View style={styles.chipWrap}>
+              {PRICE_RANGES.map((r) => {
+                const on = priceFilter === r.key;
+                return (
+                  <Pressable
+                    key={r.key}
+                    onPress={() => setPriceFilter(on ? null : r.key)}
+                    style={[styles.filterChip, on && { backgroundColor: phaseColor + '22', borderColor: phaseColor }]}
+                  >
+                    <Text style={[styles.filterChipText, on && { color: phaseColor, fontWeight: '800' }]}>
+                      {on ? '✓ ' : ''}{r.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sheetSection}>Customer rating</Text>
+            <View style={styles.chipWrap}>
+              {RATING_OPTIONS.map((r) => {
+                const on = ratingFilter === r.key;
+                return (
+                  <Pressable
+                    key={r.key}
+                    onPress={() => setRatingFilter(on ? null : r.key)}
+                    style={[styles.filterChip, on && { backgroundColor: phaseColor + '22', borderColor: phaseColor }]}
+                  >
+                    <Text style={[styles.filterChipText, on && { color: phaseColor, fontWeight: '800' }]}>
+                      {on ? '✓ ' : ''}{r.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              style={[styles.stepBtn, { backgroundColor: phaseColor }]}
+              onPress={() => setFilterOpen(false)}
+            >
+              <Text style={styles.stepBtnText}>
+                Show {products.length} item{products.length === 1 ? '' : 's'}
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Sort sheet */}
+      <Modal visible={sortOpen} animationType="slide" transparent onRequestClose={() => setSortOpen(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setSortOpen(false)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Sort by</Text>
+            </View>
+            {SORT_OPTIONS.map((o) => {
+              const on = sortKey === o.key;
+              return (
+                <Pressable
+                  key={o.key}
+                  style={styles.sortRow}
+                  onPress={() => { setSortKey(o.key); setSortOpen(false); }}
+                >
+                  <Text style={[styles.sortLabel, on && { color: phaseColor, fontWeight: '800' }]}>
+                    {o.label}
+                  </Text>
+                  <View style={[styles.radio, on && { borderColor: phaseColor }]}>
+                    {on && <View style={[styles.radioDot, { backgroundColor: phaseColor }]} />}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Checkout Modal */}
       <Modal visible={checkoutOpen} animationType="slide" transparent onRequestClose={closeCheckout}>
@@ -557,6 +813,93 @@ const styles = StyleSheet.create({
   tagline: { fontSize: 13, color: dash.inkSoft, marginTop: -6 },
   cartBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   cartBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // 4-control header row
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F0EBE5',
+    borderRadius: 12,
+    padding: 3,
+    gap: 2,
+  },
+  modeBtn: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 9 },
+  modeBtnEmoji: { fontSize: 15 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#F0EBE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnDim: { opacity: 0.45 },
+  iconBtnGlyph: { fontSize: 16, color: dash.ink },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+
+  // Filter / sort sheets
+  sheet: {
+    backgroundColor: dash.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 36,
+    gap: 10,
+  },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: dash.ink },
+  sheetClear: { fontSize: 13, fontWeight: '700' },
+  sheetSection: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: dash.muted,
+    textTransform: 'uppercase',
+    marginTop: 8,
+  },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  filterChip: {
+    borderWidth: 1.5,
+    borderColor: dash.line,
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    backgroundColor: dash.bg,
+  },
+  filterChipText: { fontSize: 13, color: dash.inkSoft, fontWeight: '600' },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: dash.line,
+  },
+  sortLabel: { fontSize: 15, color: dash.ink, fontWeight: '600' },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: dash.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: { width: 10, height: 10, borderRadius: 5 },
+  emptyFilter: { alignItems: 'center', gap: 6, paddingVertical: 18 },
+  emptyFilterText: { fontSize: 14, color: dash.muted },
+  emptyFilterClear: { fontSize: 14, fontWeight: '800' },
   noticePill: { backgroundColor: '#FFF8E7', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 },
   noticeText: { fontSize: 12, color: '#9A7B2E', textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },

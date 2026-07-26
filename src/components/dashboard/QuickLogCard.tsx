@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+
+const LOG_HISTORY = '/log-history' as Href;
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
@@ -36,7 +39,9 @@ export function QuickLogCard({ dateISO }: Props) {
     return (
       <View style={styles.card}>
         <View style={styles.loggedHeader}>
-          <Text style={styles.title}>Quick Log</Text>
+          <Pressable onPress={() => router.push(LOG_HISTORY)} hitSlop={8}>
+            <Text style={styles.title}>Quick Log <Text style={styles.historyLink}>· History ›</Text></Text>
+          </Pressable>
           <View style={styles.loggedPill}>
             <Text style={styles.loggedPillText}>✓ Logged today</Text>
           </View>
@@ -69,7 +74,9 @@ export function QuickLogCard({ dateISO }: Props) {
 
   return (
     <Animated.View entering={FadeIn.duration(200)} style={styles.card}>
-      <Text style={styles.title}>Quick Log</Text>
+      <Pressable onPress={() => router.push(LOG_HISTORY)} hitSlop={8}>
+        <Text style={styles.title}>Quick Log <Text style={styles.historyLink}>· History ›</Text></Text>
+      </Pressable>
 
       <Text style={styles.label}>
         Energy{energy === 0 && showHint ? <Text style={styles.required}> *</Text> : null}
@@ -150,6 +157,7 @@ const styles = StyleSheet.create({
     borderColor: dash.line,
   },
   title: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
+  historyLink: { fontSize: 13, color: dash.sage, fontWeight: '700' },
   label: { fontSize: 13, fontWeight: '700', color: dash.inkSoft, marginTop: 8 },
   required: { color: '#C2683F' },
   scaleRow: { flexDirection: 'row', gap: 10, marginTop: 4 },

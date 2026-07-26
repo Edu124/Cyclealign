@@ -184,6 +184,7 @@ export default function RootLayout() {
             <Stack.Screen name="auth" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="task-sync"         options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="log-history"       options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="privacy-settings" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="terms"             options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="paywall"           options={{ animation: 'slide_from_bottom' }} />

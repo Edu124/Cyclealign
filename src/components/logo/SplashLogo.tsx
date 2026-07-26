@@ -2,10 +2,8 @@ import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { spacing } from '@/theme';
@@ -50,12 +48,6 @@ export function SplashLogo({ onFinish, size = 220 }: Props) {
         <Animated.View style={logoStyle}>
           <Logo3D size={size} />
         </Animated.View>
-        <Animated.Text
-          entering={FadeIn.duration(400)}
-          style={styles.tagline}
-        >
-          In tune with your cycle
-        </Animated.Text>
       </View>
     </View>
   );
@@ -70,10 +62,4 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   word: { marginTop: spacing.lg },
-  tagline: {
-    fontSize: 15,
-    color: '#8E79D6',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
 });

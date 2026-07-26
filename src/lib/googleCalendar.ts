@@ -62,6 +62,19 @@ interface GoogleEvent {
   summary?: string;
   start?: { dateTime?: string; date?: string };
   visibility?: 'public' | 'private' | 'confidential' | 'default';
+  /** "default" for normal events; birthdays etc. are typed differently. */
+  eventType?: string;
+  organizer?: { email?: string };
+}
+
+/** Holiday-feed and other non-personal events aren't plannable tasks. */
+function isNoiseEvent(e: GoogleEvent): boolean {
+  if (e.eventType && e.eventType !== 'default') return true;
+  const organizer = e.organizer?.email ?? '';
+  // Google's holiday/regional calendars all live on this domain
+  // (e.g. en.indian#holiday@group.v.calendar.google.com).
+  if (organizer.includes('group.v.calendar.google.com')) return true;
+  return false;
 }
 
 function mapGoogleEvent(e: GoogleEvent): CalendarEvent {
@@ -102,16 +115,18 @@ export async function fetchGoogleCalendarEvents(
     now.getTime() + 30 * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const url = new URL(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-  );
-  url.searchParams.set('timeMin', timeMin);
-  url.searchParams.set('timeMax', timeMax);
-  url.searchParams.set('singleEvents', 'true');
-  url.searchParams.set('orderBy', 'startTime');
-  url.searchParams.set('maxResults', '50');
+  // Plain string building — Hermes does not implement URL.searchParams, so
+  // the previous new URL(...).searchParams.set(...) threw on-device.
+  const params = [
+    `timeMin=${encodeURIComponent(timeMin)}`,
+    `timeMax=${encodeURIComponent(timeMax)}`,
+    'singleEvents=true',
+    'orderBy=startTime',
+    'maxResults=50',
+  ].join('&');
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
 
-  const res = await fetch(url.toString(), {
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -124,7 +139,7 @@ export async function fetchGoogleCalendarEvents(
   }
 
   const data = (await res.json()) as { items?: GoogleEvent[] };
-  return (data.items ?? []).map(mapGoogleEvent);
+  return (data.items ?? []).filter((e) => !isNoiseEvent(e)).map(mapGoogleEvent);
 }
 
 /**

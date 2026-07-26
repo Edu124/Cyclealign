@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -20,6 +20,8 @@ import { useRetailTherapyTrigger } from '@/lib/retailTherapy/useRetailTherapyTri
 import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
 import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
+import { useOnboarding } from '@/lib/stores/useOnboarding';
+import { syncScheduledNotifications } from '@/lib/notifications';
 import {
   CAPACITY,
   FOCUS_TILES,
@@ -40,6 +42,14 @@ export default function Today() {
 
   // V2-gated features (AI coach entry point).
   const isV2 = useIsV2();
+
+  // Keep the on-device notification schedule in sync with her cycle: daily
+  // briefing / dishes / log reminder + the period heads-up, recomputed
+  // whenever the prediction moves. Opt-out clears everything.
+  const notificationsEnabled = useOnboarding((s) => s.notificationEnabled);
+  useEffect(() => {
+    syncScheduledNotifications(prediction, notificationsEnabled);
+  }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   useRetailTherapyTrigger(prediction);

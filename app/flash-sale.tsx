@@ -11,6 +11,7 @@ import {
   type SaleItem,
 } from '@/lib/retailTherapy/catalog';
 import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
+import { sendOrderNotification } from '@/lib/notifications';
 import { dash, palette } from '@/theme';
 import { fonts } from '@/theme/fonts';
 
@@ -63,6 +64,7 @@ export default function FlashSale() {
     });
     setBag([]);
     setPlaced(true);
+    sendOrderNotification();
   }
 
   // ── Confirmation state ─────────────────────────────────────────────────────
