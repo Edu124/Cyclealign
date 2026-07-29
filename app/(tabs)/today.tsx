@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { TabScreen } from '@/components/ui';
-import { ExitFlowOverlay } from '@/components/exit/ExitFlowOverlay';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { EnergyHeroCard } from '@/components/dashboard/EnergyHeroCard';
 import { CycleOverviewCard } from '@/components/dashboard/CycleOverviewCard';
@@ -12,6 +11,7 @@ import { TodayTasksCard } from '@/components/dashboard/TodayTasksCard';
 import { QuickLogCard } from '@/components/dashboard/QuickLogCard';
 import { LogInsightCard } from '@/components/dashboard/LogInsightCard';
 import { LifeStageCard } from '@/components/dashboard/LifeStageCard';
+import { PeriodCheckInModal } from '@/components/dashboard/PeriodCheckInModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
@@ -79,7 +79,6 @@ export default function Today() {
             <Text style={styles.emptyCtaText}>Set up my cycle</Text>
           </Pressable>
         </TabScreen>
-        <ExitFlowOverlay />
       </>
     );
   }
@@ -97,24 +96,6 @@ export default function Today() {
             onAvatarPress={() => router.push('/(tabs)/profile')}
           />
         </Animated.View>
-
-        {prediction.isOverdue && !overdueDismissed && (
-          <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.overdueBanner}>
-            <Text style={styles.overdueEmoji}>🌙</Text>
-            <View style={styles.overdueText}>
-              <Text style={styles.overdueTitle}>Looks like your period might be here</Text>
-              <Text style={styles.overdueSub}>Let us know so we can keep your phase tracking accurate for you.</Text>
-            </View>
-            <View style={styles.overdueActions}>
-              <Pressable style={styles.overdueYes} onPress={handleLogPeriodToday}>
-                <Text style={styles.overdueYesLabel}>Yes, log it</Text>
-              </Pressable>
-              <Pressable onPress={() => setOverdueDismissed(true)}>
-                <Text style={styles.overdueNo}>Not yet</Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        )}
 
         <Animated.View entering={FadeInDown.delay(80).duration(450)}>
           <EnergyHeroCard
@@ -192,7 +173,11 @@ export default function Today() {
         </Animated.View>
       </TabScreen>
 
-      <ExitFlowOverlay />
+      <PeriodCheckInModal
+        visible={prediction.isOverdue && !overdueDismissed}
+        onYes={handleLogPeriodToday}
+        onNotYet={() => setOverdueDismissed(true)}
+      />
     </>
   );
 }
@@ -210,30 +195,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   emptyCtaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
-
-  overdueBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: '#FDF4EE',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EDD9C8',
-    padding: 14,
-  },
-  overdueEmoji: { fontSize: 22, marginTop: 1 },
-  overdueText: { flex: 1 },
-  overdueTitle: { fontSize: 14, fontWeight: '700', color: dash.ink, marginBottom: 2 },
-  overdueSub: { fontSize: 12, color: dash.inkSoft, lineHeight: 17 },
-  overdueActions: { flexDirection: 'column', gap: 6, alignItems: 'flex-end', marginTop: 2 },
-  overdueYes: {
-    backgroundColor: '#B06070',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  overdueYesLabel: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  overdueNo: { fontSize: 12, color: dash.inkSoft },
 
   coachCard: {
     flexDirection: 'row',

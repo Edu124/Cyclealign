@@ -101,6 +101,8 @@ export interface BlogPost {
   accentColor: string;
   author: string;
   publishedAt: string;
+  /** Optional issue label, e.g. "02 · WORKPLACE & SYSTEMS". */
+  kicker?: string;
 }
 
 export interface DailyLog {

@@ -1,40 +1,23 @@
-import { supabase, isSupabaseConfigured } from './supabase';
-import type { BlogPost } from '@/types/models';
+-- Replace the placeholder welcome post with the six founder-authored articles.
+-- Run after 0004_blog_posts.sql. Adds an optional "kicker" issue label
+-- (e.g. "02 · WORKPLACE & SYSTEMS") shown above the title in-app.
 
-function mapRow(d: any): BlogPost {
-  return {
-    id: d.id,
-    title: d.title,
-    excerpt: d.excerpt,
-    body: d.body,
-    emoji: d.emoji,
-    accentColor: d.accent_color,
-    author: d.author,
-    publishedAt: d.published_at,
-    kicker: d.kicker ?? undefined,
-  };
-}
+ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS kicker text;
 
-// ── Example posts ─────────────────────────────────────────────────────────────
-// Shown in demo mode (no Supabase) and as a fallback while the real blog table
-// is still empty, so the Blog tab never looks abandoned.
+DELETE FROM blog_posts WHERE title = 'Welcome to the CycleAlign blog';
 
-export const EXAMPLE_POSTS: BlogPost[] = [
-  {
-    id: 'post-1',
-    title: 'Why Productivity Advice Often Fails Women',
-    excerpt: 'Every productivity book was written for a 24-hour hormonal cycle. Yours runs on 28 to 35 days — and that mismatch isn\'t your failure, it\'s a category error.',
-    body: `Every year, millions of women read the same productivity books, attend the same time-management workshops, and download the same habit-tracking apps - only to feel like they're the problem when the advice doesn't stick.
+INSERT INTO blog_posts (title, excerpt, body, emoji, accent_color, author, published_at, kicker) VALUES
+  ('Why Productivity Advice Often Fails Women', 'Every productivity book was written for a 24-hour hormonal cycle. Yours runs on 28 to 35 days — and that mismatch isn''t your failure, it''s a category error.', 'Every year, millions of women read the same productivity books, attend the same time-management workshops, and download the same habit-tracking apps - only to feel like they''re the problem when the advice doesn''t stick.
 
-They're not the problem. The advice is.
+They''re not the problem. The advice is.
 
 The 24-Hour Bias in Productivity Science
 
 Testosterone - the primary hormone driving the male energy cycle - operates on a 24-hour rhythm. It peaks in the morning, dips in the afternoon, and resets overnight. This is why every classic productivity book tells you to tackle deep work in the morning: eat the frog, do the most important thing first, protect your mornings.
 
-For men, this is biologically sound advice. For women, it's a gamble. Estrogen and progesterone - the two primary hormones governing the female experience - operate on a 28-to-35-day cycle. A woman's cognitive strengths, emotional bandwidth, physical energy, and decision-making capacity shift dramatically across four distinct phases every single month.
+For men, this is biologically sound advice. For women, it''s a gamble. Estrogen and progesterone - the two primary hormones governing the female experience - operate on a 28-to-35-day cycle. A woman''s cognitive strengths, emotional bandwidth, physical energy, and decision-making capacity shift dramatically across four distinct phases every single month.
 
-Mapping a 24-hour framework onto a 28-day hormonal reality isn't inefficiency. It's a category error.
+Mapping a 24-hour framework onto a 28-day hormonal reality isn''t inefficiency. It''s a category error.
 
 What the Research Actually Shows
 
@@ -48,7 +31,7 @@ During the luteal phase (days 15-28), progesterone elevates detail-orientation, 
 
 During menstruation (days 1-5), hormonal withdrawal creates an inward pull - a neurological state suited for reflection, visioning, and strategic planning.
 
-None of this is weakness. It is biology operating exactly as designed. The failure isn't the cycle - it's the complete absence of cycle awareness in how we structure work.
+None of this is weakness. It is biology operating exactly as designed. The failure isn''t the cycle - it''s the complete absence of cycle awareness in how we structure work.
 
 The Cost of Ignoring This
 
@@ -58,20 +41,10 @@ High-achieving women often describe this as running on fumes for two weeks every
 
 What Women Actually Need
 
-Women don't need to work harder. They don't need more discipline or better morning routines. They need frameworks built for their biology - systems that leverage cyclical strengths rather than overriding them.
+Women don''t need to work harder. They don''t need more discipline or better morning routines. They need frameworks built for their biology - systems that leverage cyclical strengths rather than overriding them.
 
-This is precisely what CycleALIGN is designed to do. CycleALIGN is a hormonal intelligence platform built for women in leadership. It maps your cognitive and emotional strengths across your menstrual cycle and helps you schedule work - meetings, creative sprints, strategic planning, recovery - in alignment with your biology, not against it.`,
-    emoji: '🧭',
-    accentColor: '#7FAA5A',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-07-29T09:00:00Z',
-    kicker: '01 · PRODUCTIVITY SCIENCE',
-  },
-  {
-    id: 'post-2',
-    title: 'The Hidden Cost of Ignoring Female Biology at Work',
-    excerpt: 'Burnout, attrition, and "confidence issues" often trace back to one unmeasured variable: cyclical biology nobody planned around.',
-    body: `When we talk about gender equity in the workplace, we rarely talk about biology. We discuss representation, pay gaps, leadership pipelines, and unconscious bias. These conversations matter enormously - but they miss something foundational.
+This is precisely what CycleALIGN is designed to do. CycleALIGN is a hormonal intelligence platform built for women in leadership. It maps your cognitive and emotional strengths across your menstrual cycle and helps you schedule work - meetings, creative sprints, strategic planning, recovery - in alignment with your biology, not against it.', '🧭', '#7FAA5A', 'Vinita Thakur', '2026-07-29T09:00:00Z', '01 · PRODUCTIVITY SCIENCE'),
+  ('The Hidden Cost of Ignoring Female Biology at Work', 'Burnout, attrition, and "confidence issues" often trace back to one unmeasured variable: cyclical biology nobody planned around.', 'When we talk about gender equity in the workplace, we rarely talk about biology. We discuss representation, pay gaps, leadership pipelines, and unconscious bias. These conversations matter enormously - but they miss something foundational.
 
 The female body is not a variation of the male body. It operates on different hormonal rhythms, different neurological cycles, and different physiological needs. And when organisations - and women themselves - ignore this reality, there is a cost. It shows up in performance reviews, resignation letters, therapy sessions, and sick days.
 
@@ -83,15 +56,15 @@ But because the cost is invisible and unspoken, it accumulates silently. Women i
 
 Three Hidden Costs at the Individual Level
 
-1. Cognitive Mismatch - When women schedule deep analytical work during phases when their hormonal profile supports collaboration - or vice versa - the result is cognitive friction. Work takes longer, errors increase, and the effort required for basic tasks doubles. This isn't incompetence. It's biology being ignored.
+1. Cognitive Mismatch - When women schedule deep analytical work during phases when their hormonal profile supports collaboration - or vice versa - the result is cognitive friction. Work takes longer, errors increase, and the effort required for basic tasks doubles. This isn''t incompetence. It''s biology being ignored.
 
-2. Decision Fatigue Amplification - Decision fatigue affects everyone, but for women, the luteal phase naturally elevates cortisol sensitivity. This means decision-heavy environments during this phase don't just feel harder - they are neurologically harder. Without awareness, high-achieving women in back-to-back decision roles during this phase experience accelerated depletion.
+2. Decision Fatigue Amplification - Decision fatigue affects everyone, but for women, the luteal phase naturally elevates cortisol sensitivity. This means decision-heavy environments during this phase don''t just feel harder - they are neurologically harder. Without awareness, high-achieving women in back-to-back decision roles during this phase experience accelerated depletion.
 
 3. Emotional Labour Mismanagement - The emotional bandwidth available to women shifts across their cycle. During the follicular phase, empathy and interpersonal attunement peak. During late luteal, the nervous system becomes more reactive. When women are unaware of these shifts, they either suppress legitimate biological signals or feel blindsided by their own responses - both of which generate significant internal cost.
 
 Three Hidden Costs at the Organisational Level
 
-1. Talent Attrition - Research consistently shows burnout is the primary driver of voluntary attrition among senior women. A significant portion of that burnout is hormonal in origin - not because women can't handle pressure, but because organisations structure pressure with no awareness of the cyclical demands already present in women's bodies.
+1. Talent Attrition - Research consistently shows burnout is the primary driver of voluntary attrition among senior women. A significant portion of that burnout is hormonal in origin - not because women can''t handle pressure, but because organisations structure pressure with no awareness of the cyclical demands already present in women''s bodies.
 
 2. Leadership Pipeline Leakage - Women often exit leadership tracks not at the entry level but at the moment of maximum contribution - mid-career, post-promotion, when demands intensify and biological load simultaneously peaks. The timing is not coincidental.
 
@@ -99,20 +72,10 @@ Three Hidden Costs at the Organisational Level
 
 The Alternative: Hormonal Intelligence at Work
 
-The solution is not to accommodate women's biology as a limitation. It is to leverage it as a strategic asset. Women who understand their cyclical strengths and schedule accordingly consistently report higher output, better decision quality, and dramatically reduced burnout - without working more hours.
+The solution is not to accommodate women''s biology as a limitation. It is to leverage it as a strategic asset. Women who understand their cyclical strengths and schedule accordingly consistently report higher output, better decision quality, and dramatically reduced burnout - without working more hours.
 
-CycleALIGN exists to make this possible at scale. By combining hormonal cycle data with scheduling intelligence, CycleALIGN helps women in leadership stop paying the invisible tax - and start operating at their biological best.`,
-    emoji: '🏢',
-    accentColor: '#C06A45',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-07-22T09:00:00Z',
-    kicker: '02 · WORKPLACE & SYSTEMS',
-  },
-  {
-    id: 'post-3',
-    title: "Cycle Tracking Isn't About Periods. It's About Performance.",
-    excerpt: 'Fertility apps show 10% of what cycle data can do. The other 90% is a four-phase map of your cognitive peaks and valleys.',
-    body: `When most people hear cycle tracking, they think of fertility apps, period predictions, and family planning. That framing, while legitimate, captures perhaps 10% of what menstrual cycle data can actually do for a woman's professional life.
+CycleALIGN exists to make this possible at scale. By combining hormonal cycle data with scheduling intelligence, CycleALIGN helps women in leadership stop paying the invisible tax - and start operating at their biological best.', '🏢', '#C06A45', 'Vinita Thakur', '2026-07-22T09:00:00Z', '02 · WORKPLACE & SYSTEMS'),
+  ('Cycle Tracking Isn''t About Periods. It''s About Performance.', 'Fertility apps show 10% of what cycle data can do. The other 90% is a four-phase map of your cognitive peaks and valleys.', 'When most people hear cycle tracking, they think of fertility apps, period predictions, and family planning. That framing, while legitimate, captures perhaps 10% of what menstrual cycle data can actually do for a woman''s professional life.
 
 At its core, cycle tracking is cognitive mapping. It is the practice of understanding which neurological and physiological resources are available to you on any given day - and making decisions accordingly.
 
@@ -130,7 +93,7 @@ Phase 4: Luteal (Days 18-28) - The Refinement Phase. Rising progesterone shifts 
 
 What Performance-Oriented Cycle Tracking Actually Looks Like
 
-It doesn't mean cancelling meetings when you're premenstrual. It means front-loading high-stakes presentations to your ovulatory window, scheduling creative team sessions in your follicular phase, blocking deep analytical work for early luteal, and protecting late luteal for lighter tasks and strategic reflection.
+It doesn''t mean cancelling meetings when you''re premenstrual. It means front-loading high-stakes presentations to your ovulatory window, scheduling creative team sessions in your follicular phase, blocking deep analytical work for early luteal, and protecting late luteal for lighter tasks and strategic reflection.
 
 Over three months of cycle-aware scheduling, most women report a noticeable shift: less cognitive drag, fewer bad weeks, and a significantly higher sense of control over their professional output.
 
@@ -138,28 +101,18 @@ Why This Belongs in the Boardroom, Not Just the Wellness Space
 
 Cycle awareness has been confined to wellness circles for too long. It belongs in strategic planning conversations, executive coaching, and organisational design.
 
-CycleALIGN is built on this premise. It is not a period tracker. It is a performance intelligence tool for women who lead - giving them the data and frameworks to schedule their professional lives in alignment with their biological strengths.`,
-    emoji: '⚡',
-    accentColor: '#EDA639',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-07-15T09:00:00Z',
-    kicker: '03 · PERFORMANCE SCIENCE',
-  },
-  {
-    id: 'post-4',
-    title: 'Decision Fatigue and the Menstrual Cycle',
-    excerpt: "The judges-and-parole study proved decision quality decays through the day. For women, it decays through the month too — and it's predictable.",
-    body: `In 2011, a landmark study on Israeli judges revealed that the quality of parole decisions dropped dramatically throughout the day - regardless of case merits. Early morning sessions favoured parole; late afternoon sessions denied it. The variable wasn't the prisoner. It was the judge's depleted decision-making energy.
+CycleALIGN is built on this premise. It is not a period tracker. It is a performance intelligence tool for women who lead - giving them the data and frameworks to schedule their professional lives in alignment with their biological strengths.', '⚡', '#EDA639', 'Vinita Thakur', '2026-07-15T09:00:00Z', '03 · PERFORMANCE SCIENCE'),
+  ('Decision Fatigue and the Menstrual Cycle', 'The judges-and-parole study proved decision quality decays through the day. For women, it decays through the month too — and it''s predictable.', 'In 2011, a landmark study on Israeli judges revealed that the quality of parole decisions dropped dramatically throughout the day - regardless of case merits. Early morning sessions favoured parole; late afternoon sessions denied it. The variable wasn''t the prisoner. It was the judge''s depleted decision-making energy.
 
 Decision fatigue is real, well-documented, and consequential. But there is a dimension that has never made it into the mainstream productivity literature: for women, the severity of decision fatigue is not just a daily variable - it is a monthly one.
 
 How the Menstrual Cycle Affects Decision-Making Capacity
 
-The neurochemical underpinnings of decision-making - dopamine, serotonin, cortisol, GABA - are all modulated by estrogen and progesterone. This means a woman's capacity to make high-quality decisions is not static across her cycle. It has peaks, plateaus, and valleys that are entirely predictable - if you know what to look for.
+The neurochemical underpinnings of decision-making - dopamine, serotonin, cortisol, GABA - are all modulated by estrogen and progesterone. This means a woman''s capacity to make high-quality decisions is not static across her cycle. It has peaks, plateaus, and valleys that are entirely predictable - if you know what to look for.
 
 High-Decision Capacity Windows
 
-During the follicular phase and ovulation, rising estrogen elevates dopamine activity in the prefrontal cortex - the brain's decision-making centre. Risk tolerance increases, pattern recognition sharpens, and the ability to evaluate multiple options simultaneously improves. These are neurologically favourable conditions for complex, high-stakes decisions.
+During the follicular phase and ovulation, rising estrogen elevates dopamine activity in the prefrontal cortex - the brain''s decision-making centre. Risk tolerance increases, pattern recognition sharpens, and the ability to evaluate multiple options simultaneously improves. These are neurologically favourable conditions for complex, high-stakes decisions.
 
 Reduced-Decision Capacity Windows
 
@@ -167,13 +120,13 @@ In the late luteal phase - the 7 to 10 days before menstruation - progesterone d
 
 The Hidden Decision Debt
 
-When women in leadership consistently make high-stakes decisions without awareness of their cyclical decision-capacity, they accumulate decision debt - a mounting neurological deficit that doesn't show up in quarterly reports but manifests as exhaustion, anxiety, poor sleep, and eventually, burnout.
+When women in leadership consistently make high-stakes decisions without awareness of their cyclical decision-capacity, they accumulate decision debt - a mounting neurological deficit that doesn''t show up in quarterly reports but manifests as exhaustion, anxiety, poor sleep, and eventually, burnout.
 
 This is particularly acute in roles requiring constant decision-making: founders, executives, fund managers, and policy leaders. These roles have no cyclical accommodation built in - and the women who hold them often have no awareness that their decision-fatigue spikes are biologically predictable, not personally inadequate.
 
 Smarter Decision Scheduling: A Practical Framework
 
-Audit your decision load. For one month, track not just your cycle but your decision volume - how many significant decisions you're making daily and weekly.
+Audit your decision load. For one month, track not just your cycle but your decision volume - how many significant decisions you''re making daily and weekly.
 
 Identify your peak windows. Most women find their highest-quality decision-making occurs between days 10-17. Protect these windows for the decisions that matter most.
 
@@ -185,30 +138,20 @@ CycleALIGN: Decision Intelligence for Women Leaders
 
 CycleALIGN integrates cycle phase awareness directly into scheduling and workflow planning. Instead of white-knuckling through a late luteal decision sprint and wondering why it feels impossible, CycleALIGN users know - and plan accordingly.
 
-The result is not just less fatigue. It is better decisions, made at the right time, with the right neurological resources available.`,
-    emoji: '⚖️',
-    accentColor: '#D95F52',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-07-08T09:00:00Z',
-    kicker: '04 · DECISION SCIENCE',
-  },
-  {
-    id: 'post-5',
-    title: "The Future of Women's Leadership Is Biological Intelligence",
-    excerpt: 'Adding more women to the pipeline was never the whole fix. The next edge is leveraging what female biology already offers.',
-    body: `For decades, the dominant narrative around women in leadership has been additive: add more women to the pipeline, add mentorship programs, add unconscious bias training, add flexible working policies. All of these interventions have value. But they share a common limitation - they are designed to help women succeed within systems that were never built with female biology in mind.
+The result is not just less fatigue. It is better decisions, made at the right time, with the right neurological resources available.', '⚖️', '#D95F52', 'Vinita Thakur', '2026-07-08T09:00:00Z', '04 · DECISION SCIENCE'),
+  ('The Future of Women''s Leadership Is Biological Intelligence', 'Adding more women to the pipeline was never the whole fix. The next edge is leveraging what female biology already offers.', 'For decades, the dominant narrative around women in leadership has been additive: add more women to the pipeline, add mentorship programs, add unconscious bias training, add flexible working policies. All of these interventions have value. But they share a common limitation - they are designed to help women succeed within systems that were never built with female biology in mind.
 
-The next evolution of women's leadership doesn't just ask organisations to accommodate women. It asks women - and the systems around them - to understand and leverage what female biology actually offers.
+The next evolution of women''s leadership doesn''t just ask organisations to accommodate women. It asks women - and the systems around them - to understand and leverage what female biology actually offers.
 
 Why Leaning In Has a Biological Ceiling
 
-The lean-in era told women that ambition, resilience, and sheer effort were the variables to optimise. What it didn't account for is that sustained high-performance under biological misalignment has a ceiling. You can push through it for months. Some women push through it for years. But the body keeps score.
+The lean-in era told women that ambition, resilience, and sheer effort were the variables to optimise. What it didn''t account for is that sustained high-performance under biological misalignment has a ceiling. You can push through it for months. Some women push through it for years. But the body keeps score.
 
-The data on senior women's burnout, mental health, and voluntary attrition tells this story clearly: women are not leaving leadership because they lack ambition. They are leaving because the cost of sustaining performance in biologically unintelligent systems becomes unbearable.
+The data on senior women''s burnout, mental health, and voluntary attrition tells this story clearly: women are not leaving leadership because they lack ambition. They are leaving because the cost of sustaining performance in biologically unintelligent systems becomes unbearable.
 
 What Biological Intelligence Actually Means
 
-Biological intelligence, in the context of women's leadership, refers to the capacity to understand, leverage, and communicate one's own hormonal physiology as a strategic asset. It includes:
+Biological intelligence, in the context of women''s leadership, refers to the capacity to understand, leverage, and communicate one''s own hormonal physiology as a strategic asset. It includes:
 
 Knowing which cognitive strengths are available during each phase of the menstrual cycle. Scheduling high-stakes work to align with biological performance peaks. Understanding how hormonal shifts affect communication style, risk tolerance, and emotional bandwidth. Using cyclical data to predict and prevent burnout before it compounds. Building teams and workflows that accommodate natural rhythms rather than suppressing them.
 
@@ -220,7 +163,7 @@ Cyclical Communication Advantage - Women who time high-stakes communication to t
 
 Strategic Planning Precision - The reflective clarity of the menstrual phase and the analytical depth of the early luteal phase are ideal for strategic planning work. Women who use these windows intentionally report clearer strategic thinking and better-quality decisions.
 
-Sustainable High Performance - Women who cycle-sync their workloads report significantly lower rates of burnout and sustained performance over longer time horizons - not because they're working less, but because they're working with their biology rather than against it.
+Sustainable High Performance - Women who cycle-sync their workloads report significantly lower rates of burnout and sustained performance over longer time horizons - not because they''re working less, but because they''re working with their biology rather than against it.
 
 The Role of Technology: CycleALIGN
 
@@ -228,18 +171,8 @@ Translating biological intelligence into practical leadership strategy requires 
 
 CycleALIGN is a hormonal intelligence platform designed specifically for women in leadership. It takes your cycle data and converts it into actionable scheduling intelligence - telling you not just where you are in your cycle but what that means for your work today, this week, and this month.
 
-It is not a period app. It is a leadership performance tool built on the science of female hormonal intelligence.`,
-    emoji: '👑',
-    accentColor: '#C9A96E',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-07-01T09:00:00Z',
-    kicker: '05 · LEADERSHIP FUTURE',
-  },
-  {
-    id: 'post-6',
-    title: 'Can Hormones Influence Career Performance?',
-    excerpt: "Short answer: yes, profoundly. Here's the neuroscience behind why your cycle shapes motivation, mood, and decision-making at work.",
-    body: `Short answer: yes, profoundly. Longer answer: the mechanisms by which hormones shape cognitive performance, interpersonal effectiveness, and emotional regulation are well-established in neuroscience - but almost entirely absent from workplace performance conversations.
+It is not a period app. It is a leadership performance tool built on the science of female hormonal intelligence.', '👑', '#C9A96E', 'Vinita Thakur', '2026-07-01T09:00:00Z', '05 · LEADERSHIP FUTURE'),
+  ('Can Hormones Influence Career Performance?', 'Short answer: yes, profoundly. Here''s the neuroscience behind why your cycle shapes motivation, mood, and decision-making at work.', 'Short answer: yes, profoundly. Longer answer: the mechanisms by which hormones shape cognitive performance, interpersonal effectiveness, and emotional regulation are well-established in neuroscience - but almost entirely absent from workplace performance conversations.
 
 This article presents the science in plain language, because the gap between what research shows and what organisations know is both striking and consequential.
 
@@ -263,36 +196,6 @@ This is not a disadvantage. It is only a disadvantage when the landscape is igno
 
 The Evidence Gap - and Why It Matters
 
-The research on hormones and cognitive performance has existed for decades. What hasn't existed - until now - is the translation layer: a platform that takes this science and converts it into actionable, daily career guidance for women.
+The research on hormones and cognitive performance has existed for decades. What hasn''t existed - until now - is the translation layer: a platform that takes this science and converts it into actionable, daily career guidance for women.
 
-CycleALIGN is that translation layer. Built on peer-reviewed research in hormonal neuroscience, CycleALIGN maps each user's cycle phases and delivers personalised performance insights.`,
-    emoji: '🧬',
-    accentColor: '#5C8B74',
-    author: 'Vinita Thakur',
-    publishedAt: '2026-06-24T09:00:00Z',
-    kicker: '06 · HORMONE SCIENCE',
-  },
-];
-
-export async function fetchBlogPosts(): Promise<BlogPost[]> {
-  if (!isSupabaseConfigured) return EXAMPLE_POSTS;
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('is_published', true)
-    .order('published_at', { ascending: false });
-  const rows = (data ?? []).map(mapRow);
-  return rows.length > 0 ? rows : EXAMPLE_POSTS;
-}
-
-export async function fetchBlogPost(id: string): Promise<BlogPost | null> {
-  const example = EXAMPLE_POSTS.find((p) => p.id === id);
-  if (example) return example;
-  if (!isSupabaseConfigured) return null;
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  return data ? mapRow(data) : null;
-}
+CycleALIGN is that translation layer. Built on peer-reviewed research in hormonal neuroscience, CycleALIGN maps each user''s cycle phases and delivers personalised performance insights.', '🧬', '#5C8B74', 'Vinita Thakur', '2026-06-24T09:00:00Z', '06 · HORMONE SCIENCE');

@@ -138,3 +138,35 @@ export function sendOrderNotification() {
     'Someone is treating herself — your feel-good order is being prepared!',
   );
 }
+
+/**
+ * iOS has no hook for "show UI at the instant of closing" — by the time the
+ * app is told it's backgrounding, it can no longer present anything. A local
+ * notification fired a few seconds later is the closest real equivalent:
+ * it's triggered because they closed the app, not the next time they open
+ * it. Returns the notification id so the caller can cancel it if the user
+ * comes straight back before it fires.
+ */
+export async function scheduleReferralNudge(): Promise<string | null> {
+  if (!isSupported) return null;
+  try {
+    const ok = await ensureNotificationPermission();
+    if (!ok) return null;
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Miss you already 🌙',
+        body: 'Refer 3 friends and get a month of CycleAlign free.',
+      },
+      trigger: { type: SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 8 },
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function cancelReferralNudge(id: string): Promise<void> {
+  if (!isSupported) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(id);
+  } catch {}
+}
