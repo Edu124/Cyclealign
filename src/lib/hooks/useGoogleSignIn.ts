@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { exchangeCodeAsync } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { AuthResult } from '@/lib/auth';
+import { decodeJwtClaims, nameFromMetadata, type AuthResult } from '@/lib/auth';
 
 // The auth hooks throw at mount when the current platform's client ID is
 // undefined; the placeholder keeps screens alive (real config gates the flow).
@@ -93,12 +93,18 @@ export function useGoogleSignIn() {
 }
 
 async function exchangeWithSupabase(idToken: string): Promise<AuthResult> {
+  // Read the name straight off Google's own token — Supabase's mirrored
+  // user_metadata proved unreliable (stale on repeat sign-ins, or missing
+  // for accounts created before this field was read at all).
+  const claims = decodeJwtClaims(idToken);
+  const tokenName = typeof claims?.name === 'string' ? claims.name.trim() : '';
+
   // Nonce is not forwarded — the Supabase Google provider runs with
   // "Skip nonce checks" enabled.
-  const { error } = await supabase.auth.signInWithIdToken({
+  const { data, error } = await supabase.auth.signInWithIdToken({
     provider: 'google',
     token: idToken,
   });
   if (error) return { ok: false, error: `${error.message} [G5]` };
-  return { ok: true };
+  return { ok: true, name: tokenName || nameFromMetadata(data.user?.user_metadata) };
 }

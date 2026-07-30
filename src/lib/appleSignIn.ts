@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { signInWithProvider, type AuthResult } from '@/lib/auth';
+import { nameFromMetadata, signInWithProvider, type AuthResult } from '@/lib/auth';
 
 /**
  * Native Sign in with Apple: the system Face ID sheet on iOS, exchanged with
@@ -34,12 +34,19 @@ export async function signInWithApple(): Promise<AuthResult> {
       return { ok: false, error: 'Apple did not return a token. Please try again.' };
     }
 
-    const { error } = await supabase.auth.signInWithIdToken({
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
       token: credential.identityToken,
     });
     if (error) return { ok: false, error: error.message };
-    return { ok: true };
+
+    // Apple only hands back fullName on the very first authorization ever —
+    // later sign-ins omit it, so fall back to whatever Supabase captured then.
+    const appleName = [credential.fullName?.givenName, credential.fullName?.familyName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return { ok: true, name: appleName || nameFromMetadata(data.user?.user_metadata) };
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string };
     if (e?.code === 'ERR_REQUEST_CANCELED') {

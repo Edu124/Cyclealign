@@ -6,6 +6,8 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 export interface AuthResult {
   ok: boolean;
   error?: string;
+  /** Display name the provider handed back (Google/Apple), when available. */
+  name?: string;
 }
 
 export async function signUpWithEmail(
@@ -87,9 +89,60 @@ async function startOAuthFlow(provider: 'google' | 'apple'): Promise<AuthResult>
     return { ok: false, error: 'Sign-in did not complete. Please try again.' };
   }
 
-  const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: sessionData, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
   if (exErr) return { ok: false, error: exErr.message };
-  return { ok: true };
+  return { ok: true, name: nameFromMetadata(sessionData.user?.user_metadata) };
+}
+
+/** Google/Apple populate this differently — check every field either provider uses. */
+export function nameFromMetadata(meta: Record<string, unknown> | undefined): string | undefined {
+  const name = meta?.full_name || meta?.name || meta?.given_name;
+  return typeof name === 'string' && name.trim() ? name.trim() : undefined;
+}
+
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function base64UrlDecode(input: string): string {
+  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
+  let output = '';
+  let buffer = 0;
+  let bits = 0;
+  for (const char of base64) {
+    const value = BASE64_CHARS.indexOf(char);
+    if (value === -1) continue;
+    buffer = (buffer << 6) | value;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      output += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+  return output;
+}
+
+/**
+ * Decode a JWT's payload claims without verifying the signature — safe here
+ * because Supabase independently verifies the same token server-side; this
+ * is only used to read display fields (name, picture) directly off the
+ * token, rather than trusting how/when Supabase mirrors them into
+ * user_metadata (which turned out to lag or omit them for Google).
+ */
+export function decodeJwtClaims(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const bytes = base64UrlDecode(payload);
+    // Re-encode as %XX escapes so decodeURIComponent can restore UTF-8
+    // (names routinely contain non-ASCII characters).
+    const utf8 = decodeURIComponent(
+      Array.from(bytes)
+        .map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
+        .join(''),
+    );
+    return JSON.parse(utf8);
+  } catch {
+    return null;
+  }
 }
 
 export async function signOut(): Promise<void> {

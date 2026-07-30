@@ -12,6 +12,7 @@ import { restoreFromCloud } from '@/lib/restoreSession';
 import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { useSettings } from '@/lib/stores/useSettings';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { useOnboarding } from '@/lib/stores/useOnboarding';
 
 export default function SignIn() {
   const [email, setEmail]       = useState('');
@@ -53,6 +54,10 @@ export default function SignIn() {
     if (!res.ok) {
       Alert.alert('Sign-in', res.error ?? 'Failed');
     } else {
+      // A brand-new account routes into onboarding below, which pre-fills
+      // its name field from this draft — without it, account.tsx never
+      // learns what Google/Apple returned and falls back to "Friend".
+      if (res.name) useOnboarding.getState().set({ name: res.name });
       setLoading(true);
       await afterSignIn();
       setLoading(false);

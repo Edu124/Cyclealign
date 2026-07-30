@@ -15,7 +15,7 @@ import { Logo3D } from '@/components/logo/Logo3D';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSession } from '@/lib/stores/useSession';
-import { signUpWithEmail } from '@/lib/auth';
+import { nameFromMetadata, signUpWithEmail } from '@/lib/auth';
 import { signInWithApple } from '@/lib/appleSignIn';
 import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { sendWelcomeNotification } from '@/lib/notifications';
@@ -71,11 +71,18 @@ export default function AccountStep() {
     return Object.keys(e).length === 0;
   }
 
-  function buildProfileAndLog(): { profile: Profile; log: CycleLog } {
+  function buildProfileAndLog(nameOverride?: string): { profile: Profile; log: CycleLog } {
     const id = `local-${Date.now()}`;
+    // Google/Apple sign-in can also land here via the "Log in" screen or a
+    // web OAuth redirect — neither of those call sites has a name to pass
+    // as an override, so fall back to whatever Supabase captured on the
+    // session itself before defaulting to the typed field / "Friend".
+    const sessionName = nameFromMetadata(
+      session?.user?.user_metadata as Record<string, unknown> | undefined,
+    );
     const profile: Profile = {
       id,
-      name:           name.trim() || 'Friend',
+      name:           (nameOverride ?? sessionName ?? name).trim() || 'Friend',
       email:          email.trim() || undefined,
       gender:         'female',
       birthDate:      draft.birthDate ?? '',
@@ -143,7 +150,7 @@ export default function AccountStep() {
     setLoading(false);
     if (!res.ok) { notify(res.error ?? 'Sign-in failed'); return; }
     completedRef.current = true;
-    const { profile, log } = buildProfileAndLog();
+    const { profile, log } = buildProfileAndLog(res.name);
     saveLocally(profile, log);
     await syncToSupabase(profile, log);
     sendWelcomeNotification(profile.name);
