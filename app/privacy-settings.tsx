@@ -1,4 +1,4 @@
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,6 +7,7 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { useCalendar } from '@/lib/stores/useCalendar';
 import { signOut } from '@/lib/auth';
+import { deleteAccountData } from '@/lib/sync';
 import { dash, palette, spacing } from '@/theme';
 
 type RadioOption = { value: SensitivityFilter; label: string; desc: string };
@@ -35,17 +36,26 @@ export default function PrivacySettings() {
   const resetOnboarding = useOnboarding((s) => s.reset);
   const disconnect = useCalendar((s) => s.disconnect);
 
-  async function handleDeleteData() {
-    const msg =
-      'Delete ALL data? This permanently removes your profile, cycle history and tasks. This cannot be undone.';
-    const confirmed =
-      Platform.OS === 'web' ? window.confirm(msg) : false;
-    if (!confirmed) return;
-    reset();
-    resetOnboarding();
-    disconnect();
-    await signOut();
-    router.replace('/');
+  function handleDeleteData() {
+    Alert.alert(
+      'Delete all data?',
+      'This permanently removes your profile, cycle history and tasks. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete permanently',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteAccountData().catch(() => {});
+            reset();
+            resetOnboarding();
+            disconnect();
+            await signOut();
+            router.replace('/');
+          },
+        },
+      ],
+    );
   }
 
   return (

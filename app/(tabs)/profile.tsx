@@ -10,7 +10,7 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useLifeStage } from '@/lib/hooks/useLifeStage';
-import { pushProfile } from '@/lib/sync';
+import { deleteAccountData, pushProfile } from '@/lib/sync';
 import { signOut } from '@/lib/auth';
 
 const PHASE_LABELS: Record<string, string> = {
@@ -90,6 +90,7 @@ export default function Profile() {
           text: 'Delete permanently',
           style: 'destructive',
           onPress: async () => {
+            await deleteAccountData().catch(() => {});
             await signOut();
             useAppStore.getState().reset();
             router.replace('/onboarding/welcome');
@@ -313,6 +314,11 @@ export default function Profile() {
 
       {/* Footer */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
+        <Text style={styles.healthDisclaimer}>
+          CycleAlign offers general wellness guidance and is not a substitute for professional
+          medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider
+          with any questions about a medical condition.
+        </Text>
         <Text style={styles.version}>CycleAlign v{version} · {codeStamp}</Text>
         <Text style={styles.copyright}>© 2026 CycleAlign · made with 💛 for the women, by the women</Text>
       </Animated.View>
@@ -413,6 +419,14 @@ const styles = StyleSheet.create({
   signOutText: { fontSize: 15, fontWeight: '600', color: palette.danger },
 
   footer: { alignItems: 'center', gap: 4, paddingTop: spacing.sm },
+  healthDisclaimer: {
+    fontSize: 11,
+    color: palette.muted,
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: spacing.lg,
+    marginBottom: 8,
+  },
   version: { fontSize: 13, color: palette.muted },
   copyright: { fontSize: 12, color: palette.muted },
 

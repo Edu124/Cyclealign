@@ -47,6 +47,25 @@ export async function pushDailyLog(log: DailyLog): Promise<void> {
   }, { onConflict: 'user_id,date_iso' });
 }
 
+// ── Delete (account closure) ────────────────────────────────────────────────────
+
+/**
+ * Removes the signed-in user's rows from every table the client has a
+ * delete policy for (cycle_logs, daily_logs, profiles). The subscriptions
+ * row and the auth.users record itself are service-role-only and outlive
+ * this — full account closure additionally needs a support request, which
+ * is why the deletion page tells users that.
+ */
+export async function deleteAccountData(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from('cycle_logs').delete().eq('user_id', user.id);
+  await supabase.from('daily_logs').delete().eq('user_id', user.id);
+  await supabase.from('profiles').delete().eq('id', user.id);
+}
+
 // ── Pull (cloud → local) ──────────────────────────────────────────────────────
 
 export async function pullState(): Promise<{
