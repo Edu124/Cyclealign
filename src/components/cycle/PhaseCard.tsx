@@ -4,6 +4,8 @@ import { palette, radius, spacing } from '@/theme';
 import { PhaseInfo } from '@/types/models';
 import { tipsForPhase } from '@/lib/prediction/tips';
 import { PHASE_STRATEGY } from '@/lib/intelligence/framework';
+import { PhaseActivityGrid } from '@/components/cycle/PhaseActivityGrid';
+import { WorkItemGrid } from '@/components/cycle/WorkItemGrid';
 
 if (
   Platform.OS === 'android' &&
@@ -19,9 +21,18 @@ interface Props {
   defaultExpanded?: boolean;
 }
 
+type Tab = 'work' | 'wellbeing' | 'move';
+
+const TABS: { key: Tab; label: string; emoji: string }[] = [
+  { key: 'work', label: 'At Work', emoji: '💼' },
+  { key: 'wellbeing', label: 'Wellbeing', emoji: '🌿' },
+  { key: 'move', label: 'Move', emoji: '🏃' },
+];
+
 /** Expandable card describing a single phase with its rule-based tips. */
 export function PhaseCard({ phase, color, active, defaultExpanded }: Props) {
   const [expanded, setExpanded] = useState(!!defaultExpanded);
+  const [tab, setTab] = useState<Tab>('work');
   const tips = tipsForPhase(phase.key);
   const strategy = PHASE_STRATEGY[phase.key];
 
@@ -29,6 +40,16 @@ export function PhaseCard({ phase, color, active, defaultExpanded }: Props) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded((e) => !e);
   };
+
+  function selectTab(t: Tab) {
+    return (e: { stopPropagation: () => void }) => {
+      // Tab pills live inside the card's own onPress={toggle} — without
+      // this, switching tabs would also collapse the whole card.
+      e.stopPropagation();
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setTab(t);
+    };
+  }
 
   return (
     <Pressable
@@ -58,38 +79,52 @@ export function PhaseCard({ phase, color, active, defaultExpanded }: Props) {
 
       {expanded && (
         <View style={styles.body}>
-          {/* Leadership strategy — the core intelligence */}
-          <View style={[styles.strategyBox, { backgroundColor: `${color}14` }]}>
-            <Text style={[styles.strategyTheme, { color }]}>
-              AT WORK · {strategy.theme.toUpperCase()}
-            </Text>
-            <Text style={styles.strategySummary}>{strategy.summary}</Text>
-            <View style={styles.strategyCols}>
-              <View style={styles.strategyCol}>
-                <Text style={[styles.colLabel, { color: palette.lavenderDeep }]}>
-                  LEAN IN
-                </Text>
-                {strategy.bestFor.map((b) => (
-                  <Text key={b} style={styles.colItem}>• {b}</Text>
-                ))}
-              </View>
-              <View style={styles.strategyCol}>
-                <Text style={[styles.colLabel, { color: palette.roseDeep }]}>
-                  GO EASY
-                </Text>
-                {strategy.goEasyOn.map((g) => (
-                  <Text key={g} style={styles.colItem}>• {g}</Text>
-                ))}
-              </View>
-            </View>
+          <View style={styles.tabBar}>
+            {TABS.map((t) => {
+              const on = tab === t.key;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={selectTab(t.key)}
+                  style={[styles.tabBtn, on && { backgroundColor: color }]}
+                >
+                  <Text style={[styles.tabBtnText, on && styles.tabBtnTextOn]}>
+                    {t.emoji} {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
-          <Text style={styles.wellnessLabel}>WELLBEING</Text>
-          <Text style={styles.summary}>{tips.summary}</Text>
-          <TipRow label="Nourish" value={tips.diet} />
-          <TipRow label="Mood" value={tips.mood} />
-          <TipRow label="Energy" value={tips.energy} />
-          <TipRow label="Move" value={tips.movement} />
+          {tab === 'work' && (
+            <View style={[styles.strategyBox, { backgroundColor: `${color}14` }]}>
+              <Text style={[styles.strategyTheme, { color }]}>
+                {strategy.theme.toUpperCase()}
+              </Text>
+              <Text style={styles.strategySummary}>{strategy.summary}</Text>
+
+              <Text style={[styles.colLabel, { color: palette.lavenderDeep, marginTop: spacing.sm }]}>
+                LEAN IN
+              </Text>
+              <WorkItemGrid items={strategy.bestFor} accent={palette.lavenderDeep} />
+
+              <Text style={[styles.colLabel, { color: palette.roseDeep, marginTop: spacing.sm }]}>
+                GO EASY
+              </Text>
+              <WorkItemGrid items={strategy.goEasyOn} accent={palette.roseDeep} />
+            </View>
+          )}
+
+          {tab === 'wellbeing' && (
+            <View style={styles.wellbeingWrap}>
+              <Text style={styles.summary}>{tips.summary}</Text>
+              <TipRow label="Nourish" value={tips.diet} />
+              <TipRow label="Mood" value={tips.mood} />
+              <TipRow label="Energy" value={tips.energy} />
+            </View>
+          )}
+
+          {tab === 'move' && <PhaseActivityGrid phaseKey={phase.key} color={color} />}
         </View>
       )}
     </Pressable>
@@ -138,6 +173,16 @@ const styles = StyleSheet.create({
     borderTopColor: palette.line,
     paddingTop: spacing.lg,
   },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F0EBE5',
+    borderRadius: 12,
+    padding: 3,
+    gap: 2,
+  },
+  tabBtn: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
+  tabBtnText: { fontSize: 12, fontWeight: '700', color: palette.inkSoft },
+  tabBtnTextOn: { color: '#fff' },
   summary: { fontSize: 14, lineHeight: 21, color: palette.inkSoft },
   strategyBox: {
     borderRadius: radius.md,
@@ -146,17 +191,8 @@ const styles = StyleSheet.create({
   },
   strategyTheme: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   strategySummary: { fontSize: 14, lineHeight: 21, color: palette.ink },
-  strategyCols: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
-  strategyCol: { flex: 1, gap: 3 },
-  colLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
-  colItem: { fontSize: 13, lineHeight: 18, color: palette.inkSoft },
-  wellnessLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: palette.muted,
-    marginTop: spacing.sm,
-  },
+  colLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 6 },
+  wellbeingWrap: { gap: spacing.md },
   tipRow: { gap: 2 },
   tipLabel: {
     fontSize: 11,

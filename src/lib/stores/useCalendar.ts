@@ -40,9 +40,18 @@ interface CalendarState {
   /** 'demo' | 'google' | 'apple' | 'outlook' | null */
   providerLabel: string | null;
   googleAccessToken: string | null;
+  /**
+   * Google access tokens expire after ~1 hour. Without a refresh token,
+   * every re-sync after that silently fails forever (only a full
+   * disconnect/reconnect gets a working token again) — this is what lets
+   * refreshEvents() mint a new access token instead.
+   */
+  googleRefreshToken: string | null;
   events: CalendarEvent[];
   /** Connect with real Google Calendar data. */
-  connectGoogle: (accessToken: string, events: CalendarEvent[]) => void;
+  connectGoogle: (accessToken: string, events: CalendarEvent[], refreshToken?: string | null) => void;
+  /** Swap in a freshly minted access token without resetting events/refresh token. */
+  updateGoogleAccessToken: (accessToken: string) => void;
   /** Connect with real on-device Apple Calendar (EventKit) data. */
   connectAppleCalendar: (events: CalendarEvent[]) => void;
   /** Connect with seeded demo data (Outlook / sample, or Apple on non-iOS). */
@@ -61,22 +70,35 @@ export const useCalendar = create<CalendarState>()(
       connected: false,
       providerLabel: null,
       googleAccessToken: null,
+      googleRefreshToken: null,
       events: [],
 
-      connectGoogle: (accessToken, events) =>
-        set({ connected: true, providerLabel: 'Google Calendar', googleAccessToken: accessToken, events }),
+      connectGoogle: (accessToken, events, refreshToken) =>
+        set((s) => ({
+          connected: true,
+          providerLabel: 'Google Calendar',
+          googleAccessToken: accessToken,
+          // A reconnect may not always return a fresh refresh token (Google
+          // only issues one reliably on first consent) — keep the existing
+          // one rather than wiping it out with undefined.
+          googleRefreshToken: refreshToken ?? s.googleRefreshToken,
+          events,
+        })),
+
+      updateGoogleAccessToken: (accessToken) =>
+        set({ googleAccessToken: accessToken }),
 
       connectAppleCalendar: (events) =>
-        set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, events }),
+        set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, googleRefreshToken: null, events }),
 
       connectDemo: (label = 'Calendar') =>
-        set({ connected: true, providerLabel: label, googleAccessToken: null, events: seedEvents() }),
+        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, events: seedEvents() }),
 
       connect: () =>
-        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, events: seedEvents() }),
+        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, events: seedEvents() }),
 
       disconnect: () =>
-        set({ connected: false, providerLabel: null, googleAccessToken: null, events: [] }),
+        set({ connected: false, providerLabel: null, googleAccessToken: null, googleRefreshToken: null, events: [] }),
 
       addEvent: (e) =>
         set((s) => ({
@@ -96,6 +118,7 @@ export const useCalendar = create<CalendarState>()(
         connected: s.connected,
         providerLabel: s.providerLabel,
         googleAccessToken: s.googleAccessToken,
+        googleRefreshToken: s.googleRefreshToken,
         events: s.events,
       }),
     },

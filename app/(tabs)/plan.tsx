@@ -16,7 +16,7 @@ import { useCalendar, type CalendarEvent } from '@/lib/stores/useCalendar';
 import { useTasks } from '@/lib/stores/useTasks';
 import { TASK_SYNC_CATEGORIES } from '@/lib/intelligence/taskScore';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
-import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured } from '@/lib/googleCalendar';
+import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured, refreshGoogleAccessToken } from '@/lib/googleCalendar';
 import { fetchAppleCalendarEvents, isAppleCalendarSupported } from '@/lib/appleCalendar';
 import { monthPlan } from '@/lib/intelligence/schedule';
 import type { RecommendedWindow } from '@/lib/intelligence/schedule';
@@ -74,7 +74,19 @@ export default function Plan() {
       const token = state.googleAccessToken;
       fetchGoogleCalendarEvents(token)
         .then((evts) => useCalendar.getState().connectGoogle(token, evts))
-        .catch(() => {});
+        .catch(async () => {
+          // The access token expires after ~1hr — this is the expected way
+          // that first attempt fails, not an edge case. Mint a fresh one
+          // from the refresh token and retry once before giving up.
+          const refreshToken = useCalendar.getState().googleRefreshToken;
+          if (!refreshToken) return;
+          const freshToken = await refreshGoogleAccessToken(refreshToken);
+          if (!freshToken) return;
+          useCalendar.getState().updateGoogleAccessToken(freshToken);
+          fetchGoogleCalendarEvents(freshToken)
+            .then((evts) => useCalendar.getState().connectGoogle(freshToken, evts))
+            .catch(() => {});
+        });
     }
   }, []);
 
@@ -117,20 +129,25 @@ export default function Plan() {
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? PLACEHOLDER_ID,
     iosClientId:    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? PLACEHOLDER_ID,
     scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    // access_type=offline is what makes Google issue a refresh token instead
+    // of just a ~1hr access token; prompt=consent forces that even on a
+    // reconnect (Google only auto-issues one on the very first-ever grant).
+    // Without this, sync silently stops working an hour after connecting.
+    extraParams: { access_type: 'offline', prompt: 'consent' },
   });
 
   useEffect(() => {
     if (googleResponse?.type !== 'success') return;
     const token = googleResponse.authentication?.accessToken;
     if (!token) return;
-    handleGoogleConnected(token);
+    handleGoogleConnected(token, googleResponse.authentication?.refreshToken ?? null);
   }, [googleResponse]);
 
-  async function handleGoogleConnected(accessToken: string) {
+  async function handleGoogleConnected(accessToken: string, refreshToken: string | null) {
     setCalendarLoading(true);
     try {
       const calEvents = await fetchGoogleCalendarEvents(accessToken);
-      connectGoogle(accessToken, calEvents);
+      connectGoogle(accessToken, calEvents, refreshToken);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       Alert.alert('Sync failed', `Could not load your Google Calendar events.\n\n${msg}`);

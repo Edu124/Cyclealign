@@ -142,6 +142,45 @@ export async function fetchGoogleCalendarEvents(
   return (data.items ?? []).filter((e) => !isNoiseEvent(e)).map(mapGoogleEvent);
 }
 
+const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+
+/**
+ * Mint a fresh access token from a stored refresh token. Returns null (never
+ * throws) so callers can fall back to leaving the stale token in place —
+ * e.g. if the user revoked access from Google's side, refresh legitimately
+ * fails and the caller should treat that like any other sync failure rather
+ * than crash.
+ */
+export async function refreshGoogleAccessToken(
+  refreshToken: string,
+): Promise<string | null> {
+  const clientId =
+    Platform.OS === 'ios'
+      ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+      : Platform.OS === 'android'
+        ? process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+        : process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  if (!clientId) return null;
+
+  try {
+    const body = [
+      `client_id=${encodeURIComponent(clientId)}`,
+      `refresh_token=${encodeURIComponent(refreshToken)}`,
+      'grant_type=refresh_token',
+    ].join('&');
+    const res = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { access_token?: string };
+    return data.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Returns true if the Google OAuth client ID for THIS platform is present.
  * expo-auth-session picks the client by platform, so having only the web or

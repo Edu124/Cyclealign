@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
@@ -8,10 +8,13 @@ import { Card, DateField, TabScreen } from '@/components/ui';
 import { palette, phaseColors, spacing } from '@/theme';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
+import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useLifeStage } from '@/lib/hooks/useLifeStage';
 import { deleteAccountData, pushProfile } from '@/lib/sync';
 import { signOut } from '@/lib/auth';
+import { syncScheduledNotifications } from '@/lib/notifications';
+import { isCurrentUserAdmin } from '@/lib/expertRequests';
 
 const PHASE_LABELS: Record<string, string> = {
   menstrual: 'Menstrual',
@@ -46,6 +49,22 @@ export default function Profile() {
   const setProfile = useAppStore((s) => s.setProfile);
   const lifeStage = useLifeStage();
   const [birthDraft, setBirthDraft] = useState<string | null>(null);
+
+  // Onboarding's "Maybe later — I'll enable from settings" skip promised this
+  // toggle would exist here; it didn't until now, so anyone who skipped had
+  // no way back in and got zero notifications, silently, forever.
+  const notificationsEnabled = useOnboarding((s) => s.notificationEnabled);
+  const setOnboarding = useOnboarding((s) => s.set);
+  function toggleNotifications(v: boolean) {
+    setOnboarding({ notificationEnabled: v });
+    syncScheduledNotifications(prediction, v);
+  }
+
+  // Admin-only entry point to the "Talk with an Expert" submissions.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    isCurrentUserAdmin().then(setIsAdmin);
+  }, []);
 
   // Backfill for accounts created before the birthday step existed: picking a
   // date saves it to the profile and syncs to the cloud immediately.
@@ -179,6 +198,22 @@ export default function Profile() {
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={styles.settingText}>
+              <Text style={styles.settingTitle}>Daily notifications</Text>
+              <Text style={styles.settingDesc}>
+                Your morning briefing, mood-based suggestions, log reminders, and period
+                heads-ups.
+              </Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={toggleNotifications}
+              trackColor={{ false: palette.line, true: palette.lavenderDeep }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Retail Therapy mode</Text>
               <Text style={styles.settingDesc}>
                 When we sense a rough patch, we'll surprise you with a little feel-good
@@ -245,6 +280,12 @@ export default function Profile() {
             </>
           )}
           <LinkRow label="Contact Us"         onPress={() => Linking.openURL('mailto:hellocyclealign@gmail.com')} />
+          {isAdmin && (
+            <>
+              <View style={styles.divider} />
+              <LinkRow label="Admin: Expert Requests" onPress={() => router.push('/admin-expert-requests')} />
+            </>
+          )}
         </Card>
       </Animated.View>
 

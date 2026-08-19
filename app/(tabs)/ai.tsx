@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { router } from 'expo-router';
 import { TabScreen } from '@/components/ui';
 import { palette } from '@/theme';
 import { fonts } from '@/theme/fonts';
@@ -167,10 +168,11 @@ const FEATURES = [
   {
     id: 'expert',
     label: 'Talk with\nan Expert',
-    intro: 'Book time with a certified gynaecologist, nutritionist or coach — right from the app.',
+    intro: 'Send us your question or concern — our team reviews every submission.',
     circleBg: palette.blush,
     iconColor: palette.roseDeep,
     Icon: IconExpert,
+    href: '/talk-to-expert' as const,
   },
 ];
 
@@ -212,7 +214,19 @@ function FlipCard({ feature }: { feature: Feature }) {
           {feature.label.replace('\n', ' ')}
         </Text>
         <Text style={styles.backIntro}>{feature.intro}</Text>
-        <Text style={styles.backHint}>Tap to flip back</Text>
+        {feature.href ? (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push(feature.href as never);
+            }}
+            style={[styles.ctaBtn, { backgroundColor: feature.iconColor }]}
+          >
+            <Text style={styles.ctaBtnText}>Ask now →</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.backHint}>Tap to flip back</Text>
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -355,6 +369,17 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontWeight: '600',
     marginTop: 4,
+  },
+  ctaBtn: {
+    marginTop: 6,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  ctaBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 
   footer: {
