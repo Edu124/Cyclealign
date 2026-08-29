@@ -15,6 +15,7 @@ import { WeeklyTopicCard } from '@/components/community/WeeklyTopicCard';
 import { PostCard } from '@/components/community/PostCard';
 import { PostComposer } from '@/components/community/PostComposer';
 import { BlogListCard } from '@/components/community/BlogListCard';
+import { PartnerSyncCard } from '@/components/circle/PartnerSyncCard';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCommunity } from '@/lib/stores/useCommunity';
@@ -25,7 +26,7 @@ import { todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import type { CommunityPost, ReactionType } from '@/types/models';
 
-type Tab = 'community' | 'blog' | 'shop';
+type Tab = 'community' | 'blog' | 'shop' | 'partner';
 
 export default function Circle() {
   const profile = useAppStore((s) => s.profile);
@@ -162,6 +163,15 @@ export default function Circle() {
             🛍️ Shop
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'partner' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('partner')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'partner' && styles.tabBtnTextActive]} numberOfLines={1}>
+            💛 Partner
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* ── COMMUNITY TAB ── */}
@@ -233,6 +243,13 @@ export default function Circle() {
       {activeTab === 'shop' && (
         <Animated.View entering={FadeInDown.delay(60).duration(400)}>
           <DopamineMenuCard phaseKey={phaseKey} />
+        </Animated.View>
+      )}
+
+      {/* ── PARTNER TAB ── */}
+      {activeTab === 'partner' && (
+        <Animated.View entering={FadeInDown.delay(60).duration(400)}>
+          <PartnerSyncCard />
         </Animated.View>
       )}
 

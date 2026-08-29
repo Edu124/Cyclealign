@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated as RNAnimated,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -506,7 +508,10 @@ export function DopamineMenuCard({ phaseKey }: Props) {
 
       {/* Checkout Modal */}
       <Modal visible={checkoutOpen} animationType="slide" transparent onRequestClose={closeCheckout}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={[styles.modalSheet, step === 'track' && styles.modalSheetTall]}>
             {step === 'cart' && (
               <CartStep
@@ -552,7 +557,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
               />
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

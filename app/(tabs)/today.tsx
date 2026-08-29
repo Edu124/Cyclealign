@@ -22,6 +22,7 @@ import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { syncScheduledNotifications } from '@/lib/notifications';
+import { getMyInviteIfExists, publishDigestedStatus } from '@/lib/partnerSync';
 import {
   CAPACITY,
   FOCUS_TILES,
@@ -50,6 +51,16 @@ export default function Today() {
   useEffect(() => {
     syncScheduledNotifications(prediction, notificationsEnabled);
   }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled]);
+
+  // Partner Sync: whenever her prediction or today's log changes, republish the
+  // digested status onto her own link row (only if she's already connected to
+  // a partner — this never creates a link on its own).
+  useEffect(() => {
+    if (!prediction) return;
+    getMyInviteIfExists().then((link) => {
+      if (link && link.status === 'active') publishDigestedStatus(link, prediction);
+    });
+  }, [prediction?.currentPhase, prediction?.isOverdue, dailyLogs[todayISO()]]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   useRetailTherapyTrigger(prediction);
