@@ -73,7 +73,7 @@ https://edu124.github.io/Cyclealign/
 
 **Privacy Policy URL:**
 ```
-https://edu124.github.io/Cyclealign/
+https://edu124.github.io/Cyclealign/privacy.html
 ```
 
 ---
