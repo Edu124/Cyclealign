@@ -16,6 +16,9 @@ interface Props {
   size?: number;
 }
 
+// Matches the dusty-rose "align" wordmark color from assets/logo.png.
+const WORDMARK_ROSE = '#A87B7B';
+
 /**
  * Full-screen launch experience: the 3D-style ring blooms in and breathes while
  * the wordmark rises beneath it. Calls `onFinish` after the intro completes so
@@ -43,7 +46,7 @@ export function SplashLogo({ onFinish, size = 220 }: Props) {
 
   return (
     <View style={styles.root}>
-      <GradientBackground />
+      <GradientBackground colors={[WORDMARK_ROSE, WORDMARK_ROSE]} />
       <View style={styles.center}>
         <Animated.View style={logoStyle}>
           <Logo3D size={size} />
