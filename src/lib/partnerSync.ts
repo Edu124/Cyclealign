@@ -36,7 +36,7 @@ function mapRow(d: any): PartnerLink {
   };
 }
 
-const PHASE_LABEL: Record<string, string> = {
+export const PHASE_LABEL: Record<string, string> = {
   menstrual: 'her period',
   follicular: 'her follicular phase',
   ovulation: 'ovulation',
@@ -151,7 +151,7 @@ export async function publishDigestedStatus(link: PartnerLink, prediction: Predi
   await supabase
     .from('partner_links')
     .update({
-      shared_phase: link.sharePhase ? PHASE_LABEL[digest.phase] ?? digest.phase : null,
+      shared_phase: link.sharePhase ? digest.phase : null,
       shared_tough_day: link.shareToughDay ? digest.toughDay : null,
       shared_message: link.shareToughDay ? digest.message : null,
       shared_updated_at: new Date().toISOString(),

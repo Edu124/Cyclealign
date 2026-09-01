@@ -10,19 +10,22 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import {
   acceptInvite,
   fetchUnseenPings,
   getMyPartnerConnection,
   getOrCreateMyInvite,
   markPingsSeen,
+  PHASE_LABEL,
   revokeLink,
   sendSupportPing,
   updateSharingSettings,
   type PartnerLink,
 } from '@/lib/partnerSync';
-import { dash } from '@/theme';
+import { dash, phaseBanner } from '@/theme';
+import type { PhaseKey } from '@/types/models';
 
 const SUGGESTED_MESSAGES = [
   "Thinking of you today 💛",
@@ -30,6 +33,28 @@ const SUGGESTED_MESSAGES = [
   "Take it easy today, I'll handle dinner.",
   "Sending you a hug from here 🤍",
 ];
+
+const QUICK_REACTIONS: { emoji: string; message: string }[] = [
+  { emoji: '💛', message: "Thinking of you 💛" },
+  { emoji: '🤗', message: "Sending a hug 🤗" },
+  { emoji: '🌸', message: "Take it easy today 🌸" },
+  { emoji: '✨', message: "You've got this ✨" },
+];
+
+function haptic() {
+  Haptics.selectionAsync().catch(() => {});
+}
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+}
 
 export function PartnerSyncCard() {
   const [myInvite, setMyInvite] = useState<PartnerLink | null | undefined>(undefined);
@@ -43,6 +68,7 @@ export function PartnerSyncCard() {
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState('');
   const [supportBusy, setSupportBusy] = useState(false);
+  const [justSent, setJustSent] = useState(false);
 
   async function refresh() {
     const [inviteResult, partner, unseen] = await Promise.all([
@@ -62,6 +88,7 @@ export function PartnerSyncCard() {
 
   async function handleShareCode() {
     if (!myInvite) return;
+    haptic();
     try {
       await Share.share({
         message: `Join me on CycleAlign so I can share how I'm doing and you can support me on tougher days. Use invite code: ${myInvite.inviteCode}`,
@@ -71,12 +98,14 @@ export function PartnerSyncCard() {
 
   async function handleToggle(field: 'sharePhase' | 'shareToughDay' | 'shareEnergyMood', value: boolean) {
     if (!myInvite) return;
+    haptic();
     setMyInvite({ ...myInvite, [field]: value });
     await updateSharingSettings(myInvite.id, { [field]: value });
   }
 
   async function handleRevoke() {
     if (!myInvite) return;
+    haptic();
     setInviteBusy(true);
     await revokeLink(myInvite.id);
     setInviteBusy(false);
@@ -85,6 +114,7 @@ export function PartnerSyncCard() {
 
   async function handleAcceptInvite() {
     if (!codeInput.trim()) return;
+    haptic();
     setConnectBusy(true);
     setConnectError(null);
     const res = await acceptInvite(codeInput.trim());
@@ -104,9 +134,13 @@ export function PartnerSyncCard() {
     setSupportBusy(false);
     setSupportOpen(false);
     setSupportMessage('');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setJustSent(true);
+    setTimeout(() => setJustSent(false), 2200);
   }
 
   async function dismissPings() {
+    haptic();
     if (pings.length === 0) return;
     await markPingsSeen(pings.map((p) => p.id));
     setPings([]);
@@ -119,6 +153,9 @@ export function PartnerSyncCard() {
       </View>
     );
   }
+
+  const phaseKey = partnerLink?.sharedPhase as PhaseKey | null | undefined;
+  const banner = phaseKey && phaseBanner[phaseKey] ? phaseBanner[phaseKey] : null;
 
   return (
     <View style={{ gap: 16 }}>
@@ -147,14 +184,19 @@ export function PartnerSyncCard() {
         {myInvite && (
           <>
             <View style={styles.codeRow}>
-              <Text style={styles.codeText}>{myInvite.inviteCode}</Text>
+              <View style={styles.codeChip}>
+                <Text style={styles.codeText}>{myInvite.inviteCode}</Text>
+              </View>
               <TouchableOpacity style={styles.shareBtn} onPress={handleShareCode} activeOpacity={0.85}>
                 <Text style={styles.shareBtnText}>Share</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.statusLine}>
-              {myInvite.status === 'active' ? '✓ Connected with your partner' : 'Waiting for your partner to enter this code…'}
-            </Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, myInvite.status === 'active' && styles.statusDotActive]} />
+              <Text style={styles.statusLine}>
+                {myInvite.status === 'active' ? 'Connected with your partner' : 'Waiting for your partner to enter this code…'}
+              </Text>
+            </View>
 
             <View style={styles.toggleList}>
               <ToggleRow
@@ -196,21 +238,58 @@ export function PartnerSyncCard() {
 
         {partnerLink ? (
           <>
-            <Text style={styles.cardSub}>Here's how they're doing today.</Text>
-            {partnerLink.sharedPhase && (
-              <Text style={styles.digestLine}>🌙 In {partnerLink.sharedPhase}</Text>
-            )}
+            <View style={styles.digestHeader}>
+              {banner && (
+                <View style={[styles.phaseBadge, { backgroundColor: banner.bg }]}>
+                  <Text style={[styles.phaseBadgeText, { color: banner.accent }]}>
+                    {PHASE_LABEL[phaseKey as string] ?? phaseKey}
+                  </Text>
+                </View>
+              )}
+              {partnerLink.sharedUpdatedAt && (
+                <Text style={styles.updatedText}>Updated {relativeTime(partnerLink.sharedUpdatedAt)}</Text>
+              )}
+            </View>
+
             {partnerLink.sharedMessage && (
               <View style={[styles.digestBubble, partnerLink.sharedToughDay && styles.digestBubbleTough]}>
+                {partnerLink.sharedToughDay && (
+                  <Animated.View entering={FadeIn.duration(500)} style={styles.pulseDot} />
+                )}
                 <Text style={styles.digestBubbleText}>{partnerLink.sharedMessage}</Text>
               </View>
             )}
-            {!partnerLink.sharedMessage && !partnerLink.sharedPhase && (
+            {!partnerLink.sharedMessage && !banner && (
               <Text style={styles.emptyDigest}>No update shared yet — check back soon.</Text>
             )}
-            <TouchableOpacity style={styles.supportBtn} onPress={() => setSupportOpen(true)} activeOpacity={0.85}>
-              <Text style={styles.supportBtnText}>💛 Send support</Text>
-            </TouchableOpacity>
+
+            <Text style={styles.quickLabel}>Quick support</Text>
+            <View style={styles.quickRow}>
+              {QUICK_REACTIONS.map((r) => (
+                <TouchableOpacity
+                  key={r.emoji}
+                  style={styles.quickBtn}
+                  activeOpacity={0.7}
+                  disabled={supportBusy}
+                  onPress={() => {
+                    haptic();
+                    handleSendSupport(r.message);
+                  }}
+                >
+                  <Text style={styles.quickBtnEmoji}>{r.emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {justSent ? (
+              <Animated.View entering={FadeIn.duration(250)} style={styles.sentBanner}>
+                <Text style={styles.sentBannerText}>💛 Sent — she'll see it soon</Text>
+              </Animated.View>
+            ) : (
+              <TouchableOpacity style={styles.supportBtn} onPress={() => setSupportOpen(true)} activeOpacity={0.85}>
+                <Text style={styles.supportBtnText}>Write your own message</Text>
+              </TouchableOpacity>
+            )}
           </>
         ) : (
           <>
@@ -299,9 +378,21 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 13, color: dash.inkSoft, lineHeight: 19 },
 
   codeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  codeText: { fontSize: 24, fontWeight: '800', letterSpacing: 4, color: dash.ink },
-  shareBtn: { backgroundColor: '#F0ECEA', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14 },
-  shareBtnText: { fontSize: 13, fontWeight: '700', color: dash.ink },
+  codeChip: {
+    backgroundColor: '#F9F6F1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: dash.line,
+    borderStyle: 'dashed',
+  },
+  codeText: { fontSize: 22, fontWeight: '800', letterSpacing: 4, color: dash.ink },
+  shareBtn: { backgroundColor: dash.sage, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14 },
+  shareBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: dash.muted },
+  statusDotActive: { backgroundColor: dash.sage },
   statusLine: { fontSize: 12, color: dash.muted },
 
   toggleList: { gap: 4, marginTop: 4 },
@@ -311,11 +402,28 @@ const styles = StyleSheet.create({
   revokeBtn: { alignSelf: 'flex-start', marginTop: 4 },
   revokeBtnText: { fontSize: 13, color: '#B5493B', fontWeight: '600' },
 
-  digestLine: { fontSize: 14, color: dash.ink, fontWeight: '600' },
-  digestBubble: { backgroundColor: '#F9F6F1', borderRadius: 14, padding: 14 },
+  digestHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  phaseBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  phaseBadgeText: { fontSize: 12, fontWeight: '800', textTransform: 'capitalize' },
+  updatedText: { fontSize: 11, color: dash.muted, fontWeight: '600' },
+
+  digestBubble: { backgroundColor: '#F9F6F1', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   digestBubbleTough: { backgroundColor: '#FBEFE9' },
-  digestBubbleText: { fontSize: 14, color: dash.ink, lineHeight: 20 },
+  digestBubbleText: { fontSize: 14, color: dash.ink, lineHeight: 20, flex: 1 },
+  pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#C2683F', marginTop: 6 },
   emptyDigest: { fontSize: 13, color: dash.muted, fontStyle: 'italic' },
+
+  quickLabel: { fontSize: 11, fontWeight: '700', color: dash.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 2 },
+  quickRow: { flexDirection: 'row', gap: 10 },
+  quickBtn: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: '#F9F6F1', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: dash.line,
+  },
+  quickBtnEmoji: { fontSize: 20 },
+
+  sentBanner: { backgroundColor: dash.sageTint, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  sentBannerText: { color: dash.sageDeep, fontWeight: '700', fontSize: 14 },
 
   supportBtn: { backgroundColor: dash.sage, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   supportBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
