@@ -29,6 +29,12 @@ export default function FounderScreen() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
+  // Auto-advance — no button to tap, the letter just holds for a beat then continues.
+  useEffect(() => {
+    const t = setTimeout(() => router.replace('/(tabs)/today'), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
   const loadBarStyle = useAnimatedStyle(() => ({
     width: `${loadBar.value * 100}%` as `${number}%`,
   }));
@@ -88,7 +94,7 @@ export default function FounderScreen() {
 
         {/* Closing line */}
         <Animated.Text entering={FadeInDown.delay(1100).duration(600)} style={styles.closing}>
-          For the women, by the women.
+          For the women, by the woman.
         </Animated.Text>
 
         {/* Signature divider */}
@@ -98,16 +104,8 @@ export default function FounderScreen() {
           <View style={styles.sigLine} />
         </Animated.View>
 
-        {/* CTA */}
+        {/* Ready hint — page auto-advances, no tap needed */}
         <Animated.View entering={FadeInDown.delay(1300).duration(600)} style={styles.ctaWrap}>
-          <View style={styles.ctaBtn}>
-            <Text
-              style={styles.ctaText}
-              onPress={() => router.replace('/(tabs)/today')}
-            >
-              Begin your journey  →
-            </Text>
-          </View>
           <Text style={styles.ctaHint}>Your CycleAlign is ready</Text>
         </Animated.View>
 
@@ -229,21 +227,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // CTA
+  // Ready hint
   ctaWrap: { alignItems: 'center', gap: 10, marginTop: 4 },
-  ctaBtn: {
-    width: '100%',
-    backgroundColor: palette.lavenderDeep,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  ctaText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
   ctaHint: {
     fontSize: 12,
     color: palette.muted,
