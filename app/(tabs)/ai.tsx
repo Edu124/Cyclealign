@@ -116,6 +116,7 @@ const FEATURES = [
     circleBg: '#F5ECD0',
     iconColor: '#B07820',
     Icon: IconDecision,
+    directHref: '/(tabs)/plan' as const,
   },
   {
     id: 'wearable',
@@ -148,6 +149,7 @@ const FEATURES = [
     circleBg: '#F9E3D3',
     iconColor: '#C2683F',
     Icon: IconMoods,
+    directHref: '/(tabs)/phases' as const,
   },
   {
     id: 'sleep',
@@ -185,6 +187,12 @@ function FlipCard({ feature }: { feature: Feature }) {
   const flip = useSharedValue(0);
 
   function toggle() {
+    // These two go straight to the real feature — no flip, no peek.
+    if (feature.directHref) {
+      Haptics.selectionAsync().catch(() => {});
+      router.push(feature.directHref as never);
+      return;
+    }
     Haptics.selectionAsync().catch(() => {});
     const next = !isFlipped;
     setIsFlipped(next);
