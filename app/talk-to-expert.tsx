@@ -72,7 +72,7 @@ export default function TalkToExpert() {
         {sent && (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.sentBanner}>
             <Text style={styles.sentText}>
-              ✓ Sent. We'll be in touch if a reply is needed.
+              ✓ Sent — thank you for reaching out. Our team reviews every message and will follow up with you soon.
             </Text>
           </Animated.View>
         )}

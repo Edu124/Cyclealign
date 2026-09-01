@@ -40,6 +40,13 @@ export async function submitExpertRequest(
     concern: concern.trim(),
   });
   if (error) return { ok: false, error: error.message };
+
+  // Best-effort email nudge to the team — never let this affect the user's
+  // own submission result, which has already succeeded at this point.
+  supabase.functions
+    .invoke('notify-expert-request', { body: { name, email, concern: concern.trim() } })
+    .catch(() => {});
+
   return { ok: true };
 }
 
