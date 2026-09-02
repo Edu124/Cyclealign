@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   taglineQuote: {
-    // Playfair Display, matching every other heading in the app.
+    // Playfair Display Bold in the same dusty-rose as "align" in the logo.
     fontFamily: fonts.headingBold,
     textAlign: 'center',
     fontSize: 21,
     lineHeight: 30,
-    color: palette.ink,
+    color: '#A87B7B',
     paddingHorizontal: spacing.lg,
   },
   cta: { gap: spacing.md },
