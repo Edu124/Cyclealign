@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/ui/TabBarIcon';
 import { ExitFlowOverlay } from '@/components/exit/ExitFlowOverlay';
 import { ReferralCloseNudge } from '@/components/exit/ReferralCloseNudge';
-import { ReferralInAppCard } from '@/components/exit/ReferralInAppCard';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { dash } from '@/theme';
 
@@ -98,11 +97,9 @@ export default function TabsLayout() {
 
       {/* Android: referral pitch on hardware back press. Any tab, not just Home. */}
       <ExitFlowOverlay />
-      {/* iOS has no way to intercept the close gesture, so the referral pitch shows
-          in-app shortly after opening instead — guaranteed to be seen, no notification
-          permission required. The backgrounding notification stays as a backup for
-          anyone who closes before this has a chance to show. */}
-      <ReferralInAppCard />
+      {/* iOS has no way to intercept the close gesture, so the referral pitch is a
+          backgrounding notification instead; the button in About → Refer a Friend
+          is the direct, always-available entry point. */}
       <ReferralCloseNudge />
     </>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, Share, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { router } from 'expo-router';
@@ -117,6 +117,17 @@ export default function Profile() {
         },
       ],
     );
+  }
+
+  // iOS has no back-button moment to pitch a referral at (unlike Android's
+  // ExitFlowOverlay), so this is the one direct, always-available entry point.
+  const REFERRAL_MESSAGE =
+    "I've been using CycleAlign to work with my cycle instead of against it 🌙 " +
+    'Join me — refer 3 friends and get a month free: https://cyclealign.app';
+  async function handleReferAFriend() {
+    try {
+      await Share.share({ message: REFERRAL_MESSAGE });
+    } catch {}
   }
 
   function handleChangePassword() {
@@ -288,6 +299,17 @@ export default function Profile() {
           )}
         </Card>
       </Animated.View>
+
+      {/* Referrals — iOS only; Android's referral pitch already lives on back-press (ExitFlowOverlay). */}
+      {Platform.OS === 'ios' && (
+        <Animated.View entering={FadeInDown.delay(185).duration(400)}>
+          <Card padded={false}>
+            <Text style={styles.sectionTitle}>Refer a Friend</Text>
+            <View style={styles.divider} />
+            <LinkRow label="Share with friends 🎁" onPress={handleReferAFriend} />
+          </Card>
+        </Animated.View>
+      )}
 
       {/* Danger zone */}
       <Animated.View entering={FadeInDown.delay(210).duration(400)}>

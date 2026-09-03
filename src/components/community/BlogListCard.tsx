@@ -19,7 +19,13 @@ function BlogCard({ post, index, onPress }: { post: BlogPost; index: number; onP
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(300)} style={styles.card}>
       <Pressable onPress={onPress}>
-        <View style={[styles.imageWrap, { backgroundColor: post.accentColor + '22' }]}>
+        <View
+          style={[
+            styles.imageWrap,
+            { backgroundColor: post.accentColor + '22' },
+            cover ? { aspectRatio: cover.aspect } : { height: 110 },
+          ]}
+        >
           {cover ? (
             <Image source={cover.source} style={styles.image} resizeMode="cover" />
           ) : (
@@ -111,9 +117,9 @@ const styles = StyleSheet.create({
 
   card: { width: '47%', backgroundColor: dash.card, borderRadius: 18, overflow: 'hidden' },
   imageWrap: {
-    height: 110,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   image: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   emoji: { fontSize: 30 },
