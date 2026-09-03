@@ -14,7 +14,7 @@ interface SettingsState {
   reset: () => void;
 }
 
-const defaults = { retailTherapy: true, appVersion: 'v1' as AppVersion };
+const defaults = { retailTherapy: true, appVersion: 'v2' as AppVersion };
 
 export const useSettings = create<SettingsState>()(
   persist(
@@ -29,3 +29,14 @@ export const useSettings = create<SettingsState>()(
     },
   ),
 );
+
+// One-time forced upgrade: anyone who already had 'v1' saved from before this
+// rollout lands on 'v2' too, not just fresh installs picking up the new
+// default above. persist's own `version`/`migrate` option only fires when the
+// stored data already carries SOME numeric version — real pre-existing data
+// never had one, so that path silently never runs. This listener does instead.
+useSettings.persist.onFinishHydration((state) => {
+  if (state.appVersion === 'v1') {
+    useSettings.setState({ appVersion: 'v2' });
+  }
+});
