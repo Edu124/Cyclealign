@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   Share,
   StyleSheet,
   Switch,
@@ -320,8 +323,16 @@ export function PartnerSyncCard() {
 
       {supportOpen && (
       <Modal visible animationType="slide" transparent onRequestClose={() => setSupportOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalSheet}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalScrollContent}
+            >
             <Text style={styles.modalTitle}>Send support</Text>
             <View style={{ gap: 8 }}>
               {SUGGESTED_MESSAGES.map((m) => (
@@ -351,8 +362,9 @@ export function PartnerSyncCard() {
                 <Text style={styles.modalSendBtnText}>{supportBusy ? 'Sending…' : 'Send'}</Text>
               </TouchableOpacity>
             </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       )}
     </View>
@@ -450,7 +462,8 @@ const styles = StyleSheet.create({
   pingDismiss: { fontSize: 14, color: dash.muted, padding: 4 },
 
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  modalSheet: { backgroundColor: dash.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 14 },
+  modalSheet: { backgroundColor: dash.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
+  modalScrollContent: { padding: 24, paddingBottom: 40, gap: 14 },
   modalTitle: { fontSize: 17, fontWeight: '700', color: dash.ink },
   suggestionChip: { backgroundColor: '#F9F6F1', borderRadius: 12, padding: 12 },
   suggestionChipText: { fontSize: 14, color: dash.ink },
