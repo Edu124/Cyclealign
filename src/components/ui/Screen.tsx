@@ -34,6 +34,7 @@ export function Screen({ children, scroll = true, contentStyle, gradient }: Prop
               contentStyle,
             ]}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
           >
             {children}
           </ScrollView>
