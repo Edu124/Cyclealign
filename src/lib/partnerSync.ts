@@ -195,9 +195,16 @@ export async function sendSupportPing(
 
 export async function fetchUnseenPings(): Promise<{ id: string; message: string }[]> {
   if (!isSupabaseConfigured) return [];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // RLS also lets a sender read their own sent pings (for a "sent" history
+  // elsewhere) — without this filter, a just-sent still-unseen ping would
+  // come back to the SENDER here too, showing up as if their partner had
+  // messaged them.
   const { data } = await supabase
     .from('partner_support_pings')
     .select('id, message')
+    .eq('to_user_id', user.id)
     .eq('seen', false)
     .order('created_at', { ascending: false });
   return data ?? [];

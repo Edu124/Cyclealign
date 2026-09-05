@@ -253,19 +253,24 @@ export default function Circle() {
         </Animated.View>
       )}
 
-      {/* Post Composer */}
-      <PostComposer
-        visible={composerOpen}
-        onClose={() => setComposerOpen(false)}
-        onSubmit={handlePost}
-        currentPhase={phaseKey}
-        cycleDay={cycleDay}
-        activeTopic={topic}
-        defaultReplyToTopic={replyToTopic}
-      />
+      {/* Post Composer — conditionally mounted, not just visibility-toggled:
+          an always-mounted <Modal> can be left stuck open/behind on some
+          platforms even after `visible` flips false. */}
+      {composerOpen && (
+        <PostComposer
+          visible
+          onClose={() => setComposerOpen(false)}
+          onSubmit={handlePost}
+          currentPhase={phaseKey}
+          cycleDay={cycleDay}
+          activeTopic={topic}
+          defaultReplyToTopic={replyToTopic}
+        />
+      )}
 
       {/* Admin: New Topic Modal */}
-      <Modal visible={adminModalOpen} animationType="slide" transparent onRequestClose={() => setAdminModalOpen(false)}>
+      {adminModalOpen && (
+      <Modal visible animationType="slide" transparent onRequestClose={() => setAdminModalOpen(false)}>
         <View style={styles.adminOverlay}>
           <View style={styles.adminSheet}>
             <Text style={styles.adminTitle}>Post a New Topic</Text>
@@ -300,6 +305,7 @@ export default function Circle() {
           </View>
         </View>
       </Modal>
+      )}
     </TabScreen>
   );
 }

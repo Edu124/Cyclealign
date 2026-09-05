@@ -2,6 +2,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -60,12 +61,17 @@ export function PostComposer({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.sheet}>
           {/* Handle */}
           <View style={styles.handle} />
 
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.sheetScrollContent}
+          >
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Share a thought</Text>
@@ -138,6 +144,7 @@ export function PostComposer({
               </Text>
             </TouchableOpacity>
           </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -154,7 +161,11 @@ const styles = StyleSheet.create({
     backgroundColor: dash.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: spacing.xl,
+    maxHeight: '90%',
+    paddingTop: spacing.xl,
+  },
+  sheetScrollContent: {
+    paddingHorizontal: spacing.xl,
     paddingBottom: Platform.OS === 'ios' ? 36 : spacing.xl,
     gap: 14,
   },

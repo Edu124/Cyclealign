@@ -318,7 +318,8 @@ export function PartnerSyncCard() {
         )}
       </Animated.View>
 
-      <Modal visible={supportOpen} animationType="slide" transparent onRequestClose={() => setSupportOpen(false)}>
+      {supportOpen && (
+      <Modal visible animationType="slide" transparent onRequestClose={() => setSupportOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Send support</Text>
@@ -353,6 +354,7 @@ export function PartnerSyncCard() {
           </View>
         </View>
       </Modal>
+      )}
     </View>
   );
 }
