@@ -10,9 +10,11 @@ import { palette, radius, shadow, spacing } from '@/theme';
 
 type Stage = 'closed' | 'referral' | 'confirm';
 
+// Android-only (this overlay only fires off the hardware back button), so
+// this always links straight to the Play Store listing.
 const REFERRAL_MESSAGE =
   "I've been using CycleAlign to work with my cycle instead of against it 🌙 " +
-  'Join me — refer 3 friends and get a month free: https://cyclealign.app';
+  'Join me — refer 3 friends and get a month free: https://play.google.com/store/apps/details?id=com.cyclealign.app';
 
 interface Props {
   /** Preview/testing only — forces the overlay open at a given stage, bypassing the back-button trigger. */

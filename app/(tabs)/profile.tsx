@@ -121,9 +121,11 @@ export default function Profile() {
 
   // iOS has no back-button moment to pitch a referral at (unlike Android's
   // ExitFlowOverlay), so this is the one direct, always-available entry point.
+  // This section only renders on iOS (gated below), so it always links
+  // straight to the App Store listing.
   const REFERRAL_MESSAGE =
     "I've been using CycleAlign to work with my cycle instead of against it 🌙 " +
-    'Join me — refer 3 friends and get a month free: https://cyclealign.app';
+    'Join me — refer 3 friends and get a month free: https://apps.apple.com/app/id6788590698';
   async function handleReferAFriend() {
     try {
       await Share.share({ message: REFERRAL_MESSAGE });
