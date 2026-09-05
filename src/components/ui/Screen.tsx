@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '@/theme';
 import { GradientBackground } from './GradientBackground';
@@ -20,7 +20,11 @@ export function Screen({ children, scroll = true, contentStyle, gradient }: Prop
       {/* The top inset lives OUTSIDE the scroll area: with it inside the
           content padding, anything at the top of the page (back buttons)
           scrolled up underneath the status bar / Dynamic Island. */}
-      <View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
+      <KeyboardAvoidingView
+        style={[styles.root, { paddingTop: insets.top + spacing.md }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={insets.top}
+      >
         {scroll ? (
           <ScrollView
             style={styles.root}
@@ -45,7 +49,7 @@ export function Screen({ children, scroll = true, contentStyle, gradient }: Prop
             {children}
           </View>
         )}
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

@@ -330,8 +330,11 @@ export default function Profile() {
         </Pressable>
       </Animated.View>
 
-      {/* Change password modal */}
-      <Modal visible={pwModal} transparent animationType="fade">
+      {/* Change password modal — conditionally mounted, not just visibility-toggled:
+          an always-mounted <Modal> can conflict with another native modal
+          presentation (e.g. Share.share()'s share sheet) on iOS. */}
+      {pwModal && (
+      <Modal visible transparent animationType="fade">
         <Pressable style={styles.overlay} onPress={() => { setPwModal(false); setPwError(''); }}>
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Change Password</Text>
@@ -374,6 +377,7 @@ export default function Profile() {
           </Pressable>
         </Pressable>
       </Modal>
+      )}
 
       {/* Footer */}
       <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
