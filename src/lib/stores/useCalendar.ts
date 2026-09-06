@@ -47,11 +47,16 @@ interface CalendarState {
    * refreshEvents() mint a new access token instead.
    */
   googleRefreshToken: string | null;
+  outlookAccessToken: string | null;
+  /** Microsoft rotates the refresh token on every use, unlike Google's. */
+  outlookRefreshToken: string | null;
   events: CalendarEvent[];
   /** Connect with real Google Calendar data. */
   connectGoogle: (accessToken: string, events: CalendarEvent[], refreshToken?: string | null) => void;
   /** Swap in a freshly minted access token without resetting events/refresh token. */
   updateGoogleAccessToken: (accessToken: string) => void;
+  /** Connect with real Outlook / Microsoft 365 Calendar data. */
+  connectOutlook: (accessToken: string, events: CalendarEvent[], refreshToken?: string | null) => void;
   /** Connect with real on-device Apple Calendar (EventKit) data. */
   connectAppleCalendar: (events: CalendarEvent[]) => void;
   /** Connect with seeded demo data (Outlook / sample, or Apple on non-iOS). */
@@ -71,6 +76,8 @@ export const useCalendar = create<CalendarState>()(
       providerLabel: null,
       googleAccessToken: null,
       googleRefreshToken: null,
+      outlookAccessToken: null,
+      outlookRefreshToken: null,
       events: [],
 
       connectGoogle: (accessToken, events, refreshToken) =>
@@ -82,23 +89,39 @@ export const useCalendar = create<CalendarState>()(
           // only issues one reliably on first consent) — keep the existing
           // one rather than wiping it out with undefined.
           googleRefreshToken: refreshToken ?? s.googleRefreshToken,
+          outlookAccessToken: null,
+          outlookRefreshToken: null,
           events,
         })),
 
       updateGoogleAccessToken: (accessToken) =>
         set({ googleAccessToken: accessToken }),
 
+      connectOutlook: (accessToken, events, refreshToken) =>
+        set((s) => ({
+          connected: true,
+          providerLabel: 'Outlook Calendar',
+          googleAccessToken: null,
+          googleRefreshToken: null,
+          outlookAccessToken: accessToken,
+          // Microsoft rotates the refresh token on every use, so a fresh one
+          // should normally always be present — but keep the existing one
+          // rather than wiping it out on the off chance it isn't returned.
+          outlookRefreshToken: refreshToken ?? s.outlookRefreshToken,
+          events,
+        })),
+
       connectAppleCalendar: (events) =>
-        set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, googleRefreshToken: null, events }),
+        set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events }),
 
       connectDemo: (label = 'Calendar') =>
-        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, events: seedEvents() }),
+        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents() }),
 
       connect: () =>
-        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, events: seedEvents() }),
+        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents() }),
 
       disconnect: () =>
-        set({ connected: false, providerLabel: null, googleAccessToken: null, googleRefreshToken: null, events: [] }),
+        set({ connected: false, providerLabel: null, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: [] }),
 
       addEvent: (e) =>
         set((s) => ({
@@ -119,6 +142,8 @@ export const useCalendar = create<CalendarState>()(
         providerLabel: s.providerLabel,
         googleAccessToken: s.googleAccessToken,
         googleRefreshToken: s.googleRefreshToken,
+        outlookAccessToken: s.outlookAccessToken,
+        outlookRefreshToken: s.outlookRefreshToken,
         events: s.events,
       }),
     },

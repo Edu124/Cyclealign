@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Platform, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { TabScreen } from '@/components/ui';
@@ -17,6 +18,7 @@ import { useTasks } from '@/lib/stores/useTasks';
 import { TASK_SYNC_CATEGORIES } from '@/lib/intelligence/taskScore';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { fetchGoogleCalendarEvents, isGoogleCalendarConfigured, refreshGoogleAccessToken } from '@/lib/googleCalendar';
+import { fetchOutlookCalendarEvents, isOutlookCalendarConfigured, refreshOutlookAccessToken } from '@/lib/outlookCalendar';
 import { fetchAppleCalendarEvents, isAppleCalendarSupported } from '@/lib/appleCalendar';
 import { monthPlan } from '@/lib/intelligence/schedule';
 import type { RecommendedWindow } from '@/lib/intelligence/schedule';
@@ -33,6 +35,7 @@ export default function Plan() {
     providerLabel,
     events,
     connectGoogle,
+    connectOutlook,
     connectAppleCalendar,
     connectDemo,
     disconnect,
@@ -85,6 +88,24 @@ export default function Plan() {
           useCalendar.getState().updateGoogleAccessToken(freshToken);
           fetchGoogleCalendarEvents(freshToken)
             .then((evts) => useCalendar.getState().connectGoogle(freshToken, evts))
+            .catch(() => {});
+        });
+    } else if (state.providerLabel === 'Outlook Calendar' && state.outlookAccessToken) {
+      lastSyncRef.current = now;
+      const token = state.outlookAccessToken;
+      fetchOutlookCalendarEvents(token)
+        .then((evts) => useCalendar.getState().connectOutlook(token, evts))
+        .catch(async () => {
+          // Access tokens expire in ~1hr, same expected pattern as Google —
+          // mint a fresh one from the refresh token and retry once. Microsoft
+          // also rotates the refresh token on every use, so the new one MUST
+          // be stored or the next refresh fails with an already-used token.
+          const refreshToken = useCalendar.getState().outlookRefreshToken;
+          if (!refreshToken) return;
+          const fresh = await refreshOutlookAccessToken(refreshToken);
+          if (!fresh) return;
+          fetchOutlookCalendarEvents(fresh.accessToken)
+            .then((evts) => useCalendar.getState().connectOutlook(fresh.accessToken, evts, fresh.refreshToken))
             .catch(() => {});
         });
     }
@@ -156,6 +177,72 @@ export default function Plan() {
     }
   }
 
+  // ── Outlook / Microsoft 365 OAuth ──────────────────────────────────────────
+  // No prebuilt Microsoft provider exists in expo-auth-session the way there
+  // is for Google, so this is built on the generic AuthSession primitives —
+  // one client ID and one redirect URI cover every platform (Microsoft's
+  // "public client" registration isn't tied to a per-platform bundle ID/SHA-1
+  // the way Google's Android/iOS client types are).
+  const OUTLOOK_DISCOVERY = {
+    authorizationEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+  };
+  const OUTLOOK_REDIRECT_URI = 'com.cyclealign.app://oauthredirect';
+  const OUTLOOK_CLIENT_ID = process.env.EXPO_PUBLIC_OUTLOOK_CLIENT_ID ?? PLACEHOLDER_ID;
+
+  const [outlookRequest, outlookResponse, promptOutlookAuth] = AuthSession.useAuthRequest(
+    {
+      clientId: OUTLOOK_CLIENT_ID,
+      redirectUri: OUTLOOK_REDIRECT_URI,
+      scopes: ['openid', 'profile', 'offline_access', 'https://graph.microsoft.com/Calendars.Read'],
+      usePKCE: true,
+      // Forces a fresh refresh token on every connect, same reasoning as
+      // Google's prompt=consent above — otherwise a reconnect can silently
+      // reuse a token Microsoft won't actually rotate for us.
+      extraParams: { prompt: 'consent' },
+    },
+    OUTLOOK_DISCOVERY,
+  );
+
+  useEffect(() => {
+    if (outlookResponse?.type !== 'success') return;
+    const code = outlookResponse.params.code;
+    const verifier = outlookRequest?.codeVerifier;
+    if (!code || !verifier) return;
+    (async () => {
+      setCalendarLoading(true);
+      try {
+        const tokens = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: OUTLOOK_CLIENT_ID,
+            code,
+            redirectUri: OUTLOOK_REDIRECT_URI,
+            extraParams: { code_verifier: verifier },
+          },
+          OUTLOOK_DISCOVERY,
+        );
+        if (!tokens.accessToken) throw new Error('Microsoft did not return a token.');
+        await handleOutlookConnected(tokens.accessToken, tokens.refreshToken ?? null);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        Alert.alert('Sync failed', `Could not connect your Outlook Calendar.\n\n${msg}`);
+        setCalendarLoading(false);
+      }
+    })();
+  }, [outlookResponse]);
+
+  async function handleOutlookConnected(accessToken: string, refreshToken: string | null) {
+    try {
+      const calEvents = await fetchOutlookCalendarEvents(accessToken);
+      connectOutlook(accessToken, calEvents, refreshToken);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Alert.alert('Sync failed', `Could not load your Outlook Calendar events.\n\n${msg}`);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
   async function handleAppleConnected() {
     setCalendarLoading(true);
     try {
@@ -187,11 +274,23 @@ export default function Plan() {
       await promptGoogleAuth();
     } else if (providerId === 'apple' && isAppleCalendarSupported()) {
       await handleAppleConnected();
+    } else if (providerId === 'outlook') {
+      if (!isOutlookCalendarConfigured()) {
+        Alert.alert(
+          'Outlook Calendar unavailable',
+          'Outlook Calendar sync is not available on this device yet. You can preview with sample events instead.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Use sample events', onPress: () => connectDemo('Outlook Calendar (demo)') },
+          ],
+        );
+        return;
+      }
+      await promptOutlookAuth();
     } else {
       const labels: Record<string, string> = {
-        apple:   'Apple Calendar (demo)',
-        outlook: 'Outlook',
-        demo:    'Sample Calendar',
+        apple: 'Apple Calendar (demo)',
+        demo:  'Sample Calendar',
       };
       connectDemo(labels[providerId] ?? 'Calendar');
     }

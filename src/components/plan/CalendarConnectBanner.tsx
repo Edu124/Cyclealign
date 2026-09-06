@@ -5,7 +5,7 @@ import { dash } from '@/theme';
 const ALL_PROVIDERS = [
   { id: 'google',  label: 'Google Calendar',         icon: '📅', desc: 'Sync real events from your Google account' },
   { id: 'apple',   label: 'Apple Calendar',           icon: '🍎', desc: 'Real events from your iPhone’s Calendar app' },
-  { id: 'outlook', label: 'Outlook / Microsoft 365',  icon: '📧', desc: 'Work or personal Microsoft account (sample data in preview)' },
+  { id: 'outlook', label: 'Outlook / Microsoft 365',  icon: '📧', desc: 'Sync real events from your work or personal Microsoft account' },
   { id: 'demo',    label: 'Try with sample events',   icon: '✨', desc: 'Preview how cycle scoring looks — no sign-in needed' },
 ];
 
