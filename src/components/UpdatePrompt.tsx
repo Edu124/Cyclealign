@@ -6,9 +6,11 @@ import { palette, radius, shadow, spacing } from '@/theme';
 
 /**
  * Checks once per launch for a new OTA update, in the background — never
- * blocks the splash screen or the UI. If one is found and downloaded, shows
- * a prompt so the user decides when to apply it, instead of the app
- * silently swapping itself out from under them.
+ * blocks the splash screen or the UI. The popup shows as soon as a manifest
+ * check confirms one exists (fast — a small metadata request), rather than
+ * waiting for the full bundle download to finish first. The actual
+ * download only happens once the user taps "Update Now", so the wait moves
+ * to after their decision instead of before they even see the prompt.
  */
 export function UpdatePrompt() {
   const [ready, setReady] = useState(false);
@@ -21,9 +23,7 @@ export function UpdatePrompt() {
     (async () => {
       try {
         const result = await Updates.checkForUpdateAsync();
-        if (!result.isAvailable || cancelled) return;
-        await Updates.fetchUpdateAsync();
-        if (!cancelled) setReady(true);
+        if (result.isAvailable && !cancelled) setReady(true);
       } catch {
         // No network, dev client, or a transient error — stay quiet.
       }
@@ -35,6 +35,7 @@ export function UpdatePrompt() {
   async function applyUpdate() {
     setApplying(true);
     try {
+      await Updates.fetchUpdateAsync();
       await Updates.reloadAsync();
     } catch {
       setApplying(false);
