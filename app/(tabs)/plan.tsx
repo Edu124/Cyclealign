@@ -196,12 +196,15 @@ export default function Plan() {
       redirectUri: OUTLOOK_REDIRECT_URI,
       scopes: ['openid', 'profile', 'offline_access', 'https://graph.microsoft.com/Calendars.Read'],
       usePKCE: true,
-      // select_account skips Microsoft's silent single-sign-on attempt,
-      // which is known to hang indefinitely on "Trying to sign you in…"
-      // inside an embedded browser/Custom Tab — this forces an explicit
-      // account picker instead. consent forces a fresh refresh token on
-      // every connect, same reasoning as Google's prompt=consent above.
-      extraParams: { prompt: 'select_account consent' },
+      // Unlike Google, Microsoft's `prompt` only accepts ONE value at a
+      // time (login | none | consent | select_account | create) — combining
+      // them space-separated (as tried before) is rejected outright with
+      // "unsupported prompt value". select_account skips the silent
+      // single-sign-on attempt that hangs on "Trying to sign you in…"
+      // inside an embedded browser/Custom Tab. A fresh refresh token is
+      // still issued on every grant regardless of prompt value here, so
+      // nothing is lost by not also forcing consent (unlike Google's flow).
+      extraParams: { prompt: 'select_account' },
     },
     OUTLOOK_DISCOVERY,
   );
