@@ -1,7 +1,8 @@
-import { Component, useEffect, useRef } from 'react';
+import { Component, useEffect, useRef, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import * as Updates from 'expo-updates';
 import { supabase } from '@/lib/supabase';
 
 // Required for expo-auth-session OAuth redirects to complete on web.
@@ -118,6 +119,48 @@ function useCloudHydration() {
   }, [session?.user?.id]);
 }
 
+/**
+ * By default expo-updates only DOWNLOADS a new OTA update in the background
+ * on launch — it never applies it until the NEXT cold start, which is why
+ * users had to close and reopen the app (sometimes twice) to see a change.
+ * This checks for an update before the UI is shown and, if one exists,
+ * downloads it and reloads immediately, so opening the app is enough on its
+ * own. Bounded by a timeout so a slow/flaky connection can never hang the
+ * launch — worst case, it just falls through to whatever's already cached.
+ */
+function useEagerUpdateCheck(): boolean {
+  const [checked, setChecked] = useState(Platform.OS === 'web' || !Updates.isEnabled);
+
+  useEffect(() => {
+    if (checked) return;
+    let done = false;
+    const finish = () => {
+      if (!done) { done = true; setChecked(true); }
+    };
+    const timeout = setTimeout(finish, 8000);
+
+    (async () => {
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          clearTimeout(timeout);
+          await Updates.reloadAsync(); // restarts the app on the new bundle; nothing after this runs
+          return;
+        }
+      } catch {
+        // No network, dev client, transient error — proceed with what's cached.
+      }
+      clearTimeout(timeout);
+      finish();
+    })();
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return checked;
+}
+
 function useAuthDeepLink() {
   useEffect(() => {
     async function handleUrl(url: string) {
@@ -148,21 +191,23 @@ function useAuthDeepLink() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
+  const updateChecked = useEagerUpdateCheck();
   useWebPhoneFrame();
   useCloudHydration();
   useAuthDeepLink();
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && updateChecked) {
       // Apply Gabriola as the global text default, then reveal the app.
       applyGlobalFont();
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, updateChecked]);
 
-  // Hold rendering until fonts are ready. Show a blank-coloured view (not null)
-  // so the screen is never pure white while loading.
-  if (!fontsLoaded && !fontError) {
+  // Hold rendering until fonts are ready AND the update check has settled
+  // (found-and-reloading, or none found, or timed out). Show a blank-coloured
+  // view (not null) so the screen is never pure white while loading.
+  if ((!fontsLoaded && !fontError) || !updateChecked) {
     return <View style={{ flex: 1, backgroundColor: '#F7F4EF' }} />;
   }
 
