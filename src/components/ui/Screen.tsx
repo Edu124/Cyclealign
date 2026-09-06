@@ -22,7 +22,7 @@ export function Screen({ children, scroll = true, contentStyle, gradient }: Prop
           scrolled up underneath the status bar / Dynamic Island. */}
       <KeyboardAvoidingView
         style={[styles.root, { paddingTop: insets.top + spacing.md }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={insets.top}
       >
         {scroll ? (

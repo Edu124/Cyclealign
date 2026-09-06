@@ -87,6 +87,11 @@ export function PartnerSyncCard() {
 
   useEffect(() => {
     refresh();
+    // Neither side gets pushed a notification when the other connects,
+    // toggles sharing, or sends support — poll while this tab is open so a
+    // connection/update shows up without needing to leave and come back.
+    const interval = setInterval(refresh, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   async function handleShareCode() {
