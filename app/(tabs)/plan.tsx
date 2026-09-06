@@ -196,10 +196,12 @@ export default function Plan() {
       redirectUri: OUTLOOK_REDIRECT_URI,
       scopes: ['openid', 'profile', 'offline_access', 'https://graph.microsoft.com/Calendars.Read'],
       usePKCE: true,
-      // Forces a fresh refresh token on every connect, same reasoning as
-      // Google's prompt=consent above — otherwise a reconnect can silently
-      // reuse a token Microsoft won't actually rotate for us.
-      extraParams: { prompt: 'consent' },
+      // select_account skips Microsoft's silent single-sign-on attempt,
+      // which is known to hang indefinitely on "Trying to sign you in…"
+      // inside an embedded browser/Custom Tab — this forces an explicit
+      // account picker instead. consent forces a fresh refresh token on
+      // every connect, same reasoning as Google's prompt=consent above.
+      extraParams: { prompt: 'select_account consent' },
     },
     OUTLOOK_DISCOVERY,
   );
