@@ -49,6 +49,9 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', brand: 'Cloud Nine Living', price: 2499,                    image: img('1559454403-b8fb88521f11') },
     { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection',  brand: 'Steep Story',      price: 1099,                    image: img('1544787219-7f47ccb76574') },
     { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe',     brand: 'Hearth & Haven',   price: 1999, tag: 'New',         image: img('1584100936595-c0654b55a2e2') },
+    { id: 'm7', emoji: '🧦', name: 'Cozy Sock Set',          brand: 'Hearth & Haven',   price: 699,                     image: img('1602874801007-bd458bb1b8b6') },
+    { id: 'm8', emoji: '🧴', name: 'Body Oil Ritual',        brand: 'Aster Skin',       price: 1599, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
+    { id: 'm9', emoji: '📖', name: 'Cycle Journal',          brand: 'Paper Petal',      price: 999,                     image: img('1517842645767-c639042777db') },
   ],
   follicular: [
     { id: 'f1', emoji: '📓', name: 'Manifestation Journal', brand: 'Paper Petal', price: 1499, tag: 'Trending',    image: img('1517842645767-c639042777db') },
@@ -57,6 +60,9 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds',      brand: 'Auralite',    price: 5999,                    image: img('1590658268037-6bf12165a8df') },
     { id: 'f5', emoji: '💪', name: 'Home Workout Set',      brand: 'FormaFit',    price: 1299,                    image: img('1517836357463-d25dfeac3438') },
     { id: 'f6', emoji: '✏️', name: 'Stationery Bundle',     brand: 'Paper Petal', price: 1199, tag: 'New',         image: img('1456735190827-d1262f71b8a3') },
+    { id: 'f7', emoji: '🥾', name: 'Trail Sneakers',        brand: 'FormaFit',    price: 3499, tag: 'New',         image: img('1517836357463-d25dfeac3438') },
+    { id: 'f8', emoji: '🎧', name: 'Focus Playlist Speaker', brand: 'Auralite',   price: 4499,                    image: img('1590658268037-6bf12165a8df') },
+    { id: 'f9', emoji: '🗓️', name: 'Goal Planner',          brand: 'Paper Petal', price: 899,                     image: img('1517842645767-c639042777db') },
   ],
   ovulation: [
     { id: 'o1', emoji: '👗', name: 'Statement Set',        brand: 'Maison Rosette', price: 4999, tag: 'Hot Pick',    image: img('1515886657613-9f3515b0c78f') },
@@ -65,6 +71,9 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'o4', emoji: '✨', name: 'Pearl Jewelry Set',    brand: 'Gilt & Grace',   price: 3499,                    image: img('1515562141207-7a88fb7ce338') },
     { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set',    brand: 'Aster Skin',     price: 3999, tag: 'Trending',    image: img('1608571423902-eed4a5ad8108') },
     { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag',   brand: 'Maison Rosette', price: 4499,                    image: img('1591561954557-26941169b49e') },
+    { id: 'o7', emoji: '💋', name: 'Statement Lip Set',    brand: 'Lumi Beauty',    price: 1899, tag: 'New',         image: img('1522335789203-aabd1fc54bc9') },
+    { id: 'o8', emoji: '🕶️', name: 'Sunglasses Edit',      brand: 'Maison Rosette', price: 2999,                    image: img('1515886657613-9f3515b0c78f') },
+    { id: 'o9', emoji: '🎀', name: 'Hair Accessory Set',   brand: 'Gilt & Grace',   price: 1299,                    image: img('1515562141207-7a88fb7ce338') },
   ],
   luteal: [
     { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', brand: 'Aster Skin',       price: 1899, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
@@ -73,6 +82,9 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks',    brand: 'FormaFit',         price: 3999,                   image: img('1544367567-0f2fcb009e0b') },
     { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit',      brand: 'Steep Story',      price: 1399, tag: 'Best Seller', image: img('1576092768241-dec231879fc3') },
     { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set',     brand: 'Bloom & Ember',    price: 2299,                   image: img('1540555700478-4be289fbecef') },
+    { id: 'l7', emoji: '🧦', name: 'Fuzzy Slipper Socks',  brand: 'Cloud Nine Living', price: 899,                   image: img('1522771739844-6a9f6d5f14af') },
+    { id: 'l8', emoji: '🕯️', name: 'Wind-Down Candle',     brand: 'Bloom & Ember',    price: 1499, tag: 'Cozy Pick', image: img('1540555700478-4be289fbecef') },
+    { id: 'l9', emoji: '📓', name: 'Gratitude Journal',    brand: 'Fable & Fern',     price: 999,                    image: img('1463320726281-696a485928c7') },
   ],
 };
 
@@ -85,6 +97,9 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'fm4', emoji: '🫖', name: 'Chamomile Calm Tea',      brand: 'Steep Story',      price: 199,                    image: img('1576092768241-dec231879fc3') },
     { id: 'fm5', emoji: '🍪', name: 'Warm Cookies & Chai',     brand: 'Steep Story',      price: 249, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
     { id: 'fm6', emoji: '🎁', name: 'Midnight Chocolate Box',  brand: 'Cocoa Theory',     price: 549,                    image: img('1481391319762-47dff72954d9') },
+    { id: 'fm7', emoji: '🍩', name: 'Glazed Donut Duo',        brand: 'Midnight Kitchen', price: 279,                    image: img('1543339494-b4cd4f7ba686') },
+    { id: 'fm8', emoji: '🥤', name: 'Iced Chocolate Shake',    brand: 'Cocoa Theory',     price: 329, tag: 'Fan Fave',    image: img('1511381939415-e44015466834') },
+    { id: 'fm9', emoji: '🍲', name: 'Spiced Soup Bowl',        brand: 'Midnight Kitchen', price: 399,                    image: img('1569718212165-3a8278d5f624') },
   ],
   follicular: [
     { id: 'ff1', emoji: '☕', name: 'Oat Latte Boost',         brand: 'Steep Story',      price: 229, tag: 'Trending',    image: img('1512568400610-62da28bc8a13') },
@@ -93,6 +108,9 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'ff4', emoji: '🍰', name: 'Berry Cheesecake Slice',  brand: 'Midnight Kitchen', price: 329,                    image: img('1524351199678-941a58a3df50') },
     { id: 'ff5', emoji: '🍵', name: 'Green Tea Ritual',        brand: 'Steep Story',      price: 189,                    image: img('1576092768241-dec231879fc3') },
     { id: 'ff6', emoji: '🍫', name: 'Energy Chocolate Chunks', brand: 'Cocoa Theory',     price: 299, tag: 'New',         image: img('1511381939415-e44015466834') },
+    { id: 'ff7', emoji: '🥗', name: 'Superfood Salad Bowl',    brand: 'Midnight Kitchen', price: 429, tag: 'New',         image: img('1513104890138-7c749659a591') },
+    { id: 'ff8', emoji: '🍓', name: 'Berry Smoothie Bowl',     brand: 'Steep Story',      price: 349,                    image: img('1524351199678-941a58a3df50') },
+    { id: 'ff9', emoji: '🥐', name: 'Almond Croissant',        brand: 'Midnight Kitchen', price: 249,                    image: img('1558857563-b371033873b8') },
   ],
   ovulation: [
     { id: 'fo1', emoji: '🍰', name: 'Celebration Cheesecake',  brand: 'Midnight Kitchen', price: 599, tag: 'Hot Pick',    image: img('1524351199678-941a58a3df50') },
@@ -101,6 +119,9 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'fo4', emoji: '☕', name: 'Latte Art Date',          brand: 'Steep Story',      price: 259,                    image: img('1512568400610-62da28bc8a13') },
     { id: 'fo5', emoji: '🎁', name: 'Chocolate Tasting Box',   brand: 'Cocoa Theory',     price: 699, tag: 'Fan Fave',    image: img('1481391319762-47dff72954d9') },
     { id: 'fo6', emoji: '🫖', name: 'High Tea Set',            brand: 'Steep Story',      price: 449,                    image: img('1544787219-7f47ccb76574') },
+    { id: 'fo7', emoji: '🍹', name: 'Sparkling Mocktail',      brand: 'Steep Story',      price: 349, tag: 'Trending',    image: img('1512568400610-62da28bc8a13') },
+    { id: 'fo8', emoji: '🍣', name: 'Date Night Sushi Set',    brand: 'Midnight Kitchen', price: 799,                    image: img('1513104890138-7c749659a591') },
+    { id: 'fo9', emoji: '🧁', name: 'Celebration Cupcakes',    brand: 'Cocoa Theory',     price: 449,                    image: img('1481391319762-47dff72954d9') },
   ],
   luteal: [
     { id: 'fl1', emoji: '🧀', name: 'Extra-Cheese Mac',        brand: 'Midnight Kitchen', price: 399, tag: 'Most craved', image: img('1543339494-b4cd4f7ba686') },
@@ -109,6 +130,9 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'fl4', emoji: '🍫', name: 'Midnight Chocolate Chunks', brand: 'Cocoa Theory',   price: 329,                    image: img('1511381939415-e44015466834') },
     { id: 'fl5', emoji: '🍕', name: 'Comfort Pizza',           brand: 'Midnight Kitchen', price: 549,                    image: img('1513104890138-7c749659a591') },
     { id: 'fl6', emoji: '🍪', name: 'Masala Chai & Cookies',   brand: 'Steep Story',      price: 229, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
+    { id: 'fl7', emoji: '🍲', name: 'Slow-Cooked Stew',        brand: 'Midnight Kitchen', price: 549, tag: 'Cozy Pick',   image: img('1569718212165-3a8278d5f624') },
+    { id: 'fl8', emoji: '☕', name: 'Cinnamon Chai Latte',      brand: 'Steep Story',      price: 249,                    image: img('1512568400610-62da28bc8a13') },
+    { id: 'fl9', emoji: '🍫', name: 'Warm Brownie Bite',       brand: 'Cocoa Theory',     price: 299, tag: 'Most craved', image: img('1511381939415-e44015466834') },
   ],
 };
 
