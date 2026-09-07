@@ -8,6 +8,12 @@ export interface AuthResult {
   error?: string;
   /** Display name the provider handed back (Google/Apple), when available. */
   name?: string;
+  /**
+   * True when signUp returned an active session immediately — i.e. the
+   * Supabase project has "Confirm email" turned off. False means a
+   * confirmation email was actually sent and the account isn't usable yet.
+   */
+  hasSession?: boolean;
 }
 
 export async function signUpWithEmail(
@@ -18,7 +24,7 @@ export async function signUpWithEmail(
   if (!isSupabaseConfigured) {
     return { ok: false, error: 'Supabase is not configured (running in demo mode).' };
   }
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -27,7 +33,7 @@ export async function signUpWithEmail(
     },
   });
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return { ok: true, hasSession: !!data.session };
 }
 
 export async function signInWithEmail(

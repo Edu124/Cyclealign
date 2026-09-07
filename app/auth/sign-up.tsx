@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Screen, TextField } from '@/components/ui';
 import { Wordmark } from '@/components/logo/Wordmark';
 import { palette, spacing } from '@/theme';
 import { signUpWithEmail } from '@/lib/auth';
+import { useSettings } from '@/lib/stores/useSettings';
+import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { useOnboarding } from '@/lib/stores/useOnboarding';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -20,10 +23,22 @@ export default function SignUp() {
     }
     setLoading(true);
     const res = await signUpWithEmail(email.trim(), password, name.trim());
-    setLoading(false);
     if (!res.ok) {
+      setLoading(false);
       Alert.alert('Could not sign up', res.error);
+      return;
+    }
+    if (res.hasSession) {
+      // "Confirm email" is off on this Supabase project — the account is
+      // active immediately, so continue straight into onboarding instead of
+      // telling the user to go check an inbox that has nothing to confirm.
+      useSettings.getState().reset();
+      useDailyLog.getState().reset();
+      if (name.trim()) useOnboarding.getState().set({ name: name.trim() });
+      router.replace('/onboarding/role');
+      setLoading(false);
     } else {
+      setLoading(false);
       Alert.alert(
         'Check your email',
         'Confirm your address, then sign in to continue.',
