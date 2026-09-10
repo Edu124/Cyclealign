@@ -14,8 +14,8 @@ interface AppState {
   setProfile: (profile: Profile) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   addCycleLog: (log: CycleLog) => void;
-  /** Corrects the current (most recent) cycle's start date. */
-  editLastPeriodStart: (newStartDate: string) => void;
+  /** Corrects the current (most recent) cycle's start/end dates. */
+  editLastPeriodRange: (startDate: string, endDate: string) => void;
   completeOnboarding: () => void;
   reset: () => void;
   setHydrated: () => void;
@@ -49,16 +49,16 @@ export const useAppStore = create<AppState>()(
         }));
         pushCycleLog(log).catch(() => {});
       },
-      editLastPeriodStart: (newStartDate) => {
+      editLastPeriodRange: (startDate, endDate) => {
         const logs = get().cycleLogs;
         const current = logs[0];
-        if (!current || current.startDate === newStartDate) return;
+        if (!current || (current.startDate === startDate && current.endDate === endDate)) return;
         const oldStartDate = current.startDate;
-        const updated: CycleLog = { ...current, startDate: newStartDate };
+        const updated: CycleLog = { ...current, startDate, endDate };
         set({
           cycleLogs: [
             updated,
-            ...logs.slice(1).filter((l) => l.startDate !== newStartDate),
+            ...logs.slice(1).filter((l) => l.startDate !== startDate),
           ].sort((a, b) => (a.startDate < b.startDate ? 1 : -1)),
         });
         updateCycleLogDate(oldStartDate, updated).catch(() => {});

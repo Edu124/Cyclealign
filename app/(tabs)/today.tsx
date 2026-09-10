@@ -12,7 +12,7 @@ import { QuickLogCard } from '@/components/dashboard/QuickLogCard';
 import { LogInsightCard } from '@/components/dashboard/LogInsightCard';
 import { LifeStageCard } from '@/components/dashboard/LifeStageCard';
 import { PeriodCheckInModal } from '@/components/dashboard/PeriodCheckInModal';
-import { EditPeriodStartModal } from '@/components/dashboard/EditPeriodStartModal';
+import { EditPeriodDatesModal } from '@/components/dashboard/EditPeriodDatesModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
@@ -36,7 +36,8 @@ import { dash } from '@/theme';
 export default function Today() {
   const profile = useAppStore((s) => s.profile);
   const addCycleLog = useAppStore((s) => s.addCycleLog);
-  const editLastPeriodStart = useAppStore((s) => s.editLastPeriodStart);
+  const editLastPeriodRange = useAppStore((s) => s.editLastPeriodRange);
+  const lastPeriodLog = useAppStore((s) => s.cycleLogs[0] ?? null);
   const prediction = usePrediction();
   const dailyLogs = useDailyLog((s) => s.logs);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
@@ -194,14 +195,13 @@ export default function Today() {
         onNotYet={() => setOverdueDismissed(true)}
       />
 
-      {profile && (
-        <EditPeriodStartModal
+      {lastPeriodLog && (
+        <EditPeriodDatesModal
           visible={editDateOpen}
-          cycleLength={prediction.cycleLength}
-          avgPeriodLength={profile.avgPeriodLength}
-          currentDayOfCycle={prediction.dayOfCycle}
+          currentStartDate={lastPeriodLog.startDate}
+          currentEndDate={lastPeriodLog.endDate ?? null}
           onClose={() => setEditDateOpen(false)}
-          onSave={editLastPeriodStart}
+          onSave={editLastPeriodRange}
         />
       )}
     </>
