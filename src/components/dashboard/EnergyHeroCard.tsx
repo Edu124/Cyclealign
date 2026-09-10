@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { phaseBanner, dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
@@ -19,9 +19,11 @@ interface Props {
   dayOfCycle: number;
   capacity: Capacity;
   hero: HeroGuidance;
+  /** Opens the "edit period start date" flow. Omit to hide the edit affordance. */
+  onEditPress?: () => void;
 }
 
-export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero }: Props) {
+export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero, onEditPress }: Props) {
   const accent = phaseBanner[phase].accent;
   const bg = phaseBanner[phase].bg;
 
@@ -45,6 +47,15 @@ export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero }: Props) {
         <View style={styles.dayRow}>
           <View style={[styles.dot, { backgroundColor: accent }]} />
           <Text style={[styles.dayText, { color: accent }]}>Day {dayOfCycle}</Text>
+          {onEditPress && (
+            <Pressable
+              onPress={onEditPress}
+              hitSlop={10}
+              style={[styles.editBtn, { backgroundColor: `${accent}1A` }]}
+            >
+              <Icon name="pencil" color={accent} size={13} strokeWidth={2} />
+            </Pressable>
+          )}
         </View>
         <Text style={[styles.phase, { color: accent }]}>{PHASE_TITLE[phase]} Phase</Text>
       </View>
@@ -106,6 +117,14 @@ const styles = StyleSheet.create({
   dayRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   dot: { width: 9, height: 9, borderRadius: 5 },
   dayText: { fontSize: 14, fontWeight: '600' },
+  editBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
   phase: { fontFamily: fonts.headingBold, fontSize: 26 },
   divider: { height: 1, backgroundColor: 'rgba(46,42,37,0.08)', marginVertical: 16 },
   energyRow: { flexDirection: 'row', alignItems: 'center' },

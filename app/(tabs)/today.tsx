@@ -12,6 +12,7 @@ import { QuickLogCard } from '@/components/dashboard/QuickLogCard';
 import { LogInsightCard } from '@/components/dashboard/LogInsightCard';
 import { LifeStageCard } from '@/components/dashboard/LifeStageCard';
 import { PeriodCheckInModal } from '@/components/dashboard/PeriodCheckInModal';
+import { EditPeriodStartModal } from '@/components/dashboard/EditPeriodStartModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
@@ -35,9 +36,11 @@ import { dash } from '@/theme';
 export default function Today() {
   const profile = useAppStore((s) => s.profile);
   const addCycleLog = useAppStore((s) => s.addCycleLog);
+  const editLastPeriodStart = useAppStore((s) => s.editLastPeriodStart);
   const prediction = usePrediction();
   const dailyLogs = useDailyLog((s) => s.logs);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
+  const [editDateOpen, setEditDateOpen] = useState(false);
 
   const logInsight = prediction ? analyzeLogs(dailyLogs, prediction) : null;
 
@@ -114,6 +117,7 @@ export default function Today() {
             dayOfCycle={prediction.dayOfCycle}
             capacity={capacity}
             hero={HERO_GUIDANCE[capPhase]}
+            onEditPress={() => setEditDateOpen(true)}
           />
         </Animated.View>
 
@@ -189,6 +193,17 @@ export default function Today() {
         onYes={handleLogPeriodToday}
         onNotYet={() => setOverdueDismissed(true)}
       />
+
+      {profile && (
+        <EditPeriodStartModal
+          visible={editDateOpen}
+          cycleLength={prediction.cycleLength}
+          avgPeriodLength={profile.avgPeriodLength}
+          currentDayOfCycle={prediction.dayOfCycle}
+          onClose={() => setEditDateOpen(false)}
+          onSave={editLastPeriodStart}
+        />
+      )}
     </>
   );
 }

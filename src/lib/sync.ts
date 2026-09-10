@@ -33,6 +33,31 @@ export async function pushCycleLog(log: CycleLog): Promise<void> {
   }, { onConflict: 'user_id,start_date' });
 }
 
+/**
+ * Corrects a cycle log's start date. Rows are keyed by (user_id, start_date)
+ * — upserting the new date alone would leave the old row behind as a stale
+ * duplicate, so the old row is deleted first.
+ */
+export async function updateCycleLogDate(oldStartDate: string, log: CycleLog): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  if (oldStartDate !== log.startDate) {
+    await supabase
+      .from('cycle_logs')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('start_date', oldStartDate);
+  }
+  await supabase.from('cycle_logs').upsert({
+    user_id: user.id,
+    start_date: log.startDate,
+    end_date: log.endDate ?? null,
+    notes: log.notes ?? null,
+  }, { onConflict: 'user_id,start_date' });
+}
+
 export async function pushDailyLog(log: DailyLog): Promise<void> {
   if (!isSupabaseConfigured) return;
   const { data: { user } } = await supabase.auth.getUser();

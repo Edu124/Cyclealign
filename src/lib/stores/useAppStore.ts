@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CycleLog, Profile } from '@/types/models';
-import { pushCycleLog, pushProfile } from '@/lib/sync';
+import { pushCycleLog, pushProfile, updateCycleLogDate } from '@/lib/sync';
 
 interface AppState {
   profile: Profile | null;
@@ -14,6 +14,8 @@ interface AppState {
   setProfile: (profile: Profile) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   addCycleLog: (log: CycleLog) => void;
+  /** Corrects the current (most recent) cycle's start date. */
+  editLastPeriodStart: (newStartDate: string) => void;
   completeOnboarding: () => void;
   reset: () => void;
   setHydrated: () => void;
@@ -46,6 +48,20 @@ export const useAppStore = create<AppState>()(
           ].sort((a, b) => (a.startDate < b.startDate ? 1 : -1)),
         }));
         pushCycleLog(log).catch(() => {});
+      },
+      editLastPeriodStart: (newStartDate) => {
+        const logs = get().cycleLogs;
+        const current = logs[0];
+        if (!current || current.startDate === newStartDate) return;
+        const oldStartDate = current.startDate;
+        const updated: CycleLog = { ...current, startDate: newStartDate };
+        set({
+          cycleLogs: [
+            updated,
+            ...logs.slice(1).filter((l) => l.startDate !== newStartDate),
+          ].sort((a, b) => (a.startDate < b.startDate ? 1 : -1)),
+        });
+        updateCycleLogDate(oldStartDate, updated).catch(() => {});
       },
       completeOnboarding: () => set({ onboardingComplete: true }),
       reset: () =>
