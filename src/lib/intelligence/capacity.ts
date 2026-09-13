@@ -1,4 +1,4 @@
-import { Prediction } from '@/types/models';
+import { Prediction, PhaseKey } from '@/types/models';
 import { getPhases } from '@/lib/prediction/phases';
 import { daysBetween, fromISODate } from '@/lib/dates';
 import type { IconName } from '@/components/dashboard/Icon';
@@ -17,6 +17,15 @@ export type CapacityPhase =
   | 'luteal_late';
 
 export type Capacity = 'HIGH' | 'MEDIUM' | 'LOW';
+
+/** Collapses the 5-way capacity split back to the 4 biological phases (both luteal halves count as luteal). */
+export const CAPACITY_TO_PHASE_KEY: Record<CapacityPhase, PhaseKey> = {
+  menstrual: 'menstrual',
+  follicular: 'follicular',
+  ovulatory: 'ovulation',
+  luteal_early: 'luteal',
+  luteal_late: 'luteal',
+};
 
 export const CAPACITY: Record<CapacityPhase, Capacity> = {
   menstrual: 'LOW',

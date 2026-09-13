@@ -22,7 +22,7 @@ import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
 import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
-import { syncScheduledNotifications } from '@/lib/notifications';
+import { sendPhaseChangeNotification, syncScheduledNotifications } from '@/lib/notifications';
 import { getMyInviteIfExists, publishDigestedStatus } from '@/lib/partnerSync';
 import {
   CAPACITY,
@@ -38,6 +38,8 @@ export default function Today() {
   const addCycleLog = useAppStore((s) => s.addCycleLog);
   const editLastPeriodRange = useAppStore((s) => s.editLastPeriodRange);
   const lastPeriodLog = useAppStore((s) => s.cycleLogs[0] ?? null);
+  const lastNotifiedPhase = useAppStore((s) => s.lastNotifiedPhase);
+  const setLastNotifiedPhase = useAppStore((s) => s.setLastNotifiedPhase);
   const prediction = usePrediction();
   const dailyLogs = useDailyLog((s) => s.logs);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
@@ -55,6 +57,19 @@ export default function Today() {
   useEffect(() => {
     syncScheduledNotifications(prediction, notificationsEnabled);
   }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled]);
+
+  // Fire a one-time notification the moment her cycle crosses into a new
+  // phase. The very first run just records a baseline — it never fires on
+  // app open, only on an actual transition since the last one we saw.
+  useEffect(() => {
+    if (!prediction || !notificationsEnabled) return;
+    if (lastNotifiedPhase && lastNotifiedPhase !== prediction.currentPhase) {
+      sendPhaseChangeNotification(prediction.currentPhase);
+    }
+    if (lastNotifiedPhase !== prediction.currentPhase) {
+      setLastNotifiedPhase(prediction.currentPhase);
+    }
+  }, [prediction?.currentPhase, notificationsEnabled]);
 
   // Partner Sync: whenever her prediction or today's log changes, republish the
   // digested status onto her own link row (only if she's already connected to

@@ -21,10 +21,12 @@ import {
   greenDates,
   scoreForDate,
 } from '@/lib/intelligence/taskScore';
-import { CapacityPhase, PHASE_CONTEXT } from '@/lib/intelligence/capacity';
+import { CAPACITY_TO_PHASE_KEY, CapacityPhase, PHASE_CONTEXT } from '@/lib/intelligence/capacity';
 import { fromISODate, todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
+import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
+import { Activity, PHASE_ACTIVITIES } from '@/lib/wellness/activityCatalog';
 
 const PHASE_NAME: Record<CapacityPhase, string> = {
   menstrual: 'Menstrual',
@@ -50,11 +52,20 @@ export default function TaskSync() {
   const [result, setResult] = useState<{ phase: CapacityPhase; score: ScoreColor | null } | null>(
     null,
   );
+  const [recommendedActivity, setRecommendedActivity] = useState<Activity | null>(null);
+  const [movedViaSuggestion, setMovedViaSuggestion] = useState(false);
+
+  /** Falls back to the dashboard when there's no back-navigation history to pop
+   *  (e.g. this screen was reached directly, not pushed from Home). */
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/today');
+  };
 
   if (!prediction) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Header onBack={() => router.back()} title="Plan a task" />
+        <Header onBack={goBack} title="Plan a task" />
         <Text style={styles.empty}>Set up your cycle first.</Text>
       </SafeAreaView>
     );
@@ -62,13 +73,26 @@ export default function TaskSync() {
 
   const check = () => {
     if (!category) return;
+    setRecommendedActivity(null);
+    setMovedViaSuggestion(false);
     setResult(scoreForDate(category, dateISO, prediction));
+  };
+
+  /** Picks one activity at random from that phase's catalog — kept in state so it doesn't reshuffle on re-render. */
+  const pickRecommendation = (phase: CapacityPhase) => {
+    const list = PHASE_ACTIVITIES[CAPACITY_TO_PHASE_KEY[phase]];
+    setRecommendedActivity(list[Math.floor(Math.random() * list.length)]);
   };
 
   const save = () => {
     if (!category) return;
-    addTask({ category, dateISO, label: label.trim() || undefined });
-    router.back();
+    addTask({
+      category,
+      dateISO,
+      label: label.trim() || undefined,
+      suggestedMove: movedViaSuggestion,
+    });
+    goBack();
   };
 
   const dateLabel = format(fromISODate(dateISO), 'EEE, d MMM');
@@ -128,6 +152,8 @@ export default function TaskSync() {
                               style={styles.betterDateChip}
                               onPress={() => {
                                 setDateISO(d);
+                                setRecommendedActivity(null);
+                                setMovedViaSuggestion(true);
                                 setResult(scoreForDate(category!, d, prediction));
                               }}
                             >
@@ -140,15 +166,30 @@ export default function TaskSync() {
                         </View>
                       </View>
                     )}
+                    {result.score === 'red' && recommendedActivity && (
+                      <ActivityRecommendationCard
+                        intro="Since this day can't move, here's what might help:"
+                        color={ui!.fg}
+                        activity={recommendedActivity}
+                      />
+                    )}
                     <Pressable
                       style={[
                         styles.cta,
                         result.score === 'amber' ? { backgroundColor: ui!.fg } : styles.ctaGhost,
                       ]}
-                      onPress={save}
+                      onPress={
+                        result.score === 'red' && !recommendedActivity
+                          ? () => pickRecommendation(result.phase)
+                          : save
+                      }
                     >
                       <Text style={[styles.ctaText, result.score === 'red' && { color: dash.ink }]}>
-                        {result.score === 'amber' ? 'Keep this date' : 'Keep this date anyway'}
+                        {result.score === 'amber'
+                          ? 'Keep this date'
+                          : recommendedActivity
+                            ? 'Save task'
+                            : 'Keep this date anyway'}
                       </Text>
                     </Pressable>
                   </>
@@ -165,7 +206,7 @@ export default function TaskSync() {
   // ---- Input view ---------------------------------------------------------
   return (
     <SafeAreaView style={styles.safe}>
-      <Header onBack={() => router.back()} title="Plan a task" />
+      <Header onBack={goBack} title="Plan a task" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.privacy}>
           Pick a category only — your task stays private. We'll score it against your cycle.

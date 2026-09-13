@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Modal,
   Platform,
@@ -18,12 +19,16 @@ import {
   type ScoreColor,
 } from '@/lib/intelligence/taskScore';
 import {
+  CAPACITY_TO_PHASE_KEY,
   PHASE_CONTEXT,
   type CapacityPhase,
 } from '@/lib/intelligence/capacity';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
+import { useTasks } from '@/lib/stores/useTasks';
 import type { Prediction } from '@/types/models';
 import { Icon } from '@/components/dashboard/Icon';
+import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
+import { PHASE_ACTIVITIES } from '@/lib/wellness/activityCatalog';
 
 // ── Exact same SCORE_UI as task-sync.tsx ────────────────────────────────────
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
@@ -47,6 +52,19 @@ interface Props {
   onClose: () => void;
 }
 
+/** A task created via Task Sync surfaces here too (plan.tsx merges them in) — its id is prefixed so we can tell it apart from a read-only synced calendar event. */
+function taskIdOf(eventId: string): string | null {
+  return eventId.startsWith('task-') ? eventId.slice('task-'.length) : null;
+}
+
+/** Stable-but-varied activity pick per event, so the same event always shows the same card while different events on the same day don't all show the same one. */
+function pickActivity(phase: CapacityPhase, seed: string) {
+  const list = PHASE_ACTIVITIES[CAPACITY_TO_PHASE_KEY[phase]];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return list[hash % list.length];
+}
+
 function scoreMessage(score: ScoreColor, phaseName: string): string {
   if (score === 'green')
     return `You'll be in your ${phaseName} phase — a strong window for this.`;
@@ -56,7 +74,14 @@ function scoreMessage(score: ScoreColor, phaseName: string): string {
 }
 
 export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) {
+  const updateTaskDate = useTasks((s) => s.updateTaskDate);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+
   if (!dateISO) return null;
+
+  function reveal(eventId: string) {
+    setRevealed((prev) => new Set(prev).add(eventId));
+  }
 
   const dateLabel = format(fromISODate(dateISO), 'EEEE, d MMMM');
   const hasRedEvent = events.some((e) => {
@@ -110,6 +135,7 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                 const isPersonal = score === null;
                 const ui = score ? SCORE_UI[score] : null;
                 const phaseName = PHASE_NAME[phase];
+                const taskId = taskIdOf(event.id);
 
                 // For red events, find the next 2 green dates so we can show them directly.
                 const betterDates = score === 'red'
@@ -164,20 +190,59 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                       </Text>
                     )}
 
-                    {/* Better date suggestions — shown inline for red events */}
+                    {/* Better date suggestions — shown inline for red events.
+                        Tappable only for a locally-created task (it can actually
+                        be moved); a real synced calendar event is read-only. */}
                     {betterDates.length > 0 && (
                       <View style={styles.betterDates}>
-                        <Text style={styles.betterDatesLabel}>✦ Better windows</Text>
+                        <Text style={styles.betterDatesLabel}>
+                          {taskId ? '✦ Better windows — tap to move it' : '✦ Better windows'}
+                        </Text>
                         <View style={styles.dateChips}>
-                          {betterDates.map((d) => (
-                            <View key={d} style={styles.dateChip}>
-                              <Text style={styles.dateChipText}>
-                                {format(fromISODate(d), 'EEE, d MMM')}
-                              </Text>
-                            </View>
-                          ))}
+                          {betterDates.map((d) =>
+                            taskId ? (
+                              <TouchableOpacity
+                                key={d}
+                                style={styles.dateChip}
+                                onPress={() => updateTaskDate(taskId, d)}
+                              >
+                                <Text style={styles.dateChipText}>
+                                  {format(fromISODate(d), 'EEE, d MMM')}
+                                </Text>
+                              </TouchableOpacity>
+                            ) : (
+                              <View key={d} style={styles.dateChip}>
+                                <Text style={styles.dateChipText}>
+                                  {format(fromISODate(d), 'EEE, d MMM')}
+                                </Text>
+                              </View>
+                            ),
+                          )}
                         </View>
                       </View>
+                    )}
+
+                    {/* Same "keep this date anyway" flow as Task Sync: tap to
+                        reveal a phase-tuned activity recommendation instead of
+                        it appearing automatically. */}
+                    {score === 'red' && !revealed.has(event.id) && (
+                      <TouchableOpacity
+                        style={styles.keepBtn}
+                        onPress={() => reveal(event.id)}
+                      >
+                        <Text style={styles.keepBtnText}>Keep this date anyway</Text>
+                      </TouchableOpacity>
+                    )}
+                    {score === 'red' && revealed.has(event.id) && (
+                      <ActivityRecommendationCard
+                        intro={
+                          taskId
+                            ? "Since you're keeping this date, here's what might help:"
+                            : "This can't be moved from here — here's what might help:"
+                        }
+                        color={ui!.fg}
+                        activity={pickActivity(phase, event.id)}
+                      />
                     )}
                   </Animated.View>
                 );
@@ -288,6 +353,17 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   dateChipText: { fontSize: 13, fontWeight: '700', color: '#3A5C2C' },
+  keepBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: dash.bg,
+    borderWidth: 1.5,
+    borderColor: dash.line,
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginTop: 2,
+  },
+  keepBtnText: { fontSize: 13, fontWeight: '700', color: dash.ink },
   footer: { paddingHorizontal: 20, paddingTop: 12, alignItems: 'center' },
   footerNote: { fontSize: 12, color: dash.muted },
 });

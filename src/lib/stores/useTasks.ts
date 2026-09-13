@@ -9,6 +9,10 @@ export interface Task {
   label?: string; // optional private label, max 40 chars, local only
   done?: boolean;
   starred?: boolean;
+  /** True when this date was picked from a "better windows" suggestion chip. */
+  suggestedMove?: boolean;
+  /** True once she's answered the "did it help" prompt for a suggested move. */
+  feedbackGiven?: boolean;
 }
 
 interface TasksState {
@@ -17,6 +21,9 @@ interface TasksState {
   removeTask: (id: string) => void;
   toggleDone: (id: string) => void;
   toggleStar: (id: string) => void;
+  recordFeedback: (id: string) => void;
+  /** Moves a task to a new date via a "better windows" suggestion — flags it for the end-of-day feedback prompt. */
+  updateTaskDate: (id: string, dateISO: string) => void;
 }
 
 export const useTasks = create<TasksState>()(
@@ -36,6 +43,16 @@ export const useTasks = create<TasksState>()(
       toggleStar: (id) =>
         set((s) => ({
           tasks: s.tasks.map((t) => (t.id === id ? { ...t, starred: !t.starred } : t)),
+        })),
+      recordFeedback: (id) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, feedbackGiven: true } : t)),
+        })),
+      updateTaskDate: (id, dateISO) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === id ? { ...t, dateISO, suggestedMove: true, feedbackGiven: false } : t,
+          ),
         })),
     }),
     {

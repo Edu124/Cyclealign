@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CycleLog, Profile } from '@/types/models';
+import { CycleLog, PhaseKey, Profile } from '@/types/models';
 import { pushCycleLog, pushProfile, updateCycleLogDate } from '@/lib/sync';
 
 interface AppState {
@@ -10,12 +10,15 @@ interface AppState {
   onboardingComplete: boolean;
   /** Becomes true once the persisted store has rehydrated from disk. */
   hydrated: boolean;
+  /** Last phase she was notified for — lets a phase-change notification fire exactly once per transition. */
+  lastNotifiedPhase: PhaseKey | null;
 
   setProfile: (profile: Profile) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   addCycleLog: (log: CycleLog) => void;
   /** Corrects the current (most recent) cycle's start/end dates. */
   editLastPeriodRange: (startDate: string, endDate: string) => void;
+  setLastNotifiedPhase: (phase: PhaseKey) => void;
   completeOnboarding: () => void;
   reset: () => void;
   setHydrated: () => void;
@@ -28,6 +31,7 @@ export const useAppStore = create<AppState>()(
       cycleLogs: [],
       onboardingComplete: false,
       hydrated: false,
+      lastNotifiedPhase: null,
 
       setProfile: (profile) => {
         set({ profile });
@@ -63,9 +67,10 @@ export const useAppStore = create<AppState>()(
         });
         updateCycleLogDate(oldStartDate, updated).catch(() => {});
       },
+      setLastNotifiedPhase: (phase) => set({ lastNotifiedPhase: phase }),
       completeOnboarding: () => set({ onboardingComplete: true }),
       reset: () =>
-        set({ profile: null, cycleLogs: [], onboardingComplete: false }),
+        set({ profile: null, cycleLogs: [], onboardingComplete: false, lastNotifiedPhase: null }),
       setHydrated: () => set({ hydrated: true }),
     }),
     {
@@ -75,6 +80,7 @@ export const useAppStore = create<AppState>()(
         profile: s.profile,
         cycleLogs: s.cycleLogs,
         onboardingComplete: s.onboardingComplete,
+        lastNotifiedPhase: s.lastNotifiedPhase,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

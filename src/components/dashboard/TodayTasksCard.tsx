@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
@@ -9,6 +10,12 @@ import { usePrediction } from '@/lib/hooks/usePrediction';
 import { fromISODate } from '@/lib/dates';
 import { Icon } from './Icon';
 
+const FEEDBACK_REASONS = [
+  'Still felt off',
+  'Something else came up',
+  "The energy read wasn't right",
+];
+
 interface Props {
   dateISO: string;
 }
@@ -19,6 +26,7 @@ export function TodayTasksCard({ dateISO }: Props) {
   const toggleDone = useTasks((s) => s.toggleDone);
   const toggleStar = useTasks((s) => s.toggleStar);
   const removeTask = useTasks((s) => s.removeTask);
+  const recordFeedback = useTasks((s) => s.recordFeedback);
   const todays = tasksForDate(tasks, dateISO);
   const prediction = usePrediction();
 
@@ -29,6 +37,11 @@ export function TodayTasksCard({ dateISO }: Props) {
   const betterDate = prediction && redTask
     ? greenDates(redTask.category, prediction, 30)[0]
     : undefined;
+
+  // The day a suggested move lands on, ask once whether it actually helped.
+  const feedbackTask = todays.find((t) => t.suggestedMove && !t.feedbackGiven);
+  const [feedbackStep, setFeedbackStep] = useState<'ask' | 'reasons'>('ask');
+  useEffect(() => setFeedbackStep('ask'), [feedbackTask?.id]);
 
   return (
     <View style={styles.card}>
@@ -90,6 +103,47 @@ export function TodayTasksCard({ dateISO }: Props) {
             <Text style={styles.hintBold}>{format(fromISODate(betterDate), 'd MMM')}</Text>
             {' '}is your next high-alignment window.
           </Text>
+        </View>
+      )}
+
+      {/* One-time feedback prompt on the day a suggested move lands */}
+      {feedbackTask && (
+        <View style={styles.feedback}>
+          <Text style={styles.feedbackTitle}>How did it go?</Text>
+          <Text style={styles.feedbackBody}>
+            As per our recommendation the{' '}
+            <Text style={styles.hintBold}>{categoryById(feedbackTask.category)?.label}</Text>
+            {' '}was moved because it looked like a better day. Did it help?
+          </Text>
+
+          {feedbackStep === 'ask' ? (
+            <View style={styles.feedbackRow}>
+              <Pressable
+                style={[styles.feedbackBtn, styles.feedbackBtnYes]}
+                onPress={() => recordFeedback(feedbackTask.id)}
+              >
+                <Text style={styles.feedbackBtnYesText}>👍 Yes, better</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.feedbackBtn, styles.feedbackBtnNo]}
+                onPress={() => setFeedbackStep('reasons')}
+              >
+                <Text style={styles.feedbackBtnNoText}>👎 Not really</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.reasonWrap}>
+              {FEEDBACK_REASONS.map((reason) => (
+                <Pressable
+                  key={reason}
+                  style={styles.reasonChip}
+                  onPress={() => recordFeedback(feedbackTask.id)}
+                >
+                  <Text style={styles.reasonChipText}>{reason}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -157,4 +211,35 @@ const styles = StyleSheet.create({
   hintIcon: { fontSize: 15, marginTop: 1 },
   hintText: { flex: 1, fontSize: 13, color: dash.inkSoft, lineHeight: 19 },
   hintBold: { fontWeight: '700', color: dash.ink },
+
+  feedback: {
+    backgroundColor: dash.sageTint,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    marginTop: 4,
+  },
+  feedbackTitle: { fontSize: 14, fontWeight: '800', color: dash.ink },
+  feedbackBody: { fontSize: 13, color: dash.inkSoft, lineHeight: 19 },
+  feedbackRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
+  feedbackBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  feedbackBtnYes: { backgroundColor: dash.sage },
+  feedbackBtnYesText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  feedbackBtnNo: { backgroundColor: dash.card, borderWidth: 1, borderColor: dash.line },
+  feedbackBtnNoText: { fontSize: 13, fontWeight: '700', color: dash.ink },
+  reasonWrap: { gap: 8, marginTop: 2 },
+  reasonChip: {
+    backgroundColor: dash.card,
+    borderWidth: 1,
+    borderColor: dash.line,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  reasonChipText: { fontSize: 13, fontWeight: '600', color: dash.ink },
 });

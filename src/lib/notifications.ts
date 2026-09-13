@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
-import type { Prediction } from '@/types/models';
+import type { PhaseKey, Prediction } from '@/types/models';
 
 /**
  * Local notification engine — everything is scheduled on-device, no push
@@ -137,6 +137,31 @@ export function sendOrderNotification() {
     'Order confirmed 🎀',
     'Someone is treating herself — your feel-good order is being prepared!',
   );
+}
+
+const PHASE_CHANGE_MESSAGE: Record<PhaseKey, { title: string; body: string }> = {
+  menstrual: {
+    title: "You've entered your Menstrual phase 🌙",
+    body: 'Energy dips today — gentle yoga or stretching can ease cramps and calm your nervous system. Be kind to yourself.',
+  },
+  follicular: {
+    title: "You've entered your Follicular phase 🌿",
+    body: "Energy's rising — a great day to start something new. Try a brisk walk or a fresh workout to match your momentum.",
+  },
+  ovulation: {
+    title: "You've entered your Ovulatory phase ☀️",
+    body: "You're at your peak — perfect for high-energy workouts, big conversations, or tackling your boldest task today.",
+  },
+  luteal: {
+    title: "You've entered your Luteal phase 🍂",
+    body: "Energy's winding down — yoga or a slow walk can help manage stress as progesterone rises. Protect your evenings.",
+  },
+};
+
+/** Fired once, the moment her cycle actually crosses into a new phase. */
+export function sendPhaseChangeNotification(phase: PhaseKey) {
+  const { title, body } = PHASE_CHANGE_MESSAGE[phase];
+  return notifyNow(title, body);
 }
 
 /**
