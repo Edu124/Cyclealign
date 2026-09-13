@@ -75,21 +75,20 @@ function scoreMessage(score: ScoreColor, phaseName: string): string {
 
 export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) {
   const updateTaskDate = useTasks((s) => s.updateTaskDate);
-  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [openPopupEventId, setOpenPopupEventId] = useState<string | null>(null);
 
   if (!dateISO) return null;
 
-  function reveal(eventId: string) {
-    setRevealed((prev) => new Set(prev).add(eventId));
-  }
-
   const dateLabel = format(fromISODate(dateISO), 'EEEE, d MMMM');
+  const popupEvent = events.find((e) => e.id === openPopupEventId);
+  const popupResult = popupEvent ? scoreForDate(popupEvent.categoryId, dateISO, prediction) : null;
   const hasRedEvent = events.some((e) => {
     const r = scoreForDate(e.categoryId, dateISO, prediction);
     return r.score === 'red';
   });
 
   return (
+    <>
     <Modal visible={!!dateISO} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
@@ -223,26 +222,14 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                     )}
 
                     {/* Same "keep this date anyway" flow as Task Sync: tap to
-                        reveal a phase-tuned activity recommendation instead of
-                        it appearing automatically. */}
-                    {score === 'red' && !revealed.has(event.id) && (
+                        reveal a phase-tuned activity recommendation popup. */}
+                    {score === 'red' && (
                       <TouchableOpacity
                         style={styles.keepBtn}
-                        onPress={() => reveal(event.id)}
+                        onPress={() => setOpenPopupEventId(event.id)}
                       >
                         <Text style={styles.keepBtnText}>Keep this date anyway</Text>
                       </TouchableOpacity>
-                    )}
-                    {score === 'red' && revealed.has(event.id) && (
-                      <ActivityRecommendationCard
-                        intro={
-                          taskId
-                            ? "Since you're keeping this date, here's what might help:"
-                            : "This can't be moved from here — here's what might help:"
-                        }
-                        color={ui!.fg}
-                        activity={pickActivity(phase, event.id)}
-                      />
                     )}
                   </Animated.View>
                 );
@@ -258,6 +245,21 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
         </View>
       </View>
     </Modal>
+
+    {popupEvent && popupResult?.score === 'red' && (
+      <ActivityRecommendationCard
+        visible
+        intro={
+          taskIdOf(popupEvent.id)
+            ? "Since you're keeping this date, here's what might help:"
+            : "This can't be moved from here — here's what might help:"
+        }
+        color={SCORE_UI.red.fg}
+        activity={pickActivity(popupResult.phase, popupEvent.id)}
+        onClose={() => setOpenPopupEventId(null)}
+      />
+    )}
+    </>
   );
 }
 

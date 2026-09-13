@@ -53,6 +53,7 @@ export default function TaskSync() {
     null,
   );
   const [recommendedActivity, setRecommendedActivity] = useState<Activity | null>(null);
+  const [popupOpen, setPopupOpen] = useState(false);
   const [movedViaSuggestion, setMovedViaSuggestion] = useState(false);
 
   /** Falls back to the dashboard when there's no back-navigation history to pop
@@ -74,6 +75,7 @@ export default function TaskSync() {
   const check = () => {
     if (!category) return;
     setRecommendedActivity(null);
+    setPopupOpen(false);
     setMovedViaSuggestion(false);
     setResult(scoreForDate(category, dateISO, prediction));
   };
@@ -82,6 +84,7 @@ export default function TaskSync() {
   const pickRecommendation = (phase: CapacityPhase) => {
     const list = PHASE_ACTIVITIES[CAPACITY_TO_PHASE_KEY[phase]];
     setRecommendedActivity(list[Math.floor(Math.random() * list.length)]);
+    setPopupOpen(true);
   };
 
   const save = () => {
@@ -153,6 +156,7 @@ export default function TaskSync() {
                               onPress={() => {
                                 setDateISO(d);
                                 setRecommendedActivity(null);
+                                setPopupOpen(false);
                                 setMovedViaSuggestion(true);
                                 setResult(scoreForDate(category!, d, prediction));
                               }}
@@ -165,13 +169,6 @@ export default function TaskSync() {
                           ))}
                         </View>
                       </View>
-                    )}
-                    {result.score === 'red' && recommendedActivity && (
-                      <ActivityRecommendationCard
-                        intro="Since this day can't move, here's what might help:"
-                        color={ui!.fg}
-                        activity={recommendedActivity}
-                      />
                     )}
                     <Pressable
                       style={[
@@ -199,6 +196,15 @@ export default function TaskSync() {
           )}
         </ScrollView>
 
+        {recommendedActivity && (
+          <ActivityRecommendationCard
+            visible={popupOpen}
+            intro="Since this day can't move, here's what might help:"
+            color={ui!.fg}
+            activity={recommendedActivity}
+            onClose={() => setPopupOpen(false)}
+          />
+        )}
       </SafeAreaView>
     );
   }

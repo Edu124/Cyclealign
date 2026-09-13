@@ -9,120 +9,92 @@ const CATEGORY_LABEL: Record<Activity['category'], string> = {
 };
 
 interface Props {
+  visible: boolean;
   activity: Activity;
   color: string;
   /** Short lead-in shown above the card, e.g. "Since this day can't move, here's what might help:" */
   intro?: string;
+  onClose: () => void;
 }
 
 /**
- * A single phase-tuned activity recommendation, in the same product-card
- * visual language as the Insights tab's activity grid — image + emoji
- * fallback + tag, with the "why" (benefit) shown as one line underneath.
- * Tapping the card opens the same detail bottom-sheet the Insights grid uses.
+ * A single phase-tuned activity recommendation, shown as a small popup — a
+ * compact thumbnail (not a big banner) with the name/duration beside it and
+ * the "why" (benefit) below, matching the same info the Insights tab shows.
  */
-export function ActivityRecommendationCard({ activity, color, intro }: Props) {
+export function ActivityRecommendationCard({ visible, activity, color, intro, onClose }: Props) {
   const [imgFailed, setImgFailed] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   return (
-    <View style={styles.wrap}>
-      {intro && <Text style={styles.intro}>{intro}</Text>}
-      <Pressable onPress={() => setDetailOpen(true)}>
-        <View style={styles.card}>
-          <View style={styles.imageWrap}>
-            <Text style={styles.emoji}>{activity.emoji}</Text>
-            {!imgFailed && (
-              <Image
-                source={{ uri: activity.image }}
-                style={styles.image}
-                resizeMode="cover"
-                onError={() => setImgFailed(true)}
-              />
-            )}
-            {activity.tag && (
-              <View style={styles.tagPill}>
-                <Text style={[styles.tagText, { color }]}>{activity.tag}</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.body}>
-            <Text style={styles.category}>{CATEGORY_LABEL[activity.category]}</Text>
-            <Text style={styles.name}>{activity.name}</Text>
-            <Text style={[styles.duration, { color }]}>{activity.duration}</Text>
-          </View>
-        </View>
-        <Text style={styles.benefit}>{activity.benefit}</Text>
-      </Pressable>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.popup} onPress={() => {}}>
+          {intro && <Text style={styles.intro}>{intro}</Text>}
 
-      <Modal visible={detailOpen} animationType="slide" transparent onRequestClose={() => setDetailOpen(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setDetailOpen(false)}>
-          <Pressable style={styles.sheet} onPress={() => {}}>
-            <Text style={styles.sheetEmoji}>{activity.emoji}</Text>
-            <Text style={styles.sheetName}>{activity.name}</Text>
-            <Text style={[styles.sheetMeta, { color }]}>
-              {CATEGORY_LABEL[activity.category]} · {activity.duration}
-            </Text>
-            <Text style={styles.sheetBenefit}>{activity.benefit}</Text>
-            <Pressable style={[styles.sheetBtn, { backgroundColor: color }]} onPress={() => setDetailOpen(false)}>
-              <Text style={styles.sheetBtnText}>Got it</Text>
-            </Pressable>
+          <View style={styles.row}>
+            <View style={styles.thumbWrap}>
+              <Text style={styles.emoji}>{activity.emoji}</Text>
+              {!imgFailed && (
+                <Image
+                  source={{ uri: activity.image }}
+                  style={styles.thumb}
+                  resizeMode="cover"
+                  onError={() => setImgFailed(true)}
+                />
+              )}
+            </View>
+            <View style={styles.textCol}>
+              <Text style={styles.category}>{CATEGORY_LABEL[activity.category]}</Text>
+              <Text style={styles.name} numberOfLines={2}>{activity.name}</Text>
+              <Text style={[styles.duration, { color }]}>{activity.duration}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.benefit}>{activity.benefit}</Text>
+
+          <Pressable style={[styles.gotItBtn, { backgroundColor: color }]} onPress={onClose}>
+            <Text style={styles.gotItText}>Got it</Text>
           </Pressable>
         </Pressable>
-      </Modal>
-    </View>
+      </Pressable>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '100%', gap: 8 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(47,42,37,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  popup: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: dash.card,
+    borderRadius: 20,
+    padding: 18,
+    gap: 12,
+  },
   intro: { fontSize: 13, fontWeight: '600', color: dash.inkSoft },
-  card: { backgroundColor: '#F9F6F1', borderRadius: 16, overflow: 'hidden' },
-  imageWrap: {
-    height: 120,
+  row: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  thumbWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     backgroundColor: '#F0EBE5',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  image: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  emoji: { fontSize: 32 },
-  tagPill: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#FFFFFFEE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 7,
-  },
-  tagText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
-  body: { padding: 14, gap: 3 },
+  thumb: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  emoji: { fontSize: 22 },
+  textCol: { flex: 1, gap: 2 },
   category: { fontSize: 11, fontWeight: '700', color: dash.muted, letterSpacing: 0.2 },
   name: { fontSize: 15, fontWeight: '700', color: dash.ink },
-  duration: { fontSize: 13, fontWeight: '700' },
-  benefit: { fontSize: 13, color: dash.inkSoft, lineHeight: 19, paddingHorizontal: 2, marginTop: 8 },
-
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: dash.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingBottom: 40,
-    alignItems: 'center',
-    gap: 6,
-  },
-  sheetEmoji: { fontSize: 40, marginBottom: 4 },
-  sheetName: { fontSize: 19, fontWeight: '800', color: dash.ink, textAlign: 'center' },
-  sheetMeta: { fontSize: 13, fontWeight: '700' },
-  sheetBenefit: {
-    fontSize: 14,
-    color: dash.inkSoft,
-    textAlign: 'center',
-    lineHeight: 21,
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  sheetBtn: { borderRadius: 14, paddingVertical: 13, paddingHorizontal: 40, marginTop: 4 },
-  sheetBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  duration: { fontSize: 12, fontWeight: '700' },
+  benefit: { fontSize: 13, color: dash.inkSoft, lineHeight: 19 },
+  gotItBtn: { borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 2 },
+  gotItText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
 });
