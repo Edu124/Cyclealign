@@ -14,6 +14,7 @@ import { DayEventsModal } from '@/components/plan/DayEventsModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCalendar, type CalendarEvent } from '@/lib/stores/useCalendar';
+import { phaseTestEvents } from '@/lib/intelligence/demoEvents';
 import { useTasks } from '@/lib/stores/useTasks';
 import { TASK_SYNC_CATEGORIES } from '@/lib/intelligence/taskScore';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
@@ -55,6 +56,8 @@ export default function Plan() {
     isPrivate: t.category === 'PERSONAL',
   }));
   const allEvents = [...events, ...taskEvents];
+  // Sample calendar: one event per phase so every phase's suggestions can be tried.
+  const demoEvents = prediction ? phaseTestEvents(prediction) : [];
 
   // ── Auto re-sync ──────────────────────────────────────────────────────────
   // The connect flow takes a one-time snapshot; without this, events created
@@ -271,7 +274,7 @@ export default function Plan() {
             : 'Google Calendar sync is not available on this device yet. You can preview with sample events instead.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Use sample events', onPress: () => connectDemo('Google Calendar (demo)') },
+            { text: 'Use sample events', onPress: () => connectDemo('Google Calendar (demo)', demoEvents) },
           ],
         );
         return;
@@ -286,7 +289,7 @@ export default function Plan() {
           'Outlook Calendar sync is not available on this device yet. You can preview with sample events instead.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Use sample events', onPress: () => connectDemo('Outlook Calendar (demo)') },
+            { text: 'Use sample events', onPress: () => connectDemo('Outlook Calendar (demo)', demoEvents) },
           ],
         );
         return;
@@ -297,7 +300,7 @@ export default function Plan() {
         apple: 'Apple Calendar (demo)',
         demo:  'Sample Calendar',
       };
-      connectDemo(labels[providerId] ?? 'Calendar');
+      connectDemo(labels[providerId] ?? 'Calendar', demoEvents);
     }
   }
 

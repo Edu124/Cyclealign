@@ -26,7 +26,7 @@ import { fromISODate, todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
 import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
-import { Activity, PHASE_ACTIVITIES } from '@/lib/wellness/activityCatalog';
+import { Activity, pickSuggestions } from '@/lib/wellness/activityCatalog';
 
 const PHASE_NAME: Record<CapacityPhase, string> = {
   menstrual: 'Menstrual',
@@ -52,7 +52,7 @@ export default function TaskSync() {
   const [result, setResult] = useState<{ phase: CapacityPhase; score: ScoreColor | null } | null>(
     null,
   );
-  const [recommendedActivity, setRecommendedActivity] = useState<Activity | null>(null);
+  const [recommendedActivities, setRecommendedActivities] = useState<Activity[] | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
   const [movedViaSuggestion, setMovedViaSuggestion] = useState(false);
 
@@ -74,16 +74,17 @@ export default function TaskSync() {
 
   const check = () => {
     if (!category) return;
-    setRecommendedActivity(null);
+    setRecommendedActivities(null);
     setPopupOpen(false);
     setMovedViaSuggestion(false);
     setResult(scoreForDate(category, dateISO, prediction));
   };
 
-  /** Picks one activity at random from that phase's catalog — kept in state so it doesn't reshuffle on re-render. */
+  /** Picks four suggestions for that phase — kept in state so they don't reshuffle on re-render. */
   const pickRecommendation = (phase: CapacityPhase) => {
-    const list = PHASE_ACTIVITIES[CAPACITY_TO_PHASE_KEY[phase]];
-    setRecommendedActivity(list[Math.floor(Math.random() * list.length)]);
+    setRecommendedActivities(
+      pickSuggestions(CAPACITY_TO_PHASE_KEY[phase], true, String(Math.random())),
+    );
     setPopupOpen(true);
   };
 
@@ -155,7 +156,7 @@ export default function TaskSync() {
                               style={styles.betterDateChip}
                               onPress={() => {
                                 setDateISO(d);
-                                setRecommendedActivity(null);
+                                setRecommendedActivities(null);
                                 setPopupOpen(false);
                                 setMovedViaSuggestion(true);
                                 setResult(scoreForDate(category!, d, prediction));
@@ -176,17 +177,13 @@ export default function TaskSync() {
                         result.score === 'amber' ? { backgroundColor: ui!.fg } : styles.ctaGhost,
                       ]}
                       onPress={
-                        result.score === 'red' && !recommendedActivity
+                        !recommendedActivities
                           ? () => pickRecommendation(result.phase)
                           : save
                       }
                     >
                       <Text style={[styles.ctaText, result.score === 'red' && { color: dash.ink }]}>
-                        {result.score === 'amber'
-                          ? 'Keep this date'
-                          : recommendedActivity
-                            ? 'Save task'
-                            : 'Keep this date anyway'}
+                        {recommendedActivities ? 'Save task' : 'Keep this date anyway'}
                       </Text>
                     </Pressable>
                   </>
@@ -196,12 +193,12 @@ export default function TaskSync() {
           )}
         </ScrollView>
 
-        {recommendedActivity && (
+        {recommendedActivities && (
           <ActivityRecommendationCard
             visible={popupOpen}
-            intro="Since this day can't move, here's what might help:"
+            intro="Since you're keeping this date, here's what might help:"
             color={ui!.fg}
-            activity={recommendedActivity}
+            activities={recommendedActivities}
             onClose={() => setPopupOpen(false)}
           />
         )}

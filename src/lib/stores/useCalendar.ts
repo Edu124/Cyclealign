@@ -60,7 +60,7 @@ interface CalendarState {
   /** Connect with real on-device Apple Calendar (EventKit) data. */
   connectAppleCalendar: (events: CalendarEvent[]) => void;
   /** Connect with seeded demo data (Outlook / sample, or Apple on non-iOS). */
-  connectDemo: (providerLabel?: string) => void;
+  connectDemo: (providerLabel?: string, extraEvents?: CalendarEvent[]) => void;
   /** Backwards-compat alias for connectDemo. */
   connect: () => void;
   disconnect: () => void;
@@ -114,8 +114,8 @@ export const useCalendar = create<CalendarState>()(
       connectAppleCalendar: (events) =>
         set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events }),
 
-      connectDemo: (label = 'Calendar') =>
-        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents() }),
+      connectDemo: (label = 'Calendar', extraEvents = []) =>
+        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: [...seedEvents(), ...extraEvents] }),
 
       connect: () =>
         set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents() }),

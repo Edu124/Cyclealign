@@ -8,6 +8,7 @@ import type { PhaseKey } from '@/types/models';
 const CATEGORY_LABEL: Record<Activity['category'], string> = {
   exercise: '🏃 Exercise',
   mindfulness: '🧘 Mindfulness',
+  quick: '☕ Quick Break',
 };
 
 interface Props {

@@ -28,7 +28,7 @@ import { useTasks } from '@/lib/stores/useTasks';
 import type { Prediction } from '@/types/models';
 import { Icon } from '@/components/dashboard/Icon';
 import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
-import { PHASE_ACTIVITIES } from '@/lib/wellness/activityCatalog';
+import { pickSuggestions } from '@/lib/wellness/activityCatalog';
 
 // ── Exact same SCORE_UI as task-sync.tsx ────────────────────────────────────
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
@@ -55,14 +55,6 @@ interface Props {
 /** A task created via Task Sync surfaces here too (plan.tsx merges them in) — its id is prefixed so we can tell it apart from a read-only synced calendar event. */
 function taskIdOf(eventId: string): string | null {
   return eventId.startsWith('task-') ? eventId.slice('task-'.length) : null;
-}
-
-/** Stable-but-varied activity pick per event, so the same event always shows the same card while different events on the same day don't all show the same one. */
-function pickActivity(phase: CapacityPhase, seed: string) {
-  const list = PHASE_ACTIVITIES[CAPACITY_TO_PHASE_KEY[phase]];
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  return list[hash % list.length];
 }
 
 function scoreMessage(score: ScoreColor, phaseName: string): string {
@@ -137,7 +129,8 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                 const taskId = taskIdOf(event.id);
 
                 // For red events, find the next 2 green dates so we can show them directly.
-                const betterDates = score === 'red'
+                const needsAttention = score === 'red' || score === 'amber';
+                const betterDates = needsAttention
                   ? greenDates(event.categoryId, prediction, 30).slice(0, 2)
                   : [];
 
@@ -223,7 +216,7 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
 
                     {/* Same "keep this date anyway" flow as Task Sync: tap to
                         reveal a phase-tuned activity recommendation popup. */}
-                    {score === 'red' && (
+                    {needsAttention && (
                       <TouchableOpacity
                         style={styles.keepBtn}
                         onPress={() => setOpenPopupEventId(event.id)}
@@ -246,7 +239,7 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
       </View>
     </Modal>
 
-    {popupEvent && popupResult?.score === 'red' && (
+    {popupEvent && popupResult && popupResult.score && popupResult.score !== 'green' && (
       <ActivityRecommendationCard
         visible
         intro={
@@ -254,8 +247,12 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
             ? "Since you're keeping this date, here's what might help:"
             : "This can't be moved from here — here's what might help:"
         }
-        color={SCORE_UI.red.fg}
-        activity={pickActivity(popupResult.phase, popupEvent.id)}
+        color={SCORE_UI[popupResult.score].fg}
+        activities={pickSuggestions(
+          CAPACITY_TO_PHASE_KEY[popupResult.phase],
+          !!taskIdOf(popupEvent.id),
+          popupEvent.id,
+        )}
         onClose={() => setOpenPopupEventId(null)}
       />
     )}
