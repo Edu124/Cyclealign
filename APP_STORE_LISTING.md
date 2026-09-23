@@ -38,8 +38,9 @@ A 20-second Quick Log (energy, mood, one win) builds a picture of your
 real pattern over time — not just the textbook average.
 
 CALENDAR AWARE
-Connect Google or Apple Calendar (read-only) to see your existing events
-scored against your cycle — plan around what's already on your plate.
+Connect Google, Outlook or Apple Calendar to see your existing events
+scored against your cycle — and move an event to a better day with one
+tap (always with your confirmation).
 
 ASK ALIGN — YOUR PRIVATE CYCLE COACH
 A warm, judgment-free AI coach that knows your current phase and recent

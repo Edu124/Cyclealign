@@ -66,6 +66,8 @@ interface CalendarState {
   disconnect: () => void;
   addEvent: (e: Omit<CalendarEvent, 'id'>) => void;
   removeEvent: (id: string) => void;
+  /** Updates an event's date locally after it was moved (in the provider, or in the sample calendar). */
+  moveEvent: (id: string, dateISO: string) => void;
   eventsForDate: (dateISO: string) => CalendarEvent[];
 }
 
@@ -130,6 +132,11 @@ export const useCalendar = create<CalendarState>()(
 
       removeEvent: (id) =>
         set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
+
+      moveEvent: (id, dateISO) =>
+        set((s) => ({
+          events: s.events.map((e) => (e.id === id ? { ...e, dateISO } : e)),
+        })),
 
       eventsForDate: (dateISO) =>
         get().events.filter((e) => e.dateISO === dateISO),

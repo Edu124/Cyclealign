@@ -152,7 +152,8 @@ export default function Plan() {
     clientId:       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? PLACEHOLDER_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? PLACEHOLDER_ID,
     iosClientId:    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? PLACEHOLDER_ID,
-    scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+    // calendar.events = read AND edit events (needed to move an event to a better date).
+    scopes: ['https://www.googleapis.com/auth/calendar.events'],
     // access_type=offline is what makes Google issue a refresh token instead
     // of just a ~1hr access token; prompt=consent forces that even on a
     // reconnect (Google only auto-issues one on the very first-ever grant).
@@ -197,7 +198,7 @@ export default function Plan() {
     {
       clientId: OUTLOOK_CLIENT_ID,
       redirectUri: OUTLOOK_REDIRECT_URI,
-      scopes: ['openid', 'profile', 'offline_access', 'https://graph.microsoft.com/Calendars.Read'],
+      scopes: ['openid', 'profile', 'offline_access', 'https://graph.microsoft.com/Calendars.ReadWrite'],
       usePKCE: true,
       // Unlike Google, Microsoft's `prompt` only accepts ONE value at a
       // time (login | none | consent | select_account | create) — combining

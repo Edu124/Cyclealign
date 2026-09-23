@@ -9,7 +9,8 @@
  *    - Supported account types: "Any Entra ID Tenant + Personal Microsoft accounts"
  *    - Platform: Mobile and desktop applications
  *    - Redirect URI: com.cyclealign.app://oauthredirect
- * 2. API permissions → Add → Microsoft Graph → Delegated → Calendars.Read
+ * 2. API permissions → Add → Microsoft Graph → Delegated → Calendars.ReadWrite
+ *    (write is needed to move an event to a better date)
  * 3. Authentication → Allow public client flows → Yes
  * 4. Add to .env:
  *      EXPO_PUBLIC_OUTLOOK_CLIENT_ID=xxxx-xxxx-xxxx-xxxx
@@ -98,7 +99,13 @@ export async function fetchOutlookCalendarEvents(
 }
 
 const OUTLOOK_TOKEN_ENDPOINT = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-const OUTLOOK_SCOPES = 'openid profile offline_access https://graph.microsoft.com/Calendars.Read';
+// Tried in order on refresh: a refresh token can only be exchanged for scopes
+// it was originally granted, so people who connected before write access
+// existed fall back to read-only instead of losing their sync.
+const OUTLOOK_SCOPE_SETS = [
+  'openid profile offline_access https://graph.microsoft.com/Calendars.ReadWrite',
+  'openid profile offline_access https://graph.microsoft.com/Calendars.Read',
+];
 
 /**
  * Mint a fresh access token from a stored refresh token. Microsoft rotates
@@ -112,25 +119,28 @@ export async function refreshOutlookAccessToken(
   const clientId = process.env.EXPO_PUBLIC_OUTLOOK_CLIENT_ID;
   if (!clientId) return null;
 
-  try {
-    const body = [
-      `client_id=${encodeURIComponent(clientId)}`,
-      `refresh_token=${encodeURIComponent(refreshToken)}`,
-      'grant_type=refresh_token',
-      `scope=${encodeURIComponent(OUTLOOK_SCOPES)}`,
-    ].join('&');
-    const res = await fetch(OUTLOOK_TOKEN_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { access_token?: string; refresh_token?: string };
-    if (!data.access_token) return null;
-    return { accessToken: data.access_token, refreshToken: data.refresh_token ?? refreshToken };
-  } catch {
-    return null;
+  for (const scope of OUTLOOK_SCOPE_SETS) {
+    try {
+      const body = [
+        `client_id=${encodeURIComponent(clientId)}`,
+        `refresh_token=${encodeURIComponent(refreshToken)}`,
+        'grant_type=refresh_token',
+        `scope=${encodeURIComponent(scope)}`,
+      ].join('&');
+      const res = await fetch(OUTLOOK_TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { access_token?: string; refresh_token?: string };
+      if (!data.access_token) continue;
+      return { accessToken: data.access_token, refreshToken: data.refresh_token ?? refreshToken };
+    } catch {
+      // try the next scope set
+    }
   }
+  return null;
 }
 
 /**

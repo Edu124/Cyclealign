@@ -3,7 +3,7 @@
  *
  * Setup (one-time, done in Google Cloud Console):
  * 1. Create a project → enable "Google Calendar API"
- * 2. OAuth consent screen → add scope: calendar.readonly
+ * 2. OAuth consent screen → add scope: calendar.events (read + edit events)
  * 3. Create credentials → OAuth 2.0 Client IDs:
  *    - Web: authorized redirect URI = http://localhost:8081 (dev) + https://auth.expo.io/@<username>/<slug>
  *    - Android: package name = your app bundle ID

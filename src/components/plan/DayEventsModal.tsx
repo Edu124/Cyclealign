@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -29,6 +30,7 @@ import type { Prediction } from '@/types/models';
 import { Icon } from '@/components/dashboard/Icon';
 import { TaskGuidanceCard } from '@/components/wellness/TaskGuidanceCard';
 import { PHASE_APPROACH, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
+import { moveCalendarEvent, providerOf, type MoveResult } from '@/lib/calendarMove';
 
 // ── Exact same SCORE_UI as task-sync.tsx ────────────────────────────────────
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
@@ -57,6 +59,36 @@ function taskIdOf(eventId: string): string | null {
   return eventId.startsWith('task-') ? eventId.slice('task-'.length) : null;
 }
 
+function confirmAsync(title: string, message: string): Promise<boolean> {
+  if (Platform.OS === 'web') return Promise.resolve(window.confirm(title + '\n\n' + message));
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Move it', onPress: () => resolve(true) },
+    ], { cancelable: true, onDismiss: () => resolve(false) });
+  });
+}
+
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(title + '\n\n' + message);
+  else Alert.alert(title, message);
+}
+
+function failureText(res: Extract<MoveResult, { ok: false }>): string {
+  switch (res.reason) {
+    case 'recurring':
+      return "This is a repeating event, so it can't be moved from here. Change it in your calendar app.";
+    case 'not-organizer':
+      return res.message ?? 'Only the organizer can move this event.';
+    case 'needs-reconnect':
+      return 'CycleAlign needs permission to change your calendar. Tap Disconnect, then Connect again, and allow it.';
+    case 'not-signed-in':
+      return 'Your calendar connection has expired. Tap Disconnect, then Connect again.';
+    default:
+      return res.message ?? 'Something went wrong. Please try again.';
+  }
+}
+
 function scoreMessage(score: ScoreColor, phaseName: string): string {
   if (score === 'green')
     return `You'll be in your ${phaseName} phase — a strong window for this.`;
@@ -68,8 +100,23 @@ function scoreMessage(score: ScoreColor, phaseName: string): string {
 export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) {
   const updateTaskDate = useTasks((s) => s.updateTaskDate);
   const [openPopupEventId, setOpenPopupEventId] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
 
   if (!dateISO) return null;
+
+  async function moveEventTo(event: CalendarEvent, newDate: string) {
+    if (movingId) return;
+    const label = format(fromISODate(newDate), 'EEE, d MMM');
+    const invited = providerOf(event.id)
+      ? " If other people are invited, they'll be notified."
+      : '';
+    const ok = await confirmAsync('Move this event?', `Move "${event.title}" to ${label}?${invited}`);
+    if (!ok) return;
+    setMovingId(event.id);
+    const res = await moveCalendarEvent(event, newDate);
+    setMovingId(null);
+    if (!res.ok) notify("Couldn't move it", failureText(res));
+  }
 
   const dateLabel = format(fromISODate(dateISO), 'EEEE, d MMMM');
   const popupEvent = events.find((e) => e.id === openPopupEventId);
@@ -182,34 +229,28 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                       </Text>
                     )}
 
-                    {/* Better date suggestions — shown inline for red events.
-                        Tappable only for a locally-created task (it can actually
-                        be moved); a real synced calendar event is read-only. */}
+                    {/* Better date suggestions — shown inline for tough/manageable
+                        events. Tapping moves a task inside the app, or moves a
+                        synced calendar event in its real calendar (after a
+                        confirmation). */}
                     {betterDates.length > 0 && (
                       <View style={styles.betterDates}>
                         <Text style={styles.betterDatesLabel}>
-                          {taskId ? '✦ Better windows — tap to move it' : '✦ Better windows'}
+                          {movingId === event.id ? '✦ Moving…' : '✦ Better windows — tap to move it'}
                         </Text>
                         <View style={styles.dateChips}>
-                          {betterDates.map((d) =>
-                            taskId ? (
-                              <TouchableOpacity
-                                key={d}
-                                style={styles.dateChip}
-                                onPress={() => updateTaskDate(taskId, d)}
-                              >
-                                <Text style={styles.dateChipText}>
-                                  {format(fromISODate(d), 'EEE, d MMM')}
-                                </Text>
-                              </TouchableOpacity>
-                            ) : (
-                              <View key={d} style={styles.dateChip}>
-                                <Text style={styles.dateChipText}>
-                                  {format(fromISODate(d), 'EEE, d MMM')}
-                                </Text>
-                              </View>
-                            ),
-                          )}
+                          {betterDates.map((d) => (
+                            <TouchableOpacity
+                              key={d}
+                              style={[styles.dateChip, movingId === event.id && { opacity: 0.5 }]}
+                              disabled={!!movingId}
+                              onPress={() => (taskId ? updateTaskDate(taskId, d) : moveEventTo(event, d))}
+                            >
+                              <Text style={styles.dateChipText}>
+                                {format(fromISODate(d), 'EEE, d MMM')}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
                         </View>
                       </View>
                     )}
