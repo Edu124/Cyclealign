@@ -27,8 +27,8 @@ import type { CalendarEvent } from '@/lib/stores/useCalendar';
 import { useTasks } from '@/lib/stores/useTasks';
 import type { Prediction } from '@/types/models';
 import { Icon } from '@/components/dashboard/Icon';
-import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
-import { pickSuggestions } from '@/lib/wellness/activityCatalog';
+import { TaskGuidanceCard } from '@/components/wellness/TaskGuidanceCard';
+import { PHASE_APPROACH, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
 
 // ── Exact same SCORE_UI as task-sync.tsx ────────────────────────────────────
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
@@ -214,14 +214,24 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                       </View>
                     )}
 
-                    {/* Same "keep this date anyway" flow as Task Sync: tap to
-                        reveal a phase-tuned activity recommendation popup. */}
+                    {/* Same guidance flow as Task Sync: tap to reveal the
+                        phase-aware PREPARE/PERFORM/RECOVER card — "keep this
+                        date anyway" framing for amber/red, "make the most of
+                        it" framing for a green (ideal) event. */}
                     {needsAttention && (
                       <TouchableOpacity
                         style={styles.keepBtn}
                         onPress={() => setOpenPopupEventId(event.id)}
                       >
                         <Text style={styles.keepBtnText}>Keep this date anyway</Text>
+                      </TouchableOpacity>
+                    )}
+                    {!isPersonal && score === 'green' && (
+                      <TouchableOpacity
+                        style={styles.keepBtn}
+                        onPress={() => setOpenPopupEventId(event.id)}
+                      >
+                        <Text style={styles.keepBtnText}>See how to make the most of it</Text>
                       </TouchableOpacity>
                     )}
                   </Animated.View>
@@ -239,20 +249,18 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
       </View>
     </Modal>
 
-    {popupEvent && popupResult && popupResult.score && popupResult.score !== 'green' && (
-      <ActivityRecommendationCard
+    {popupEvent && popupResult && popupResult.score && (
+      <TaskGuidanceCard
         visible
-        intro={
-          taskIdOf(popupEvent.id)
-            ? "Since you're keeping this date, here's what might help:"
-            : "This can't be moved from here — here's what might help:"
+        variant={popupResult.score === 'green' ? 'ideal' : 'blocked'}
+        categoryLabel={
+          TASK_SYNC_CATEGORIES.find((c) => c.id === popupEvent.categoryId)?.label ?? 'Event'
         }
+        phaseName={PHASE_NAME[popupResult.phase]}
+        approach={PHASE_APPROACH[CAPACITY_TO_PHASE_KEY[popupResult.phase]]}
+        guidance={taskGuidanceFor(popupEvent.categoryId, CAPACITY_TO_PHASE_KEY[popupResult.phase])}
         color={SCORE_UI[popupResult.score].fg}
-        activities={pickSuggestions(
-          CAPACITY_TO_PHASE_KEY[popupResult.phase],
-          !!taskIdOf(popupEvent.id),
-          popupEvent.id,
-        )}
+        onConfirm={() => setOpenPopupEventId(null)}
         onClose={() => setOpenPopupEventId(null)}
       />
     )}

@@ -79,7 +79,7 @@ export default function Today() {
     getMyInviteIfExists().then((link) => {
       if (link && link.status === 'active') publishDigestedStatus(link, prediction);
     });
-  }, [prediction?.currentPhase, prediction?.isOverdue, dailyLogs[todayISO()]]);
+  }, [prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()]]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   useRetailTherapyTrigger(prediction);

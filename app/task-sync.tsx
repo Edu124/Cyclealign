@@ -18,6 +18,7 @@ import { useTasks } from '@/lib/stores/useTasks';
 import {
   ScoreColor,
   TASK_SYNC_CATEGORIES,
+  categoryById,
   greenDates,
   scoreForDate,
 } from '@/lib/intelligence/taskScore';
@@ -25,8 +26,8 @@ import { CAPACITY_TO_PHASE_KEY, CapacityPhase, PHASE_CONTEXT } from '@/lib/intel
 import { fromISODate, todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
-import { ActivityRecommendationCard } from '@/components/wellness/ActivityRecommendationCard';
-import { Activity, pickSuggestions } from '@/lib/wellness/activityCatalog';
+import { TaskGuidanceCard } from '@/components/wellness/TaskGuidanceCard';
+import { OTHER_SUBTYPES, PHASE_APPROACH, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
 
 const PHASE_NAME: Record<CapacityPhase, string> = {
   menstrual: 'Menstrual',
@@ -47,14 +48,25 @@ export default function TaskSync() {
   const addTask = useTasks((s) => s.addTask);
 
   const [category, setCategory] = useState<string | null>(null);
+  const [otherSubtype, setOtherSubtype] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState<string>(todayISO());
   const [label, setLabel] = useState('');
   const [result, setResult] = useState<{ phase: CapacityPhase; score: ScoreColor | null } | null>(
     null,
   );
-  const [recommendedActivities, setRecommendedActivities] = useState<Activity[] | null>(null);
-  const [popupOpen, setPopupOpen] = useState(false);
+  const [guidanceOpen, setGuidanceOpen] = useState(false);
   const [movedViaSuggestion, setMovedViaSuggestion] = useState(false);
+
+  const pickCategory = (id: string) => {
+    setCategory(id);
+    if (id !== 'OTHER') setOtherSubtype(null);
+  };
+
+  /** §7 — the category whose PREPARE/PERFORM/RECOVER content applies (Other defers to its sub-type). */
+  const guidanceCategory =
+    category === 'OTHER'
+      ? OTHER_SUBTYPES.find((s) => s.id === otherSubtype)?.guidanceCategory ?? 'OTHER'
+      : category;
 
   /** Falls back to the dashboard when there's no back-navigation history to pop
    *  (e.g. this screen was reached directly, not pushed from Home). */
@@ -74,18 +86,10 @@ export default function TaskSync() {
 
   const check = () => {
     if (!category) return;
-    setRecommendedActivities(null);
-    setPopupOpen(false);
+    if (category === 'OTHER' && !otherSubtype) return;
+    setGuidanceOpen(false);
     setMovedViaSuggestion(false);
     setResult(scoreForDate(category, dateISO, prediction));
-  };
-
-  /** Picks four suggestions for that phase — kept in state so they don't reshuffle on re-render. */
-  const pickRecommendation = (phase: CapacityPhase) => {
-    setRecommendedActivities(
-      pickSuggestions(CAPACITY_TO_PHASE_KEY[phase], true, String(Math.random())),
-    );
-    setPopupOpen(true);
   };
 
   const save = () => {
@@ -121,6 +125,9 @@ export default function TaskSync() {
                 You have something important on {dateLabel}. That's {phaseName} —{' '}
                 {PHASE_CONTEXT[result.phase]}. Build buffer time around this.
               </Text>
+              <Pressable style={styles.ctaGhostFull} onPress={() => setGuidanceOpen(true)}>
+                <Text style={[styles.ctaText, { color: dash.ink }]}>See how to approach this</Text>
+              </Pressable>
               <Pressable style={[styles.cta, { backgroundColor: dash.sage }]} onPress={save}>
                 <Text style={styles.ctaText}>Save task</Text>
               </Pressable>
@@ -134,7 +141,10 @@ export default function TaskSync() {
               <Text style={styles.resultMsg}>{message(result.score!, phaseName)}</Text>
 
               {result.score === 'green' && (
-                <Pressable style={[styles.cta, { backgroundColor: ui!.fg }]} onPress={save}>
+                <Pressable
+                  style={[styles.cta, { backgroundColor: ui!.fg }]}
+                  onPress={() => setGuidanceOpen(true)}
+                >
                   <Text style={styles.ctaText}>Save task</Text>
                 </Pressable>
               )}
@@ -156,8 +166,7 @@ export default function TaskSync() {
                               style={styles.betterDateChip}
                               onPress={() => {
                                 setDateISO(d);
-                                setRecommendedActivities(null);
-                                setPopupOpen(false);
+                                setGuidanceOpen(false);
                                 setMovedViaSuggestion(true);
                                 setResult(scoreForDate(category!, d, prediction));
                               }}
@@ -176,14 +185,10 @@ export default function TaskSync() {
                         styles.cta,
                         result.score === 'amber' ? { backgroundColor: ui!.fg } : styles.ctaGhost,
                       ]}
-                      onPress={
-                        !recommendedActivities
-                          ? () => pickRecommendation(result.phase)
-                          : save
-                      }
+                      onPress={() => setGuidanceOpen(true)}
                     >
                       <Text style={[styles.ctaText, result.score === 'red' && { color: dash.ink }]}>
-                        {recommendedActivities ? 'Save task' : 'Keep this date anyway'}
+                        Keep this date anyway
                       </Text>
                     </Pressable>
                   </>
@@ -193,13 +198,20 @@ export default function TaskSync() {
           )}
         </ScrollView>
 
-        {recommendedActivities && (
-          <ActivityRecommendationCard
-            visible={popupOpen}
-            intro="Since you're keeping this date, here's what might help:"
-            color={ui!.fg}
-            activities={recommendedActivities}
-            onClose={() => setPopupOpen(false)}
+        {category && (
+          <TaskGuidanceCard
+            visible={guidanceOpen}
+            variant={result.score === 'green' ? 'ideal' : 'blocked'}
+            categoryLabel={categoryById(category)?.label ?? 'Task'}
+            phaseName={phaseName}
+            approach={PHASE_APPROACH[CAPACITY_TO_PHASE_KEY[result.phase]]}
+            guidance={taskGuidanceFor(guidanceCategory!, CAPACITY_TO_PHASE_KEY[result.phase])}
+            color={ui?.fg ?? dash.clay}
+            onConfirm={() => {
+              setGuidanceOpen(false);
+              save();
+            }}
+            onClose={() => setGuidanceOpen(false)}
           />
         )}
       </SafeAreaView>
@@ -222,7 +234,7 @@ export default function TaskSync() {
             return (
               <Pressable
                 key={c.id}
-                onPress={() => setCategory(c.id)}
+                onPress={() => pickCategory(c.id)}
                 style={[styles.catCard, active && styles.catCardActive]}
               >
                 <View style={[styles.catIcon, active && { backgroundColor: dash.sage }]}>
@@ -233,6 +245,28 @@ export default function TaskSync() {
             );
           })}
         </View>
+
+        {category === 'OTHER' && (
+          <View style={styles.subtypeBox}>
+            <Text style={styles.subtypeLabel}>What kind of work is it closest to?</Text>
+            <View style={styles.subtypeRow}>
+              {OTHER_SUBTYPES.map((s) => {
+                const active = otherSubtype === s.id;
+                return (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => setOtherSubtype(s.id)}
+                    style={[styles.subtypeChip, active && styles.subtypeChipActive]}
+                  >
+                    <Text style={[styles.subtypeChipText, active && styles.subtypeChipTextActive]}>
+                      {s.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         <Text style={styles.stepLabel}>Step 2 · When are you planning it?</Text>
         <DateField value={dateISO} onChange={setDateISO} placeholder="Pick a date" />
@@ -251,8 +285,12 @@ export default function TaskSync() {
 
       <View style={styles.footer}>
         <Pressable
-          style={[styles.cta, { backgroundColor: dash.sage }, !category && styles.ctaDisabled]}
-          disabled={!category}
+          style={[
+            styles.cta,
+            { backgroundColor: dash.sage },
+            (!category || (category === 'OTHER' && !otherSubtype)) && styles.ctaDisabled,
+          ]}
+          disabled={!category || (category === 'OTHER' && !otherSubtype)}
           onPress={check}
         >
           <Text style={styles.ctaText}>Check my timing</Text>
@@ -318,6 +356,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   catLabel: { fontSize: 14, fontWeight: '600', color: dash.ink },
+  subtypeBox: {
+    backgroundColor: dash.card,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: dash.line,
+    padding: 12,
+    gap: 8,
+  },
+  subtypeLabel: { fontSize: 13, fontWeight: '700', color: dash.ink },
+  subtypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  subtypeChip: {
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    backgroundColor: dash.sageTint,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  subtypeChipActive: { backgroundColor: dash.sage, borderColor: dash.sage },
+  subtypeChipText: { fontSize: 13, fontWeight: '600', color: dash.sageDeep },
+  subtypeChipTextActive: { color: '#FFFFFF' },
   input: {
     backgroundColor: dash.card,
     borderRadius: 14,
@@ -333,6 +392,15 @@ const styles = StyleSheet.create({
   cta: { borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   ctaDisabled: { opacity: 0.5 },
   ctaGhost: { backgroundColor: dash.card, borderWidth: 1.5, borderColor: dash.line },
+  ctaGhostFull: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: dash.line,
+    alignSelf: 'stretch',
+  },
   ctaText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   ctaRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
   ctaFlex: { flex: 1 },
