@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { capacityPhaseFor, CAPACITY, type CapacityPhase } from '@/lib/intelligence/capacity';
+import { capacityPhaseFor } from '@/lib/intelligence/capacity';
+import { isToughDay, pickPartnerMessage } from '../../supabase/functions/_shared/partnerDigest';
 import { todayISO } from '@/lib/dates';
 import type { DailyLog } from '@/types/models';
 import type { Prediction } from '@/types/models';
@@ -44,49 +45,18 @@ export const PHASE_LABEL: Record<string, string> = {
 };
 
 /**
- * What her partner reads, per phase. Each phase has a "doing okay" and a
- * "rough day" version, so the message changes when her phase changes — not
- * just when she flips between good and tough.
- */
-const PARTNER_MESSAGE: Record<CapacityPhase, { good: string; tough: string }> = {
-  menstrual: {
-    tough: "She's on her period 🌙 — energy and comfort are low today. Extra patience, something warm to drink and taking a few things off her plate would mean a lot.",
-    good: "She's on her period 🌙 but feeling okay today — keep things gentle and low-pressure.",
-  },
-  follicular: {
-    good: "She's in her follicular phase 🌿 — energy is rising and she's feeling fresh. A great time for plans, new ideas and doing something fun together.",
-    tough: "She's in her follicular phase 🌿 but it's a rough day for her 💛 — a little extra kindness goes a long way.",
-  },
-  ovulatory: {
-    good: "She's around ovulation ☀️ — peak energy and confidence. A great day to go out, have the big conversations and enjoy quality time.",
-    tough: "She's around ovulation ☀️ but it's a rough day for her 💛 — check in gently and keep the pressure off.",
-  },
-  luteal_early: {
-    good: "She's in her early luteal phase 🍂 — steady and focused. Calm time together works well; maybe skip big surprises.",
-    tough: "She's in her early luteal phase 🍂 but it's a rough day for her 💛 — keep things calm and be patient.",
-  },
-  luteal_late: {
-    tough: "She's in her late luteal phase 🍂 — energy dips and feelings can run closer to the surface before her period. Patience, comfort and no pressure would go a long way.",
-    good: "She's in her late luteal phase 🍂 but feeling okay today — still worth keeping things easy and kind.",
-  },
-};
-
-/**
- * Digested, opt-in summary — never raw numbers. "Tough day" leans on the
- * phase-based capacity model, but today's actual Quick Log (if she's logged
- * one) overrides it, since how she's actually doing beats a generic guess.
+ * Digested, opt-in summary — never raw numbers. The wording lives in the
+ * shared digest module so the server-side refresh job produces exactly the
+ * same messages when she hasn't opened the app.
  */
 export function computeDigestedStatus(
   prediction: Prediction,
   todaysLog: DailyLog | undefined,
+  now: Date = new Date(),
 ): { phase: string; toughDay: boolean; message: string } {
   const capPhase = capacityPhaseFor(prediction);
-  const phaseCapacityLow = CAPACITY[capPhase] === 'LOW';
-  const loggedRough = todaysLog && (todaysLog.energy <= 2 || ['rough', 'low'].includes(todaysLog.mood));
-  const loggedGood = todaysLog && todaysLog.energy >= 4 && !['rough', 'low'].includes(todaysLog.mood);
-
-  const toughDay = loggedRough ? true : loggedGood ? false : phaseCapacityLow;
-  const message = PARTNER_MESSAGE[capPhase][toughDay ? 'tough' : 'good'];
+  const toughDay = isToughDay(capPhase, todaysLog);
+  const message = pickPartnerMessage(capPhase, toughDay, todayISO(now));
 
   return { phase: prediction.currentPhase, toughDay, message };
 }

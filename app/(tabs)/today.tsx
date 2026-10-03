@@ -24,6 +24,7 @@ import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { sendPhaseChangeNotification, syncScheduledNotifications } from '@/lib/notifications';
 import { getMyInviteIfExists, publishDigestedStatus } from '@/lib/partnerSync';
+import { partnerMessageBucket } from '../../supabase/functions/_shared/partnerDigest';
 import {
   CAPACITY,
   FOCUS_TILES,
@@ -79,7 +80,7 @@ export default function Today() {
     getMyInviteIfExists().then((link) => {
       if (link && link.status === 'active') publishDigestedStatus(link, prediction);
     });
-  }, [prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()]]);
+  }, [prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()], partnerMessageBucket(todayISO())]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   useRetailTherapyTrigger(prediction);
