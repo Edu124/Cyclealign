@@ -209,6 +209,9 @@ async function moveApple(rawId: string, newDateISO: string): Promise<MoveResult>
   try {
     const ev = await Calendar.getEventAsync(rawId);
     if (ev.recurrenceRule) return fail('recurring');
+    // Same rule as Google/Outlook: an event she was only invited to belongs to
+    // someone else's calendar, so don't try to move it.
+    if (ev.organizer && !ev.organizer.isCurrentUser) return fail('not-organizer');
 
     const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
     const calendar = calendars.find((c) => c.id === ev.calendarId);
