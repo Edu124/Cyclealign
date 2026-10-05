@@ -10,6 +10,8 @@ interface Props {
   variant?: 'ideal' | 'blocked';
   categoryLabel: string;
   phaseName: string;
+  /** Label for the phase row — "Current phase" for cycle-based users, "Your readiness" otherwise. */
+  phaseRowLabel?: string;
   approach: string;
   guidance: TaskGuidance;
   color: string;
@@ -57,6 +59,7 @@ export function TaskGuidanceCard({
   variant = 'blocked',
   categoryLabel,
   phaseName,
+  phaseRowLabel = 'Current phase',
   approach,
   guidance,
   color,
@@ -79,7 +82,7 @@ export function TaskGuidanceCard({
                 <Text style={styles.metaValue}>{categoryLabel}</Text>
               </View>
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Current phase</Text>
+                <Text style={styles.metaLabel}>{phaseRowLabel}</Text>
                 <Text style={styles.metaValue}>{phaseName}</Text>
               </View>
               <View style={styles.metaRow}>

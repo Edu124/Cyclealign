@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Avatar } from './Avatar';
@@ -62,6 +63,7 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
     // settings (v2 flag), health logs, and premium status all reset to defaults.
     useSettings.getState().reset();
     useDailyLog.getState().reset();
+    useAdaptivePrefs.getState().reset();
     useSubscription.getState().downgrade();
     await signOut();
     router.replace('/');

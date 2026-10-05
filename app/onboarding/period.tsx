@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { DateField } from '@/components/ui';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
+import { resolveMode } from '@/lib/adaptive/mode';
 import { predict } from '@/lib/prediction/engine';
 import { getPhases } from '@/lib/prediction/phases';
 import { addDaysISO, daysBetween, fromISODate, todayISO } from '@/lib/dates';
@@ -147,9 +148,11 @@ function PhaseCard({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function PeriodStep() {
-  const { lastPeriodStart, avgCycleLength, avgPeriodLength, set } = useOnboarding();
+  const { lastPeriodStart, avgCycleLength, avgPeriodLength, cycleRegularity, healthContext, set } = useOnboarding();
+  // Irregular / changing cycles: a single "last period" date isn't a basis for a phase, so it's optional.
+  const regularMode = resolveMode({ cycleRegularity: cycleRegularity ?? undefined, healthContext: healthContext ?? undefined }) === 'regular';
 
-  const prediction = lastPeriodStart
+  const prediction = lastPeriodStart && regularMode
     ? predict({
         lastPeriodStart,
         avgCycleLength,
@@ -169,11 +172,15 @@ export default function PeriodStep() {
 
   return (
     <StepScaffold
-      step={4}
-      total={5}
+      step={5}
+      total={6}
       title="When did your last period start?"
-      subtitle="We'll use this to pinpoint exactly where you are in your cycle right now."
-      nextDisabled={!lastPeriodStart}
+      subtitle={
+        regularMode
+          ? "We'll use this to pinpoint exactly where you are in your cycle right now."
+          : "Optional. We won't turn this into a phase prediction — it's just a record you can keep."
+      }
+      nextDisabled={regularMode && !lastPeriodStart}
       onNext={() => router.push('/onboarding/notifications')}
     >
       <DateField
@@ -184,6 +191,20 @@ export default function PeriodStep() {
         disableFuture
         minYear={new Date().getFullYear() - 2}
       />
+
+      {!regularMode && (
+        <TouchableOpacity
+          onPress={() => {
+            set({ lastPeriodStart: null });
+            router.push('/onboarding/notifications');
+          }}
+          hitSlop={10}
+        >
+          <Text style={{ textAlign: 'center', color: palette.muted, fontSize: 14, fontWeight: '600', paddingVertical: 8 }}>
+            I don't have a recent date
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {prediction && (
         <Animated.View entering={FadeInDown.duration(450)}>

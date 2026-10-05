@@ -10,6 +10,8 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { usePrediction } from '@/lib/hooks/usePrediction';
+import { resolveMode } from '@/lib/adaptive/mode';
+import { CONTEXT_LABEL, REGULARITY_LABEL } from '@/components/adaptive/PersonalizeForm';
 import { useLifeStage } from '@/lib/hooks/useLifeStage';
 import { deleteAccountData, pushProfile } from '@/lib/sync';
 import { signOut } from '@/lib/auth';
@@ -57,7 +59,7 @@ export default function Profile() {
   const setOnboarding = useOnboarding((s) => s.set);
   function toggleNotifications(v: boolean) {
     setOnboarding({ notificationEnabled: v });
-    syncScheduledNotifications(prediction, v);
+    syncScheduledNotifications(resolveMode(profile) === 'regular' ? prediction : null, v);
   }
 
   // Admin-only entry point to the "Talk with an Expert" submissions.
@@ -155,8 +157,28 @@ export default function Profile() {
         {profile?.role && <Text style={styles.role}>{profile.role}</Text>}
       </Animated.View>
 
+      {/* Personalisation — her own words, never a diagnosis */}
+      <Animated.View entering={FadeInDown.delay(70).duration(400)}>
+        <Card>
+          <Text style={styles.cardLabel}>PERSONALIZED FOR YOU</Text>
+          {profile?.cycleRegularity || profile?.healthContext ? (
+            <>
+              {profile?.cycleRegularity && <Text style={styles.phaseText}>{REGULARITY_LABEL[profile.cycleRegularity]}</Text>}
+              {profile?.healthContext && <Text style={styles.nextPeriod}>{CONTEXT_LABEL[profile.healthContext]} · as you told us</Text>}
+            </>
+          ) : (
+            <Text style={styles.nextPeriod}>Standard cycle experience. Tell us more to tune your recommendations.</Text>
+          )}
+          <Pressable onPress={() => router.push('/personalize' as never)} hitSlop={8} testID="open-personalize">
+            <Text style={[styles.nextPeriod, { color: palette.lavenderDeep, fontWeight: '700', marginTop: 6 }]}>
+              {profile?.cycleRegularity || profile?.healthContext ? 'Change' : 'Personalize CycleAlign'} ›
+            </Text>
+          </Pressable>
+        </Card>
+      </Animated.View>
+
       {/* Cycle snapshot */}
-      {prediction && phase && (
+      {prediction && phase && resolveMode(profile) === 'regular' && (
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
           <Card>
             <Text style={styles.cardLabel}>CURRENT CYCLE</Text>

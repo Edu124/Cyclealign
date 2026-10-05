@@ -9,7 +9,30 @@ export interface CalendarEvent {
   categoryId: string;   // maps to TASK_SYNC_CATEGORIES id
   dateISO: string;
   timeLabel: string;    // e.g. "10:00 AM"
+  /** Local start/end as minutes from midnight, when the source has real times. */
+  startMin?: number;
+  endMin?: number;
   isPrivate: boolean;
+}
+
+/** Sample events only carry a "9:30 AM" label — derive real minutes (1h long) so they behave like synced ones. */
+export function withMinutes(e: CalendarEvent): CalendarEvent {
+  if (e.startMin !== undefined) return e;
+  const m = /(\d{1,2}):(\d{2})\s?(AM|PM)?/i.exec(e.timeLabel ?? '');
+  if (!m) return e;
+  let h = parseInt(m[1], 10);
+  const mer = m[3]?.toUpperCase();
+  if (mer === 'PM' && h < 12) h += 12;
+  if (mer === 'AM' && h === 12) h = 0;
+  const startMin = h * 60 + parseInt(m[2], 10);
+  return { ...e, startMin, endMin: startMin + 60 };
+}
+
+function minutesToLabel(min: number): string {
+  const h24 = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${h24 >= 12 ? 'PM' : 'AM'}`;
 }
 
 // ── Demo events seeded relative to today ────────────────────────────────────
@@ -67,7 +90,7 @@ interface CalendarState {
   addEvent: (e: Omit<CalendarEvent, 'id'>) => void;
   removeEvent: (id: string) => void;
   /** Updates an event's date locally after it was moved (in the provider, or in the sample calendar). */
-  moveEvent: (id: string, dateISO: string) => void;
+  moveEvent: (id: string, dateISO: string, deltaMin?: number) => void;
   eventsForDate: (dateISO: string) => CalendarEvent[];
 }
 
@@ -117,10 +140,10 @@ export const useCalendar = create<CalendarState>()(
         set({ connected: true, providerLabel: 'Apple Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events }),
 
       connectDemo: (label = 'Calendar', extraEvents = []) =>
-        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: [...seedEvents(), ...extraEvents] }),
+        set({ connected: true, providerLabel: label, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: [...seedEvents(), ...extraEvents].map(withMinutes) }),
 
       connect: () =>
-        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents() }),
+        set({ connected: true, providerLabel: 'Calendar', googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: seedEvents().map(withMinutes) }),
 
       disconnect: () =>
         set({ connected: false, providerLabel: null, googleAccessToken: null, googleRefreshToken: null, outlookAccessToken: null, outlookRefreshToken: null, events: [] }),
@@ -133,9 +156,14 @@ export const useCalendar = create<CalendarState>()(
       removeEvent: (id) =>
         set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
 
-      moveEvent: (id, dateISO) =>
+      moveEvent: (id, dateISO, deltaMin = 0) =>
         set((s) => ({
-          events: s.events.map((e) => (e.id === id ? { ...e, dateISO } : e)),
+          events: s.events.map((e) => {
+            if (e.id !== id) return e;
+            if (deltaMin === 0 || e.startMin === undefined || e.endMin === undefined) return { ...e, dateISO };
+            const startMin = e.startMin + deltaMin;
+            return { ...e, dateISO, startMin, endMin: e.endMin + deltaMin, timeLabel: minutesToLabel(startMin) };
+          }),
         })),
 
       eventsForDate: (dateISO) =>

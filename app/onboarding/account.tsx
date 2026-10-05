@@ -89,6 +89,9 @@ export default function AccountStep() {
       avgCycleLength:  draft.avgCycleLength,
       avgPeriodLength: draft.avgPeriodLength,
       role:            draft.role ?? undefined,
+      cycleRegularity: draft.cycleRegularity ?? undefined,
+      healthContext:   draft.healthContext ?? undefined,
+      cycleLengthRange: draft.cycleLengthRange ?? undefined,
     };
     const log: CycleLog = {
       id:        `log-${Date.now()}`,

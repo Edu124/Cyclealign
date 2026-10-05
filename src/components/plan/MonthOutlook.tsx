@@ -9,14 +9,16 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { phaseColors, palette, radius, spacing } from '@/theme';
-import type { Prediction } from '@/types/models';
 import { phaseForDateFromPrediction } from '@/lib/intelligence/schedule';
-import { scoreForDate, type ScoreColor } from '@/lib/intelligence/taskScore';
-import { fromISODate, toISODate } from '@/lib/dates';
+import type { ScoreColor } from '@/lib/intelligence/taskScore';
+import { toISODate, todayISO } from '@/lib/dates';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
+import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { useAdaptive } from '@/lib/adaptive/useAdaptive';
+import { evaluateReadiness } from '@/lib/adaptive/readiness';
+import type { ReadinessLevel } from '@/lib/adaptive/types';
 
 interface Props {
-  prediction: Prediction;
   events: CalendarEvent[];
   onDayPress: (dateISO: string) => void;
 }
@@ -36,8 +38,30 @@ function worstScore(scores: (ScoreColor | null)[]): ScoreColor | null {
   return null;
 }
 
-export function MonthOutlook({ prediction, events, onDayPress }: Props) {
+const TINT: Record<ReadinessLevel, string | null> = {
+  STRONG: '#56723F40',
+  GOOD: '#56723F26',
+  NEUTRAL: '#B07A2E2A',
+  PROTECT: '#C2683F33',
+  INSUFFICIENT_DATA: null,
+};
+
+export function MonthOutlook({ events, onDayPress }: Props) {
   const today = new Date();
+  const { scorer, mode, prediction, ctx, readinessFor } = useAdaptive();
+  const logs = useDailyLog((s) => s.logs);
+  const adaptive = mode !== 'regular' || !prediction;
+  const todayStr = todayISO();
+
+  /** Adaptive days: lived days use what she logged, upcoming days use her own pattern. */
+  const tintFor = (iso: string): string | null => {
+    if (iso < todayStr) {
+      const log = logs[iso];
+      if (!log) return null;
+      return TINT[evaluateReadiness({ log, type: 'RECOVERY', mode: ctx.mode }).level];
+    }
+    return TINT[readinessFor('RECOVERY', iso).level];
+  };
   const [cursor, setCursor] = useState(startOfMonth(today));
 
   const cells = useMemo(() => {
@@ -56,7 +80,7 @@ export function MonthOutlook({ prediction, events, onDayPress }: Props) {
   const dotByDate = useMemo(() => {
     const map: Record<string, string> = {};
     events.forEach((e) => {
-      const { score } = scoreForDate(e.categoryId, e.dateISO, prediction);
+      const { score } = scorer.scoreFor(e.categoryId, e.dateISO, e.title);
       const existing = map[e.dateISO];
       const incoming = score;
       if (!incoming) return;
@@ -70,7 +94,7 @@ export function MonthOutlook({ prediction, events, onDayPress }: Props) {
       }
     });
     return map;
-  }, [events, prediction]);
+  }, [events, scorer]);
 
   return (
     <View style={styles.wrap}>
@@ -94,8 +118,9 @@ export function MonthOutlook({ prediction, events, onDayPress }: Props) {
         {cells.map((day, idx) => {
           if (!day) return <View key={`e${idx}`} style={styles.cell} />;
           const iso    = toISODate(day);
-          const phase  = phaseForDateFromPrediction(prediction, iso);
-          const color  = phaseColors[phase].base;
+          const phase  = adaptive || !prediction ? null : phaseForDateFromPrediction(prediction, iso);
+          const color  = phase ? phaseColors[phase].base : null;
+          const tint   = phase ? `${color}40` : tintFor(iso);
           const isToday = isSameDay(day, today);
           const dotColor = dotByDate[iso];
 
@@ -108,8 +133,8 @@ export function MonthOutlook({ prediction, events, onDayPress }: Props) {
               <View
                 style={[
                   styles.dayInner,
-                  { backgroundColor: `${color}40` },
-                  isToday && { borderWidth: 2, borderColor: phaseColors[phase].deep },
+                  { backgroundColor: tint ?? palette.surfaceAlt },
+                  isToday && { borderWidth: 2, borderColor: phase ? phaseColors[phase].deep : palette.lavenderDeep },
                 ]}
               >
                 <Text style={[styles.dayText, isToday && styles.dayTextToday]}>
@@ -125,7 +150,19 @@ export function MonthOutlook({ prediction, events, onDayPress }: Props) {
       </View>
 
       <View style={styles.legend}>
-        {(['menstrual', 'follicular', 'ovulation', 'luteal'] as const).map((p) => (
+        {adaptive ? (
+          [
+            { color: '#56723F66', label: 'Strong / good' },
+            { color: '#B07A2E55', label: 'Neutral' },
+            { color: '#C2683F55', label: 'Protect / flex' },
+            { color: palette.surfaceAlt, label: 'Still learning' },
+          ].map((item) => (
+            <View key={item.label} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+              <Text style={styles.legendText}>{item.label}</Text>
+            </View>
+          ))
+        ) : (['menstrual', 'follicular', 'ovulation', 'luteal'] as const).map((p) => (
           <View key={p} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: phaseColors[p].base }]} />
             <Text style={styles.legendText}>{p[0].toUpperCase() + p.slice(1)}</Text>

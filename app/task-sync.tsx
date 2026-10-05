@@ -13,29 +13,19 @@ import { format } from 'date-fns';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DateField } from '@/components/ui';
 import { Icon } from '@/components/dashboard/Icon';
-import { usePrediction } from '@/lib/hooks/usePrediction';
+import { useAdaptive } from '@/lib/adaptive/useAdaptive';
+import type { DayScore } from '@/lib/adaptive/scoring';
 import { useTasks } from '@/lib/stores/useTasks';
 import {
   ScoreColor,
   TASK_SYNC_CATEGORIES,
   categoryById,
-  greenDates,
-  scoreForDate,
 } from '@/lib/intelligence/taskScore';
-import { CAPACITY_TO_PHASE_KEY, CapacityPhase, PHASE_CONTEXT } from '@/lib/intelligence/capacity';
 import { fromISODate, todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
 import { TaskGuidanceCard } from '@/components/wellness/TaskGuidanceCard';
-import { OTHER_SUBTYPES, PHASE_APPROACH, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
-
-const PHASE_NAME: Record<CapacityPhase, string> = {
-  menstrual: 'Menstrual',
-  follicular: 'Follicular',
-  ovulatory: 'Ovulatory',
-  luteal_early: 'early Luteal',
-  luteal_late: 'late Luteal',
-};
+import { OTHER_SUBTYPES, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
 
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
   green: { fg: '#56723F', bg: '#E8EFE1', glyph: '✓', word: 'Great timing' },
@@ -44,16 +34,14 @@ const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word
 };
 
 export default function TaskSync() {
-  const prediction = usePrediction();
+  const { scorer, mode, prediction } = useAdaptive();
   const addTask = useTasks((s) => s.addTask);
 
   const [category, setCategory] = useState<string | null>(null);
   const [otherSubtype, setOtherSubtype] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState<string>(todayISO());
   const [label, setLabel] = useState('');
-  const [result, setResult] = useState<{ phase: CapacityPhase; score: ScoreColor | null } | null>(
-    null,
-  );
+  const [result, setResult] = useState<DayScore | null>(null);
   const [guidanceOpen, setGuidanceOpen] = useState(false);
   const [movedViaSuggestion, setMovedViaSuggestion] = useState(false);
 
@@ -75,7 +63,7 @@ export default function TaskSync() {
     else router.replace('/(tabs)/today');
   };
 
-  if (!prediction) {
+  if (mode === 'regular' && !prediction) {
     return (
       <SafeAreaView style={styles.safe}>
         <Header onBack={goBack} title="Plan a task" />
@@ -89,7 +77,7 @@ export default function TaskSync() {
     if (category === 'OTHER' && !otherSubtype) return;
     setGuidanceOpen(false);
     setMovedViaSuggestion(false);
-    setResult(scoreForDate(category, dateISO, prediction));
+    setResult(scorer.scoreFor(category, dateISO, label));
   };
 
   const save = () => {
@@ -107,8 +95,9 @@ export default function TaskSync() {
 
   // ---- Result view --------------------------------------------------------
   if (result) {
-    const phaseName = PHASE_NAME[result.phase];
-    const isPersonal = result.score === null;
+    const phaseName = result.phaseLabel;
+    const isPersonal = category === 'PERSONAL';
+    const insufficient = !isPersonal && result.level === 'INSUFFICIENT_DATA';
     const ui = result.score ? SCORE_UI[result.score] : null;
 
     return (
@@ -122,12 +111,24 @@ export default function TaskSync() {
               </View>
               <Text style={styles.resultTitle}>Something important</Text>
               <Text style={styles.resultMsg}>
-                You have something important on {dateLabel}. That's {phaseName} —{' '}
-                {PHASE_CONTEXT[result.phase]}. Build buffer time around this.
+                You have something important on {dateLabel}. Build buffer time around this.
               </Text>
               <Pressable style={styles.ctaGhostFull} onPress={() => setGuidanceOpen(true)}>
                 <Text style={[styles.ctaText, { color: dash.ink }]}>See how to approach this</Text>
               </Pressable>
+              <Pressable style={[styles.cta, { backgroundColor: dash.sage }]} onPress={save}>
+                <Text style={styles.ctaText}>Save task</Text>
+              </Pressable>
+            </Animated.View>
+          ) : insufficient ? (
+            <Animated.View entering={FadeInDown.duration(400)} style={[styles.resultCard, { backgroundColor: dash.cycleCard }]}>
+              <View style={[styles.resultIcon, { backgroundColor: '#FFFFFF' }]}>
+                <Icon name="bolt" color={dash.clay} size={28} />
+              </View>
+              <Text style={styles.resultTitle}>Still learning your pattern</Text>
+              <Text style={styles.resultMsg}>
+                We don't have enough of your check-ins to say how {dateLabel} will suit this task. Add energy, sleep and focus in your daily check-in and recommendations will appear — for now, plan it where it fits.
+              </Text>
               <Pressable style={[styles.cta, { backgroundColor: dash.sage }]} onPress={save}>
                 <Text style={styles.ctaText}>Save task</Text>
               </Pressable>
@@ -138,7 +139,7 @@ export default function TaskSync() {
                 <Text style={[styles.resultGlyph, { color: ui!.fg }]}>{ui!.glyph}</Text>
               </View>
               <Text style={[styles.resultTitle, { color: ui!.fg }]}>{ui!.word}</Text>
-              <Text style={styles.resultMsg}>{message(result.score!, phaseName)}</Text>
+              <Text style={styles.resultMsg}>{result.note ?? message(result.score!, phaseName)}</Text>
 
               {result.score === 'green' && (
                 <Pressable
@@ -151,7 +152,7 @@ export default function TaskSync() {
               {result.score !== 'green' && (() => {
                 // Any non-green day: recommend the next green windows for this
                 // category so she can move the task with one tap.
-                const betterDates = category ? greenDates(category, prediction, 30).slice(0, 3) : [];
+                const betterDates = category ? scorer.betterDates(category, 3, { title: label, excludeDateISO: dateISO }) : [];
                 return (
                   <>
                     {betterDates.length > 0 && (
@@ -168,7 +169,7 @@ export default function TaskSync() {
                                 setDateISO(d);
                                 setGuidanceOpen(false);
                                 setMovedViaSuggestion(true);
-                                setResult(scoreForDate(category!, d, prediction));
+                                setResult(scorer.scoreFor(category!, d, label));
                               }}
                             >
                               <Text style={styles.betterDateText}>
@@ -198,14 +199,15 @@ export default function TaskSync() {
           )}
         </ScrollView>
 
-        {category && (
+        {category && result.guidancePhase && (
           <TaskGuidanceCard
             visible={guidanceOpen}
             variant={result.score === 'green' ? 'ideal' : 'blocked'}
             categoryLabel={categoryById(category)?.label ?? 'Task'}
             phaseName={phaseName}
-            approach={PHASE_APPROACH[CAPACITY_TO_PHASE_KEY[result.phase]]}
-            guidance={taskGuidanceFor(guidanceCategory!, CAPACITY_TO_PHASE_KEY[result.phase])}
+            phaseRowLabel={result.phaseRowLabel}
+            approach={result.approach}
+            guidance={taskGuidanceFor(guidanceCategory!, result.guidancePhase)}
             color={ui?.fg ?? dash.clay}
             onConfirm={() => {
               setGuidanceOpen(false);

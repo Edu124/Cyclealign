@@ -200,3 +200,61 @@ export const CAPACITY_TO_PHASE_KEY: Record<CapacityPhase, PhaseKey> = {
 export function addDaysToIso(iso: string, days: number): string {
   return daysToIso(isoToDays(iso) + days);
 }
+
+// ── Adaptive (irregular / perimenopause) users ───────────────────────────────
+// For these users CycleAlign never claims a cycle phase, so their partner reads
+// a message built only from how she is doing today — no phase, no hormones.
+
+export type AdaptiveMode = 'regular' | 'pcos_irregular' | 'perimenopause';
+
+/** Same routing as the app's resolveMode — kept here so the server job can't disagree with the app. */
+export function resolveModeFromAnswers(regularity?: string | null, context?: string | null): AdaptiveMode {
+  if (context === 'PERIMENOPAUSE' || regularity === 'CHANGING') return 'perimenopause';
+  if (
+    context === 'PCOS' ||
+    context === 'IRREGULAR' ||
+    context === 'POSTPARTUM' ||
+    regularity === 'IRREGULAR' ||
+    regularity === 'UNKNOWN'
+  ) {
+    return 'pcos_irregular';
+  }
+  return 'regular';
+}
+
+export const ADAPTIVE_PARTNER_MESSAGES: Record<'good' | 'tough' | 'unknown', string[]> = {
+  good: [
+    "She's feeling well today 🌿 — a good day to connect, make plans or just enjoy time together.",
+    'Things are going smoothly for her today ✨ — a nice moment for a catch-up or something fun.',
+    "She's in good spirits and has energy to spare 🌞 — worth checking in warmly.",
+    'A steadier, brighter day for her 🌿 — she may welcome company or a shared plan.',
+  ],
+  tough: [
+    "It's a harder day for her 💛 — extra patience, fewer demands and a bit of kindness would mean a lot.",
+    'She may be running low today 💛 — offer help before she has to ask, and keep plans light.',
+    'Today might ask a lot of her 💛 — a quiet evening and a few things taken off her plate would help.',
+    "Not her easiest day 💛 — check in gently and let her set the pace.",
+  ],
+  unknown: [
+    "She's keeping you in the loop 🌿 — a gentle check-in is always welcome.",
+    'No big signals today 🌿 — a kind word or a small gesture never goes unnoticed.',
+    "She hasn't flagged anything today — a warm hello is always a good idea 💛.",
+    'A quiet day on her end 🌿 — be around, and let her lead.',
+  ],
+};
+
+/** How she is today, from her own check-in only. 'unknown' when there's nothing to go on. */
+export function adaptiveTone(
+  log: { energy: number; mood: string; sleepQuality?: number | null } | null | undefined,
+): 'good' | 'tough' | 'unknown' {
+  if (!log) return 'unknown';
+  const lowMood = ['rough', 'low'].includes(log.mood);
+  if (log.energy <= 2 || lowMood || (log.sleepQuality != null && log.sleepQuality <= 2 && log.energy <= 3)) return 'tough';
+  if (log.energy >= 4 && !lowMood) return 'good';
+  return 'unknown';
+}
+
+export function pickAdaptiveMessage(tone: 'good' | 'tough' | 'unknown', dateISO: string): string {
+  const pool = ADAPTIVE_PARTNER_MESSAGES[tone];
+  return pool[partnerMessageBucket(dateISO) % pool.length];
+}

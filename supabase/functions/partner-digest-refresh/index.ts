@@ -17,9 +17,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   CAPACITY_TO_PHASE_KEY,
+  adaptiveTone,
   capacityPhaseForDate,
   isToughDay,
+  pickAdaptiveMessage,
   pickPartnerMessage,
+  resolveModeFromAnswers,
 } from '../_shared/partnerDigest.ts';
 
 const STALE_AFTER_HOURS = 20;
@@ -77,36 +80,64 @@ Deno.serve(async (req) => {
   for (const link of due) {
     try {
       const [{ data: profile }, { data: cycles }, { data: todaysLog }] = await Promise.all([
-        supabase.from('profiles').select('avg_cycle_length, avg_period_length').eq('id', link.user_id).maybeSingle(),
+        supabase.from('profiles').select('avg_cycle_length, avg_period_length, cycle_regularity, health_context').eq('id', link.user_id).maybeSingle(),
         supabase.from('cycle_logs').select('start_date').eq('user_id', link.user_id).order('start_date', { ascending: false }),
-        supabase.from('daily_logs').select('energy, mood').eq('user_id', link.user_id).eq('date_iso', todayISO).maybeSingle(),
+        supabase.from('daily_logs').select('energy, mood, sleep_quality').eq('user_id', link.user_id).eq('date_iso', todayISO).maybeSingle(),
       ]);
 
+      const mode = resolveModeFromAnswers(profile?.cycle_regularity, profile?.health_context);
       const starts = (cycles ?? []).map((c: { start_date: string }) => c.start_date);
-      if (!profile || starts.length === 0) {
-        result.skipped++;
-        continue;
+
+      let patch: {
+        shared_phase: string | null;
+        shared_tough_day: boolean | null;
+        shared_message: string | null;
+        shared_updated_at: string;
+      };
+      let phaseForPreview: string | null = null;
+      let toughForPreview = false;
+
+      if (mode !== 'regular') {
+        // Irregular / perimenopause: never a cycle phase — only how she says she is today.
+        if (!profile) {
+          result.skipped++;
+          continue;
+        }
+        const tone = adaptiveTone(
+          todaysLog ? { energy: todaysLog.energy, mood: todaysLog.mood, sleepQuality: todaysLog.sleep_quality } : null,
+        );
+        toughForPreview = tone === 'tough';
+        patch = {
+          shared_phase: null,
+          shared_tough_day: link.share_tough_day ? toughForPreview : null,
+          shared_message: link.share_tough_day ? pickAdaptiveMessage(tone, todayISO) : null,
+          shared_updated_at: new Date().toISOString(),
+        };
+      } else {
+        if (!profile || starts.length === 0) {
+          result.skipped++;
+          continue;
+        }
+        const phase = capacityPhaseForDate({
+          lastPeriodStart: starts[0],
+          avgCycleLength: profile.avg_cycle_length,
+          avgPeriodLength: profile.avg_period_length,
+          periodStarts: starts,
+          todayISO,
+        });
+        const toughDay = isToughDay(phase, todaysLog);
+        phaseForPreview = phase;
+        toughForPreview = toughDay;
+        patch = {
+          shared_phase: link.share_phase ? CAPACITY_TO_PHASE_KEY[phase] : null,
+          shared_tough_day: link.share_tough_day ? toughDay : null,
+          shared_message: link.share_tough_day ? pickPartnerMessage(phase, toughDay, todayISO) : null,
+          shared_updated_at: new Date().toISOString(),
+        };
       }
 
-      const phase = capacityPhaseForDate({
-        lastPeriodStart: starts[0],
-        avgCycleLength: profile.avg_cycle_length,
-        avgPeriodLength: profile.avg_period_length,
-        periodStarts: starts,
-        todayISO,
-      });
-      const toughDay = isToughDay(phase, todaysLog);
-      const message = pickPartnerMessage(phase, toughDay, todayISO);
-
-      const patch = {
-        shared_phase: link.share_phase ? CAPACITY_TO_PHASE_KEY[phase] : null,
-        shared_tough_day: link.share_tough_day ? toughDay : null,
-        shared_message: link.share_tough_day ? message : null,
-        shared_updated_at: new Date().toISOString(),
-      };
-
       if (dryRun) {
-        preview.push({ link: link.id, phase, toughDay, message: patch.shared_message });
+        preview.push({ link: link.id, mode, phase: phaseForPreview, toughDay: toughForPreview, message: patch.shared_message });
         continue;
       }
 

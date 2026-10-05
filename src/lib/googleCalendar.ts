@@ -61,6 +61,7 @@ interface GoogleEvent {
   id: string;
   summary?: string;
   start?: { dateTime?: string; date?: string };
+  end?: { dateTime?: string; date?: string };
   visibility?: 'public' | 'private' | 'confidential' | 'default';
   /** "default" for normal events; birthdays etc. are typed differently. */
   eventType?: string;
@@ -75,6 +76,18 @@ function isNoiseEvent(e: GoogleEvent): boolean {
   // (e.g. en.indian#holiday@group.v.calendar.google.com).
   if (organizer.includes('group.v.calendar.google.com')) return true;
   return false;
+}
+
+/** Local start/end minutes-from-midnight for a timed event; nothing for all-day events. */
+export function localMinutes(startISO?: string, endISO?: string): { startMin?: number; endMin?: number } {
+  if (!startISO || !endISO) return {};
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return {};
+  const startMin = s.getHours() * 60 + s.getMinutes();
+  const sameDay = s.toDateString() === e.toDateString();
+  const endMin = sameDay ? e.getHours() * 60 + e.getMinutes() : 24 * 60;
+  return endMin > startMin ? { startMin, endMin } : {};
 }
 
 function mapGoogleEvent(e: GoogleEvent): CalendarEvent {
@@ -94,6 +107,7 @@ function mapGoogleEvent(e: GoogleEvent): CalendarEvent {
     categoryId: inferCategory(summary),
     dateISO,
     timeLabel,
+    ...localMinutes(e.start?.dateTime, e.end?.dateTime),
     isPrivate: e.visibility === 'private' || e.visibility === 'confidential',
   };
 }

@@ -12,8 +12,24 @@ export interface Profile {
   avgPeriodLength: number; // days
   /** Life-context role — changes display copy only, never logic. */
   role?: string;
+  /** How predictable her cycles are (self-reported). Absent = existing user, regular experience. */
+  cycleRegularity?: CycleRegularity;
+  /** User-provided context, NOT a diagnosis. Absent = existing user, regular experience. */
+  healthContext?: HealthContext;
+  /** Optional self-reported recent cycle-length range, e.g. '29-35' or 'varies'. */
+  cycleLengthRange?: string;
   createdAt?: string;
 }
+
+export type CycleRegularity = 'REGULAR' | 'VARIABLE' | 'IRREGULAR' | 'CHANGING' | 'UNKNOWN';
+export type HealthContext =
+  | 'REGULAR'
+  | 'PCOS'
+  | 'IRREGULAR'
+  | 'PERIMENOPAUSE'
+  | 'POSTPARTUM'
+  | 'OTHER'
+  | 'UNKNOWN';
 
 export interface CycleLog {
   id: string;
@@ -110,4 +126,15 @@ export interface DailyLog {
   energy: number; // 1..5
   mood: string;
   win: string; // max 60 chars
+  // Optional "more detail" check-in fields (progressive disclosure). All 1..5 unless noted.
+  focus?: number;
+  decisionConfidence?: number;
+  sleepQuality?: number;
+  sleepHours?: number;
+  /** 1 = calm, 5 = very stressed. */
+  stress?: number;
+  /** User-selected symptom ids (see SYMPTOMS). User-reported, never attributed to hormones. */
+  symptoms?: string[];
+  /** none | spotting | light | medium | heavy */
+  bleeding?: string;
 }

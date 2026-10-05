@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -31,6 +32,7 @@ export default function SignIn() {
       // user of this device (v2 flag, health logs) before onboarding.
       useSettings.getState().reset();
       useDailyLog.getState().reset();
+      useAdaptivePrefs.getState().reset();
       router.replace('/onboarding/role');
     }
   }

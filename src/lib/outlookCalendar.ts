@@ -18,14 +18,21 @@
 
 import { Platform } from 'react-native';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
-import { inferCategory } from '@/lib/googleCalendar';
+import { inferCategory, localMinutes } from '@/lib/googleCalendar';
 
 interface OutlookEvent {
   id: string;
   subject?: string;
   start?: { dateTime?: string; timeZone?: string };
+  end?: { dateTime?: string; timeZone?: string };
   sensitivity?: 'normal' | 'personal' | 'private' | 'confidential';
   isCancelled?: boolean;
+}
+
+/** Graph returns UTC wall-clock strings without a Z; add it so they parse as real instants. */
+function utc(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  return raw.endsWith('Z') ? raw : `${raw}Z`;
 }
 
 function mapOutlookEvent(e: OutlookEvent): CalendarEvent {
@@ -48,6 +55,7 @@ function mapOutlookEvent(e: OutlookEvent): CalendarEvent {
     categoryId: inferCategory(summary),
     dateISO,
     timeLabel,
+    ...localMinutes(utc(e.start?.dateTime), utc(e.end?.dateTime)),
     isPrivate: e.sensitivity === 'private' || e.sensitivity === 'confidential',
   };
 }

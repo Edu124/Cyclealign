@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { Stepper } from '@/components/ui';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
@@ -22,10 +22,10 @@ export default function CycleStep() {
   return (
     <StepScaffold
       step={3}
-      total={5}
+      total={6}
       title="About your cycle"
       subtitle="This helps us map your phases accurately. You can always update these later."
-      onNext={() => router.push('/onboarding/period')}
+      onNext={() => router.push('/onboarding/personalize' as Href)}
     >
       {/* Cycle length */}
       <View>

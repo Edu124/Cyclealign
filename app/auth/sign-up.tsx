@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -34,6 +35,7 @@ export default function SignUp() {
       // telling the user to go check an inbox that has nothing to confirm.
       useSettings.getState().reset();
       useDailyLog.getState().reset();
+      useAdaptivePrefs.getState().reset();
       if (name.trim()) useOnboarding.getState().set({ name: name.trim() });
       router.replace('/onboarding/role');
       setLoading(false);

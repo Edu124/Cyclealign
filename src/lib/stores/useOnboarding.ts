@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Gender } from '@/types/models';
+import type { CycleRegularity, Gender, HealthContext } from '@/types/models';
 
 export interface OnboardingDraft {
   role: string | null;
@@ -12,6 +12,10 @@ export interface OnboardingDraft {
   /** True when user picked "I don't know" — defaults to 28 days, flags for recalibration. */
   unknownCycleLength: boolean;
   notificationEnabled: boolean;
+  /** Optional personalisation answers (user-provided context, not a diagnosis). */
+  cycleRegularity: CycleRegularity | null;
+  healthContext: HealthContext | null;
+  cycleLengthRange: string | null;
 }
 
 interface OnboardingState extends OnboardingDraft {
@@ -29,6 +33,9 @@ const initial: OnboardingDraft = {
   avgPeriodLength: 5,
   unknownCycleLength: false,
   notificationEnabled: false,
+  cycleRegularity: null,
+  healthContext: null,
+  cycleLengthRange: null,
 };
 
 export const useOnboarding = create<OnboardingState>((set) => ({

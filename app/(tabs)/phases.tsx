@@ -7,10 +7,21 @@ import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { getPhases } from '@/lib/prediction/phases';
 import { phaseColors, palette, spacing } from '@/theme';
+import { resolveMode } from '@/lib/adaptive/mode';
+import { AdaptiveInsights } from '@/components/adaptive/AdaptiveInsights';
 
 export default function Phases() {
   const profile = useAppStore((s) => s.profile);
   const prediction = usePrediction();
+
+  // Irregular / perimenopause users aren't shown a phase explorer — their insights are their own patterns.
+  if (profile && resolveMode(profile) !== 'regular') {
+    return (
+      <TabScreen>
+        <AdaptiveInsights />
+      </TabScreen>
+    );
+  }
 
   if (!profile || !prediction) {
     return (

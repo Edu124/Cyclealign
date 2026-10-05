@@ -1,6 +1,14 @@
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { CycleLog, DailyLog, Profile } from '@/types/models';
 
+/**
+ * The adaptive-mode columns (migration 0012). Keep OFF until that migration has
+ * been applied to the database — writing to columns that don't exist yet would
+ * make every profile / check-in upload fail. While off, these answers stay on
+ * the device only (and restoreFromCloud keeps them).
+ */
+export const SYNC_ADAPTIVE_COLUMNS: boolean = false;
+
 // ── Push (local → cloud) ──────────────────────────────────────────────────────
 
 export async function pushProfile(profile: Profile): Promise<void> {
@@ -17,6 +25,11 @@ export async function pushProfile(profile: Profile): Promise<void> {
     avg_cycle_length: profile.avgCycleLength,
     avg_period_length: profile.avgPeriodLength,
     user_role: profile.role ?? null,
+    ...(SYNC_ADAPTIVE_COLUMNS && {
+      cycle_regularity: profile.cycleRegularity ?? null,
+      health_context: profile.healthContext ?? null,
+      cycle_length_range: profile.cycleLengthRange ?? null,
+    }),
   });
 }
 
@@ -69,6 +82,15 @@ export async function pushDailyLog(log: DailyLog): Promise<void> {
     energy: log.energy,
     mood: log.mood,
     win: log.win,
+    ...(SYNC_ADAPTIVE_COLUMNS && {
+      focus: log.focus ?? null,
+      decision_confidence: log.decisionConfidence ?? null,
+      sleep_quality: log.sleepQuality ?? null,
+      sleep_hours: log.sleepHours ?? null,
+      stress: log.stress ?? null,
+      symptoms_json: log.symptoms ?? null,
+      bleeding: log.bleeding ?? null,
+    }),
   }, { onConflict: 'user_id,date_iso' });
 }
 
@@ -129,6 +151,9 @@ export async function pullState(): Promise<{
     avgCycleLength: p.avg_cycle_length,
     avgPeriodLength: p.avg_period_length,
     role: p.user_role ?? undefined,
+    cycleRegularity: p.cycle_regularity ?? undefined,
+    healthContext: p.health_context ?? undefined,
+    cycleLengthRange: p.cycle_length_range ?? undefined,
     createdAt: p.created_at,
   } : null;
 
@@ -148,6 +173,13 @@ export async function pullState(): Promise<{
       energy: l.energy,
       mood: l.mood,
       win: l.win ?? '',
+      ...(l.focus != null && { focus: l.focus }),
+      ...(l.decision_confidence != null && { decisionConfidence: l.decision_confidence }),
+      ...(l.sleep_quality != null && { sleepQuality: l.sleep_quality }),
+      ...(l.sleep_hours != null && { sleepHours: Number(l.sleep_hours) }),
+      ...(l.stress != null && { stress: l.stress }),
+      ...(Array.isArray(l.symptoms_json) && { symptoms: l.symptoms_json }),
+      ...(l.bleeding != null && { bleeding: l.bleeding }),
     };
   }
 

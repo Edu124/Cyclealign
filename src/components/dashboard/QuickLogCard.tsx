@@ -7,6 +7,9 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
 import { MOODS_QUICK, useDailyLog } from '@/lib/stores/useDailyLog';
+import { CheckInDetails, type CheckInDetailsValue } from '@/components/adaptive/CheckInDetails';
+import { resolveMode } from '@/lib/adaptive/mode';
+import { useAppStore } from '@/lib/stores/useAppStore';
 
 interface Props {
   dateISO: string;
@@ -23,12 +26,25 @@ function hint(energy: number, mood: string): string | null {
 export function QuickLogCard({ dateISO }: Props) {
   const existing = useDailyLog((s) => s.logs[dateISO]);
   const setLog   = useDailyLog((s) => s.setLog);
+  const mode     = resolveMode(useAppStore((s) => s.profile));
 
   const [energy,  setEnergy]  = useState<number>(existing?.energy ?? 0);
   const [mood,    setMood]    = useState<string>(existing?.mood   ?? '');
   const [win,     setWin]     = useState<string>(existing?.win    ?? '');
   const [editing, setEditing] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [details, setDetails] = useState<CheckInDetailsValue>({
+    focus: existing?.focus,
+    decisionConfidence: existing?.decisionConfidence,
+    sleepQuality: existing?.sleepQuality,
+    sleepHours: existing?.sleepHours,
+    stress: existing?.stress,
+    symptoms: existing?.symptoms ?? [],
+    bleeding: existing?.bleeding,
+  });
+  // Irregular / perimenopause users get the extra inputs open by default — their
+  // recommendations depend on them. Everyone else keeps the 20-second log.
+  const [showDetails, setShowDetails] = useState(mode !== 'regular');
 
   const canSubmit = energy > 0 && mood !== '';
   const hintText  = hint(energy, mood);
@@ -49,6 +65,8 @@ export function QuickLogCard({ dateISO }: Props) {
         <View style={styles.summaryRow}>
           <Summary label="Energy" value={`${existing!.energy}/5`} />
           <Summary label="Mood"   value={moodEmoji} />
+          {existing!.focus !== undefined && <Summary label="Focus" value={`${existing!.focus}/5`} />}
+          {existing!.sleepQuality !== undefined && <Summary label="Sleep" value={`${existing!.sleepQuality}/5`} />}
         </View>
         {!!existing!.win && (
           <Text style={styles.winSummary}>"{existing!.win}"</Text>
@@ -68,7 +86,19 @@ export function QuickLogCard({ dateISO }: Props) {
       }
       return;
     }
-    setLog({ dateISO, energy, mood, win: win.trim() });
+    setLog({
+      dateISO,
+      energy,
+      mood,
+      win: win.trim(),
+      ...(details.focus !== undefined && { focus: details.focus }),
+      ...(details.decisionConfidence !== undefined && { decisionConfidence: details.decisionConfidence }),
+      ...(details.sleepQuality !== undefined && { sleepQuality: details.sleepQuality }),
+      ...(details.sleepHours !== undefined && { sleepHours: details.sleepHours }),
+      ...(details.stress !== undefined && { stress: details.stress }),
+      ...(details.symptoms.length > 0 && { symptoms: details.symptoms }),
+      ...(details.bleeding !== undefined && { bleeding: details.bleeding }),
+    });
     setEditing(false);
   }
 
@@ -116,6 +146,13 @@ export function QuickLogCard({ dateISO }: Props) {
         ))}
       </View>
 
+      <Pressable onPress={() => setShowDetails((v) => !v)} hitSlop={6} testID="toggle-details">
+        <Text style={styles.moreToggle}>{showDetails ? '− Fewer details' : '+ More detail (optional)'}</Text>
+      </Pressable>
+      {showDetails && (
+        <CheckInDetails value={details} onChange={(patch) => setDetails((d) => ({ ...d, ...patch }))} mode={mode} />
+      )}
+
       <Text style={styles.label}>One win</Text>
       <TextInput
         placeholder="One good thing today…"
@@ -157,6 +194,7 @@ const styles = StyleSheet.create({
     borderColor: dash.line,
   },
   title: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
+  moreToggle: { fontSize: 13, fontWeight: '700', color: dash.sage, marginTop: 10 },
   historyLink: { fontSize: 13, color: dash.sage, fontWeight: '700' },
   label: { fontSize: 13, fontWeight: '700', color: dash.inkSoft, marginTop: 8 },
   required: { color: '#C2683F' },

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { resolveMode } from '@/lib/adaptive/mode';
+import { useAppStore } from '@/lib/stores/useAppStore';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { dash } from '@/theme';
 
@@ -26,6 +28,7 @@ interface Props {
 }
 
 export function CalendarConnectBanner({ connected, providerLabel, loading, onConnect, onDisconnect }: Props) {
+  const adaptive = resolveMode(useAppStore((st) => st.profile)) !== 'regular';
   const [showPicker, setShowPicker] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
@@ -60,7 +63,9 @@ export function CalendarConnectBanner({ connected, providerLabel, loading, onCon
           <Text style={styles.bannerEmoji}>📅</Text>
           <View style={styles.bannerTextCol}>
             <Text style={styles.bannerTitle}>Connect your calendar</Text>
-            <Text style={styles.bannerSub}>Get cycle-phase scores on your events</Text>
+            <Text style={styles.bannerSub}>
+              {adaptive ? 'Find your strongest windows for each event' : 'Get cycle-phase scores on your events'}
+            </Text>
           </View>
         </View>
         <TouchableOpacity
@@ -82,7 +87,9 @@ export function CalendarConnectBanner({ connected, providerLabel, loading, onCon
           <Pressable style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>Choose your calendar</Text>
             <Text style={styles.sheetSub}>
-              CycleAlign reads event titles to score phase alignment. It only changes an event's date when you tap a better window and confirm, and it never shares your data.
+              {adaptive
+                ? "CycleAlign reads event titles and times to find your strongest windows. It only changes an event when you tap a suggestion and confirm, and it never shares your data."
+                : "CycleAlign reads event titles to score phase alignment. It only changes an event's date when you tap a better window and confirm, and it never shares your data."}
             </Text>
             {CALENDAR_PROVIDERS.map((p, i) => (
               <TouchableOpacity

@@ -34,9 +34,17 @@ export function providerOf(eventId: string): { provider: EventProvider; rawId: s
 
 const fail = (reason: MoveFailure, message?: string): MoveResult => ({ ok: false, reason, message });
 
-/** Keeps everything after the date (time, offset) and swaps the date by `delta` days. */
-function shiftDateTime(dt: string, delta: number): string {
-  return addDaysISO(dt.slice(0, 10), delta) + dt.slice(10);
+/**
+ * Moves a date-time by `delta` days and, optionally, `deltaMin` minutes of
+ * wall-clock time. Anything after the seconds (offset / Z) is left as it was.
+ */
+function shiftDateTime(dt: string, delta: number, deltaMin = 0): string {
+  if (deltaMin === 0) return addDaysISO(dt.slice(0, 10), delta) + dt.slice(10);
+  const wall = dt.slice(0, 19); // YYYY-MM-DDTHH:mm:ss
+  const t = new Date(wall + 'Z');
+  t.setUTCDate(t.getUTCDate() + delta);
+  t.setUTCMinutes(t.getUTCMinutes() + deltaMin);
+  return t.toISOString().slice(0, 19) + dt.slice(19);
 }
 
 // ── Google ────────────────────────────────────────────────────────────────────
@@ -60,7 +68,7 @@ async function googleFetch(url: string, init: RequestInit = {}, canRetry = true)
 
 interface GoogleTime { dateTime?: string; date?: string; timeZone?: string }
 
-async function moveGoogle(rawId: string, newDateISO: string): Promise<MoveResult> {
+async function moveGoogle(rawId: string, newDateISO: string, deltaMin = 0): Promise<MoveResult> {
   const base = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(rawId)}`;
   const getRes = await googleFetch(base);
   if (!getRes) return fail('not-signed-in');
@@ -84,11 +92,11 @@ async function moveGoogle(rawId: string, newDateISO: string): Promise<MoveResult
 
   const oldDate = (ev.start.dateTime ?? ev.start.date ?? '').slice(0, 10);
   const delta = daysBetween(fromISODate(oldDate), fromISODate(newDateISO));
-  if (delta === 0) return { ok: true };
+  if (delta === 0 && deltaMin === 0) return { ok: true };
 
   const shift = (t: GoogleTime): GoogleTime => {
     if (t.dateTime) {
-      const shifted = shiftDateTime(t.dateTime, delta);
+      const shifted = shiftDateTime(t.dateTime, delta, deltaMin);
       // With a named time zone, drop the fixed offset so the zone (and any
       // daylight-saving change on the new date) decides the real offset.
       return t.timeZone
@@ -153,7 +161,7 @@ interface GraphEvent {
   end?: GraphTime;
 }
 
-async function moveOutlook(rawId: string, newDateISO: string): Promise<MoveResult> {
+async function moveOutlook(rawId: string, newDateISO: string, deltaMin = 0): Promise<MoveResult> {
   const url = `https://graph.microsoft.com/v1.0/me/events/${encodeURIComponent(rawId)}`;
   const select = `?${encodeURIComponent('$select')}=type,isOrganizer,attendees,originalStartTimeZone,start,end`;
 
@@ -180,7 +188,7 @@ async function moveOutlook(rawId: string, newDateISO: string): Promise<MoveResul
   if (!ev.start || !ev.end) return fail('failed');
 
   const delta = daysBetween(fromISODate(ev.start.dateTime.slice(0, 10)), fromISODate(newDateISO));
-  if (delta === 0) return { ok: true };
+  if (delta === 0 && deltaMin === 0) return { ok: true };
 
   const patch = await outlookFetch(
     url,
@@ -188,8 +196,8 @@ async function moveOutlook(rawId: string, newDateISO: string): Promise<MoveResul
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        start: { dateTime: shiftDateTime(ev.start.dateTime, delta), timeZone: ev.start.timeZone },
-        end: { dateTime: shiftDateTime(ev.end.dateTime, delta), timeZone: ev.end.timeZone },
+        start: { dateTime: shiftDateTime(ev.start.dateTime, delta, deltaMin), timeZone: ev.start.timeZone },
+        end: { dateTime: shiftDateTime(ev.end.dateTime, delta, deltaMin), timeZone: ev.end.timeZone },
       }),
     },
     zone,
@@ -205,7 +213,7 @@ async function moveOutlook(rawId: string, newDateISO: string): Promise<MoveResul
 
 // ── Apple Calendar (on-device) ────────────────────────────────────────────────
 
-async function moveApple(rawId: string, newDateISO: string): Promise<MoveResult> {
+async function moveApple(rawId: string, newDateISO: string, deltaMin = 0): Promise<MoveResult> {
   try {
     const ev = await Calendar.getEventAsync(rawId);
     if (ev.recurrenceRule) return fail('recurring');
@@ -220,12 +228,13 @@ async function moveApple(rawId: string, newDateISO: string): Promise<MoveResult>
     }
 
     const delta = daysBetween(fromISODate(toISODate(new Date(ev.startDate))), fromISODate(newDateISO));
-    if (delta === 0) return { ok: true };
+    if (delta === 0 && deltaMin === 0) return { ok: true };
 
     // setDate keeps the local wall-clock time across a daylight-saving change.
     const shift = (d: string | Date) => {
       const x = new Date(d);
       x.setDate(x.getDate() + delta);
+      x.setMinutes(x.getMinutes() + deltaMin);
       return x;
     };
     await Calendar.updateEventAsync(rawId, { startDate: shift(ev.startDate), endDate: shift(ev.endDate) });
@@ -242,7 +251,14 @@ async function moveApple(rawId: string, newDateISO: string): Promise<MoveResult>
  * Moves the event in its real calendar, then updates the local copy. Events
  * from the sample calendar have no provider, so they just move locally.
  */
-export async function moveCalendarEvent(event: CalendarEvent, newDateISO: string): Promise<MoveResult> {
+export async function moveCalendarEvent(
+  event: CalendarEvent,
+  newDateISO: string,
+  /** Optional new start time (minutes from midnight). Omit to keep the event's current time of day. */
+  newStartMin?: number,
+): Promise<MoveResult> {
+  const deltaMin =
+    newStartMin !== undefined && event.startMin !== undefined ? newStartMin - event.startMin : 0;
   const target = providerOf(event.id);
   let result: MoveResult = { ok: true };
 
@@ -250,15 +266,15 @@ export async function moveCalendarEvent(event: CalendarEvent, newDateISO: string
     try {
       result =
         target.provider === 'google'
-          ? await moveGoogle(target.rawId, newDateISO)
+          ? await moveGoogle(target.rawId, newDateISO, deltaMin)
           : target.provider === 'outlook'
-            ? await moveOutlook(target.rawId, newDateISO)
-            : await moveApple(target.rawId, newDateISO);
+            ? await moveOutlook(target.rawId, newDateISO, deltaMin)
+            : await moveApple(target.rawId, newDateISO, deltaMin);
     } catch (err) {
       result = fail('failed', err instanceof Error ? err.message : undefined);
     }
   }
 
-  if (result.ok) useCalendar.getState().moveEvent(event.id, newDateISO);
+  if (result.ok) useCalendar.getState().moveEvent(event.id, newDateISO, deltaMin);
   return result;
 }

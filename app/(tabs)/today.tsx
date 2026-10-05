@@ -12,6 +12,10 @@ import { QuickLogCard } from '@/components/dashboard/QuickLogCard';
 import { LogInsightCard } from '@/components/dashboard/LogInsightCard';
 import { LifeStageCard } from '@/components/dashboard/LifeStageCard';
 import { PeriodCheckInModal } from '@/components/dashboard/PeriodCheckInModal';
+import { LeadershipStateCard } from '@/components/adaptive/LeadershipStateCard';
+import { OptimizeDayModal } from '@/components/adaptive/OptimizeDayModal';
+import { ClinicianPromptCard, PatternsCard, PersonalizePromptCard } from '@/components/adaptive/InsightCards';
+import { useAdaptive } from '@/lib/adaptive/useAdaptive';
 import { EditPeriodDatesModal } from '@/components/dashboard/EditPeriodDatesModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
@@ -23,7 +27,7 @@ import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { sendPhaseChangeNotification, syncScheduledNotifications } from '@/lib/notifications';
-import { getMyInviteIfExists, publishDigestedStatus } from '@/lib/partnerSync';
+import { getMyInviteIfExists, publishAdaptiveStatus, publishDigestedStatus } from '@/lib/partnerSync';
 import { partnerMessageBucket } from '../../supabase/functions/_shared/partnerDigest';
 import {
   CAPACITY,
@@ -45,6 +49,8 @@ export default function Today() {
   const dailyLogs = useDailyLog((s) => s.logs);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
   const [editDateOpen, setEditDateOpen] = useState(false);
+  const [optimizeOpen, setOptimizeOpen] = useState(false);
+  const { mode } = useAdaptive();
 
   const logInsight = prediction ? analyzeLogs(dailyLogs, prediction) : null;
 
@@ -56,14 +62,15 @@ export default function Today() {
   // whenever the prediction moves. Opt-out clears everything.
   const notificationsEnabled = useOnboarding((s) => s.notificationEnabled);
   useEffect(() => {
-    syncScheduledNotifications(prediction, notificationsEnabled);
-  }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled]);
+    // No period / phase predictions for irregular or perimenopause users.
+    syncScheduledNotifications(mode === 'regular' ? prediction : null, notificationsEnabled);
+  }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled, mode]);
 
   // Fire a one-time notification the moment her cycle crosses into a new
   // phase. The very first run just records a baseline — it never fires on
   // app open, only on an actual transition since the last one we saw.
   useEffect(() => {
-    if (!prediction || !notificationsEnabled) return;
+    if (!prediction || !notificationsEnabled || mode !== 'regular') return;
     if (lastNotifiedPhase && lastNotifiedPhase !== prediction.currentPhase) {
       sendPhaseChangeNotification(prediction.currentPhase);
     }
@@ -76,14 +83,17 @@ export default function Today() {
   // digested status onto her own link row (only if she's already connected to
   // a partner — this never creates a link on its own).
   useEffect(() => {
-    if (!prediction) return;
+    if (mode === 'regular' && !prediction) return;
     getMyInviteIfExists().then((link) => {
-      if (link && link.status === 'active') publishDigestedStatus(link, prediction);
+      if (!link || link.status !== 'active') return;
+      if (mode === 'regular' && prediction) publishDigestedStatus(link, prediction);
+      else publishAdaptiveStatus(link);
     });
-  }, [prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()], partnerMessageBucket(todayISO())]);
+  }, [mode, prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()], partnerMessageBucket(todayISO())]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
-  useRetailTherapyTrigger(prediction);
+  // The shop never reacts to the health state of irregular / perimenopause users.
+  useRetailTherapyTrigger(mode === 'regular' ? prediction : null);
   const saleEndsAt = useRetailTherapy((s) => s.saleEndsAt);
   const saleStorefront = useRetailTherapy((s) => s.saleStorefront);
   const saleLive = saleIsLive(saleEndsAt);
@@ -95,7 +105,9 @@ export default function Today() {
     setOverdueDismissed(true);
   }
 
-  if (!profile || !prediction) {
+  // Regular users need a logged period to have a dashboard; irregular / perimenopause
+  // users don't — their home is built from check-ins, not a cycle date.
+  if (!profile || (mode === 'regular' && !prediction)) {
     return (
       <>
         <TabScreen gradient={[dash.bg, dash.bg]} contentStyle={styles.empty}>
@@ -114,9 +126,58 @@ export default function Today() {
     );
   }
 
+  const dateISO = todayISO();
+
+  // Adaptive home: what she can DO today. No phase hero, no period prompts.
+  if (mode !== 'regular' || !prediction) {
+    return (
+      <>
+        <TabScreen gradient={[dash.bg, dash.bg]} contentStyle={styles.content}>
+          <Animated.View entering={FadeInDown.duration(450)}>
+            <DashboardHeader name={profile.name} onAvatarPress={() => router.push('/(tabs)/profile')} />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(80).duration(450)}>
+            <LeadershipStateCard onOptimize={() => setOptimizeOpen(true)} />
+          </Animated.View>
+
+          <ClinicianPromptCard />
+
+          <Animated.View entering={FadeInDown.delay(115).duration(450)}>
+            <QuickLogCard dateISO={dateISO} />
+          </Animated.View>
+
+          <PatternsCard />
+
+          <Animated.View entering={FadeInDown.delay(140).duration(450)}>
+            <TodayTasksCard dateISO={dateISO} />
+          </Animated.View>
+
+          {isV2 && (
+            <Animated.View entering={FadeInDown.delay(180).duration(450)}>
+              <Pressable
+                style={({ pressed }) => [styles.coachCard, pressed && styles.coachCardPressed]}
+                onPress={() => router.push('/ai-coach')}
+              >
+                <View style={styles.coachIcon}>
+                  <Text style={styles.coachIconEmoji}>🌿</Text>
+                </View>
+                <View style={styles.coachTextWrap}>
+                  <Text style={styles.coachTitle}>Ask Align ✨</Text>
+                  <Text style={styles.coachSub}>Your leadership companion — plan your day, your week, your decisions</Text>
+                </View>
+                <Text style={styles.coachChevron}>›</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+        </TabScreen>
+        <OptimizeDayModal visible={optimizeOpen} onClose={() => setOptimizeOpen(false)} />
+      </>
+    );
+  }
+
   const capPhase = capacityPhaseFor(prediction);
   const capacity = CAPACITY[capPhase];
-  const dateISO = todayISO();
 
   return (
     <>
@@ -137,6 +198,13 @@ export default function Today() {
             onEditPress={() => setEditDateOpen(true)}
           />
         </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(90).duration(450)}>
+          <LeadershipStateCard onOptimize={() => setOptimizeOpen(true)} />
+        </Animated.View>
+
+        <PersonalizePromptCard />
+        <ClinicianPromptCard />
 
         {saleLive && (
           <Animated.View entering={FadeInDown.delay(100).duration(450)}>
@@ -164,6 +232,8 @@ export default function Today() {
             <LogInsightCard insight={logInsight} />
           </Animated.View>
         )}
+
+        <PatternsCard />
 
         <Animated.View entering={FadeInDown.delay(140).duration(450)}>
           <LifeStageCard />
@@ -204,6 +274,8 @@ export default function Today() {
           <TodayTasksCard dateISO={dateISO} />
         </Animated.View>
       </TabScreen>
+
+      <OptimizeDayModal visible={optimizeOpen} onClose={() => setOptimizeOpen(false)} />
 
       <PeriodCheckInModal
         visible={prediction.isOverdue && !overdueDismissed}

@@ -30,8 +30,8 @@ export default function NotificationsStep() {
 
   return (
     <StepScaffold
-      step={5}
-      total={5}
+      step={6}
+      total={6}
       title="Your morning briefing"
       subtitle="CycleALIGN sends you one insight every morning — your phase update, energy level, and top focus for the day."
       ctaLabel="Turn on notifications"

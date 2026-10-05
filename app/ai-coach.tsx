@@ -19,6 +19,9 @@ import {
   getUsedToday,
   type CoachMessage,
 } from '@/lib/aiCoach';
+import { useAdaptive } from '@/lib/adaptive/useAdaptive';
+import { coachStateSummary, coachTasksSummary, coachWeekOutlook, COACH_STARTERS } from '@/lib/adaptive/coachContext';
+import { useTasks } from '@/lib/stores/useTasks';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useSubscription } from '@/lib/stores/useSubscription';
@@ -49,6 +52,8 @@ export default function AICoachScreen() {
   const insets = useSafeAreaInsets();
   const prediction = usePrediction();
   const dailyLogs = useDailyLog((s) => s.logs);
+  const tasks = useTasks((s) => s.tasks);
+  const adaptive = useAdaptive();
   const scrollRef = useRef<ScrollView>(null);
 
   const [messages, setMessages] = useState<CoachMessage[]>([]);
@@ -83,12 +88,17 @@ export default function AICoachScreen() {
     setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', content: text }]);
 
     try {
+      const regular = adaptive.mode === 'regular';
       const res = await askCoach(text, {
-        phase,
-        dayOfCycle: prediction?.dayOfCycle,
-        cycleLength: prediction?.cycleLength,
+        phase: regular ? phase : undefined,
+        dayOfCycle: regular ? prediction?.dayOfCycle : undefined,
+        cycleLength: regular ? prediction?.cycleLength : undefined,
         logSummary: recentLogSummary(dailyLogs),
         lifeStage: lifeStage?.stage.coachContext,
+        mode: adaptive.mode,
+        stateSummary: coachStateSummary(adaptive),
+        weekOutlook: coachWeekOutlook(adaptive),
+        tasksSummary: coachTasksSummary(tasks),
       });
       if (res.limitReached) {
         setRemaining(0);
@@ -116,7 +126,7 @@ export default function AICoachScreen() {
           </View>
           <View>
             <Text style={styles.headerName}>Align</Text>
-            <Text style={styles.headerRole}>Your cycle coach</Text>
+            <Text style={styles.headerRole}>Your leadership companion</Text>
           </View>
         </View>
         {remaining !== null && (
@@ -139,9 +149,26 @@ export default function AICoachScreen() {
           {/* Welcome bubble */}
           <Animated.View entering={FadeIn.duration(400)} style={[styles.bubble, styles.bubbleCoach]}>
             <Text style={styles.bubbleText}>
-              {PHASE_GREETING[phase ?? 'follicular']}
+              {adaptive.mode === 'regular'
+                ? PHASE_GREETING[phase ?? 'follicular']
+                : "Hi, I'm Align — your leadership companion. Ask me how to plan today, when to schedule something important, or how to structure a tough day."}
             </Text>
           </Animated.View>
+
+          {messages.length === 0 && (
+            <View style={{ gap: 8, marginTop: 4 }}>
+              {COACH_STARTERS.map((q) => (
+                <Pressable
+                  key={q}
+                  onPress={() => setInput(q)}
+                  style={{ borderRadius: 14, borderWidth: 1.5, borderColor: palette.line, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: palette.surface }}
+                  testID="coach-starter"
+                >
+                  <Text style={{ fontSize: 13.5, color: palette.ink }}>{q}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
 
           {messages.map((msg) => (
             <Bubble key={msg.id} msg={msg} />
@@ -177,7 +204,7 @@ export default function AICoachScreen() {
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder="Ask about your cycle, energy, mood…"
+              placeholder="Ask about your day, decisions, energy…"
               placeholderTextColor={palette.muted}
               style={styles.input}
               multiline

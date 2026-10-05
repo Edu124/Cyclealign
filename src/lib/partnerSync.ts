@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { capacityPhaseFor } from '@/lib/intelligence/capacity';
-import { isToughDay, pickPartnerMessage } from '../../supabase/functions/_shared/partnerDigest';
+import { adaptiveTone, isToughDay, pickAdaptiveMessage, pickPartnerMessage } from '../../supabase/functions/_shared/partnerDigest';
 import { todayISO } from '@/lib/dates';
 import type { DailyLog } from '@/types/models';
 import type { Prediction } from '@/types/models';
@@ -151,6 +151,31 @@ export async function publishDigestedStatus(link: PartnerLink, prediction: Predi
       shared_phase: link.sharePhase ? digest.phase : null,
       shared_tough_day: link.shareToughDay ? digest.toughDay : null,
       shared_message: link.shareToughDay ? digest.message : null,
+      shared_updated_at: new Date().toISOString(),
+    })
+    .eq('id', link.id);
+}
+
+/**
+ * For irregular / perimenopause users: no cycle phase is ever shared. Her
+ * partner reads a message built only from how she says she is today.
+ */
+export async function publishAdaptiveStatus(link: PartnerLink): Promise<void> {
+  if (!isSupabaseConfigured || link.status !== 'active') return;
+  const today = todayISO();
+  let todaysLog: DailyLog | undefined;
+  try {
+    const raw = await import('@/lib/stores/useDailyLog');
+    todaysLog = raw.useDailyLog.getState().logs[today];
+  } catch {}
+
+  const tone = adaptiveTone(todaysLog ? { energy: todaysLog.energy, mood: todaysLog.mood, sleepQuality: todaysLog.sleepQuality } : null);
+  await supabase
+    .from('partner_links')
+    .update({
+      shared_phase: null,
+      shared_tough_day: link.shareToughDay ? tone === 'tough' : null,
+      shared_message: link.shareToughDay ? pickAdaptiveMessage(tone, today) : null,
       shared_updated_at: new Date().toISOString(),
     })
     .eq('id', link.id);

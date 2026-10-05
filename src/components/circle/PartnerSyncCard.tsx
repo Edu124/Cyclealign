@@ -28,6 +28,8 @@ import {
   type PartnerLink,
 } from '@/lib/partnerSync';
 import { dash, phaseBanner } from '@/theme';
+import { resolveMode } from '@/lib/adaptive/mode';
+import { useAppStore } from '@/lib/stores/useAppStore';
 import type { PhaseKey } from '@/types/models';
 
 const SUGGESTED_MESSAGES = [
@@ -60,6 +62,7 @@ function relativeTime(iso: string): string {
 }
 
 export function PartnerSyncCard() {
+  const adaptive = resolveMode(useAppStore((s) => s.profile)) !== 'regular';
   const [myInvite, setMyInvite] = useState<PartnerLink | null | undefined>(undefined);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [partnerLink, setPartnerLink] = useState<PartnerLink | null | undefined>(undefined);
@@ -207,13 +210,15 @@ export function PartnerSyncCard() {
             </View>
 
             <View style={styles.toggleList}>
+              {!adaptive && (
+                <ToggleRow
+                  label="Cycle phase"
+                  value={myInvite.sharePhase}
+                  onChange={(v) => handleToggle('sharePhase', v)}
+                />
+              )}
               <ToggleRow
-                label="Cycle phase"
-                value={myInvite.sharePhase}
-                onChange={(v) => handleToggle('sharePhase', v)}
-              />
-              <ToggleRow
-                label="Tougher-day heads-up"
+                label={adaptive ? "How I'm doing today" : "Tougher-day heads-up"}
                 value={myInvite.shareToughDay}
                 onChange={(v) => handleToggle('shareToughDay', v)}
               />

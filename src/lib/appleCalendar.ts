@@ -7,7 +7,7 @@
 import { Platform } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
-import { inferCategory } from './googleCalendar';
+import { inferCategory, localMinutes } from './googleCalendar';
 import { toISODate } from './dates';
 
 export function isAppleCalendarSupported(): boolean {
@@ -36,6 +36,7 @@ function mapDeviceEvent(e: Calendar.Event): CalendarEvent {
     categoryId,
     dateISO,
     timeLabel,
+    ...(e.allDay ? {} : localMinutes(new Date(e.startDate).toISOString(), new Date(e.endDate).toISOString())),
     // No reliable per-event privacy flag on-device; treat inferred
     // Personal/Sensitive events the same way the rest of the app does.
     isPrivate: categoryId === 'PERSONAL',

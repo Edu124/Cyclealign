@@ -39,12 +39,27 @@ export async function restoreFromCloud(): Promise<boolean> {
     return false;
   }
 
-  app.setProfile(profile);
+  // Answers that only exist on this device (the cloud columns may not exist yet) must survive a restore.
+  const localProfile = app.profile;
+  const keep = localProfile && localProfile.id === profile.id ? localProfile : null;
+  app.setProfile({
+    ...profile,
+    cycleRegularity: profile.cycleRegularity ?? keep?.cycleRegularity,
+    healthContext: profile.healthContext ?? keep?.healthContext,
+    cycleLengthRange: profile.cycleLengthRange ?? keep?.cycleLengthRange,
+  });
   cycleLogs.forEach((l) => app.addCycleLog(l));
   app.completeOnboarding();
 
   const setLog = useDailyLog.getState().setLog;
-  Object.values(dailyLogs).forEach((l) => setLog(l));
+  const localLogs = useDailyLog.getState().logs;
+  Object.values(dailyLogs).forEach((l) => {
+    const { focus, decisionConfidence, sleepQuality, sleepHours, stress, symptoms, bleeding } = localLogs[l.dateISO] ?? {};
+    setLog({
+      focus, decisionConfidence, sleepQuality, sleepHours, stress, symptoms, bleeding,
+      ...l, // anything the cloud has wins; local-only extras fill the gaps
+    });
+  });
 
   if (subscriptionTier === 'premium') {
     useSubscription.getState().activate('monthly', null, null);

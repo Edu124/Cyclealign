@@ -15,6 +15,8 @@ import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useCalendar, type CalendarEvent } from '@/lib/stores/useCalendar';
 import { phaseTestEvents } from '@/lib/intelligence/demoEvents';
+import { WeeklyWindowsCard } from '@/components/adaptive/WeeklyWindowsCard';
+import { resolveMode } from '@/lib/adaptive/mode';
 import { useTasks } from '@/lib/stores/useTasks';
 import { TASK_SYNC_CATEGORIES } from '@/lib/intelligence/taskScore';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
@@ -30,6 +32,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function Plan() {
   const profile    = useAppStore((s) => s.profile);
+  const mode       = resolveMode(profile);
   const prediction = usePrediction();
   const {
     connected,
@@ -305,7 +308,9 @@ export default function Plan() {
     }
   }
 
-  if (!profile || !prediction) {
+  // Regular users need a logged cycle; irregular / perimenopause users plan from check-ins.
+  const adaptive = mode !== 'regular';
+  if (!profile || (!adaptive && !prediction)) {
     return (
       <TabScreen contentStyle={styles.empty}>
         <Text style={styles.emptyText}>Set up your cycle to plan your month.</Text>
@@ -313,7 +318,7 @@ export default function Plan() {
     );
   }
 
-  const { recommendedWindows } = monthPlan(prediction);
+  const recommendedWindows = !adaptive && prediction ? monthPlan(prediction).recommendedWindows : [];
 
   function handleDayPress(dateISO: string) {
     if (!allEvents.some((e) => e.dateISO === dateISO)) return;
@@ -326,7 +331,9 @@ export default function Plan() {
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={styles.title}>Your plan</Text>
           <Text style={styles.subtitle}>
-            Schedule your work with your hormones, not against them.
+            {adaptive
+              ? 'Plan your calendar around how you actually feel and work.'
+              : 'Schedule your work with your hormones, not against them.'}
           </Text>
         </Animated.View>
 
@@ -343,15 +350,18 @@ export default function Plan() {
         )}
 
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
-          <RecommendedWindows
-            windows={recommendedWindows}
-            onSelectWindow={setSelectedWindow}
-          />
+          {adaptive ? (
+            <WeeklyWindowsCard />
+          ) : (
+            <RecommendedWindows
+              windows={recommendedWindows}
+              onSelectWindow={setSelectedWindow}
+            />
+          )}
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <MonthOutlook
-            prediction={prediction}
             events={isV2 ? (connected ? allEvents : taskEvents) : taskEvents}
             onDayPress={handleDayPress}
           />
@@ -367,7 +377,6 @@ export default function Plan() {
       <DayEventsModal
         dateISO={selectedDate}
         events={selectedDate ? allEvents.filter((e) => e.dateISO === selectedDate) : []}
-        prediction={prediction}
         onClose={() => setSelectedDate(null)}
       />
     </>

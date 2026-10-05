@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -11,26 +10,18 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { format } from 'date-fns';
-import { dash, phaseColors } from '@/theme';
-import { fromISODate } from '@/lib/dates';
-import {
-  TASK_SYNC_CATEGORIES,
-  greenDates,
-  scoreForDate,
-  type ScoreColor,
-} from '@/lib/intelligence/taskScore';
-import {
-  CAPACITY_TO_PHASE_KEY,
-  PHASE_CONTEXT,
-  type CapacityPhase,
-} from '@/lib/intelligence/capacity';
+import { dash } from '@/theme';
+import { addDaysISO, fromISODate } from '@/lib/dates';
+import { TASK_SYNC_CATEGORIES, type ScoreColor } from '@/lib/intelligence/taskScore';
 import type { CalendarEvent } from '@/lib/stores/useCalendar';
 import { useTasks } from '@/lib/stores/useTasks';
-import type { Prediction } from '@/types/models';
+import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
 import { Icon } from '@/components/dashboard/Icon';
 import { TaskGuidanceCard } from '@/components/wellness/TaskGuidanceCard';
-import { PHASE_APPROACH, taskGuidanceFor } from '@/lib/wellness/taskGuidance';
-import { moveCalendarEvent, providerOf, type MoveResult } from '@/lib/calendarMove';
+import { taskGuidanceFor } from '@/lib/wellness/taskGuidance';
+import { moveWithConfirmation } from '@/lib/calendarMoveUi';
+import { useAdaptive } from '@/lib/adaptive/useAdaptive';
+import { formatMinutes, type DecisionWindow } from '@/lib/adaptive/windows';
 
 // ── Exact same SCORE_UI as task-sync.tsx ────────────────────────────────────
 const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word: string }> = {
@@ -39,54 +30,15 @@ const SCORE_UI: Record<ScoreColor, { fg: string; bg: string; glyph: string; word
   red:   { fg: '#C2683F', bg: '#F7E3D9', glyph: '⚑', word: 'Tough window' },
 };
 
-const PHASE_NAME: Record<CapacityPhase, string> = {
-  menstrual:    'Menstrual',
-  follicular:   'Follicular',
-  ovulatory:    'Ovulatory',
-  luteal_early: 'early Luteal',
-  luteal_late:  'late Luteal',
-};
-
 interface Props {
   dateISO: string | null;
   events: CalendarEvent[];
-  prediction: Prediction;
   onClose: () => void;
 }
 
 /** A task created via Task Sync surfaces here too (plan.tsx merges them in) — its id is prefixed so we can tell it apart from a read-only synced calendar event. */
 function taskIdOf(eventId: string): string | null {
   return eventId.startsWith('task-') ? eventId.slice('task-'.length) : null;
-}
-
-function confirmAsync(title: string, message: string): Promise<boolean> {
-  if (Platform.OS === 'web') return Promise.resolve(window.confirm(title + '\n\n' + message));
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Move it', onPress: () => resolve(true) },
-    ], { cancelable: true, onDismiss: () => resolve(false) });
-  });
-}
-
-function notify(title: string, message: string) {
-  if (Platform.OS === 'web') window.alert(title + '\n\n' + message);
-  else Alert.alert(title, message);
-}
-
-function failureText(res: Extract<MoveResult, { ok: false }>): string {
-  switch (res.reason) {
-    case 'recurring':
-      return "This is a repeating event, so it can't be moved from here. Change it in your calendar app.";
-    case 'not-organizer':
-      return res.message ?? 'Only the organizer can move this event.';
-    case 'needs-reconnect':
-      return 'CycleAlign needs permission to change your calendar. Tap Disconnect, then Connect again, and allow it.';
-    case 'not-signed-in':
-      return 'Your calendar connection has expired. Tap Disconnect, then Connect again.';
-    default:
-      return res.message ?? 'Something went wrong. Please try again.';
-  }
 }
 
 function scoreMessage(score: ScoreColor, phaseName: string): string {
@@ -97,34 +49,33 @@ function scoreMessage(score: ScoreColor, phaseName: string): string {
   return `You'll be in your ${phaseName} phase — this may ask more of you than the day naturally gives.`;
 }
 
-export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) {
+const windowKey = (eventId: string, w: DecisionWindow) => `${eventId}|${w.dateISO}|${w.startMin}`;
+
+export function DayEventsModal({ dateISO, events, onClose }: Props) {
   const updateTaskDate = useTasks((s) => s.updateTaskDate);
+  const ignored = useAdaptivePrefs((s) => s.ignored);
+  const ignoreSuggestion = useAdaptivePrefs((s) => s.ignoreSuggestion);
+  const { scorer, mode, rank } = useAdaptive();
   const [openPopupEventId, setOpenPopupEventId] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
 
   if (!dateISO) return null;
+  const adaptive = mode !== 'regular';
 
-  async function moveEventTo(event: CalendarEvent, newDate: string) {
+  async function moveEventTo(event: CalendarEvent, newDate: string, startMin?: number) {
     if (movingId) return;
-    const label = format(fromISODate(newDate), 'EEE, d MMM');
-    const invited = providerOf(event.id)
-      ? " If other people are invited, they'll be notified."
-      : '';
-    const ok = await confirmAsync('Move this event?', `Move "${event.title}" to ${label}?${invited}`);
-    if (!ok) return;
     setMovingId(event.id);
-    const res = await moveCalendarEvent(event, newDate);
-    setMovingId(null);
-    if (!res.ok) notify("Couldn't move it", failureText(res));
+    try {
+      await moveWithConfirmation(event, newDate, startMin);
+    } finally {
+      setMovingId(null);
+    }
   }
 
   const dateLabel = format(fromISODate(dateISO), 'EEEE, d MMMM');
   const popupEvent = events.find((e) => e.id === openPopupEventId);
-  const popupResult = popupEvent ? scoreForDate(popupEvent.categoryId, dateISO, prediction) : null;
-  const hasRedEvent = events.some((e) => {
-    const r = scoreForDate(e.categoryId, dateISO, prediction);
-    return r.score === 'red';
-  });
+  const popupResult = popupEvent ? scorer.scoreFor(popupEvent.categoryId, dateISO, popupEvent.title) : null;
+  const hasRedEvent = events.some((e) => scorer.scoreFor(e.categoryId, dateISO, e.title).score === 'red');
 
   return (
     <>
@@ -152,7 +103,9 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
           {hasRedEvent && (
             <View style={styles.warningBanner}>
               <Text style={styles.warningText}>
-                ⚑ One or more events fall on a tough window. See suggestions below.
+                {adaptive
+                  ? '⚑ One or more events may ask more of you than this day supports. See suggestions below.'
+                  : '⚑ One or more events fall on a tough window. See suggestions below.'}
               </Text>
             </View>
           )}
@@ -169,17 +122,28 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
             ) : (
               events.map((event, i) => {
                 const cat = TASK_SYNC_CATEGORIES.find((c) => c.id === event.categoryId);
-                const { phase, score } = scoreForDate(event.categoryId, dateISO, prediction);
-                const isPersonal = score === null;
+                const ds = scorer.scoreFor(event.categoryId, dateISO, event.title);
+                const score = ds.score;
+                const isPrivateEvent = event.categoryId === 'PERSONAL';
+                const insufficient = ds.level === 'INSUFFICIENT_DATA';
                 const ui = score ? SCORE_UI[score] : null;
-                const phaseName = PHASE_NAME[phase];
                 const taskId = taskIdOf(event.id);
 
-                // For red events, find the next 2 green dates so we can show them directly.
                 const needsAttention = score === 'red' || score === 'amber';
-                const betterDates = needsAttention
-                  ? greenDates(event.categoryId, prediction, 30).slice(0, 2)
-                  : [];
+                // Regular mode: next green dates (unchanged). Adaptive: real time slots
+                // from her own pattern, minus anything she has already said no to.
+                const betterDates = !adaptive && needsAttention ? scorer.betterDates(event.categoryId, 2) : [];
+                const windows: DecisionWindow[] =
+                  adaptive && needsAttention && !isPrivateEvent
+                    ? rank(event.categoryId, event.title, {
+                        excludeDateISO: dateISO,
+                        days: 10,
+                        durationMin:
+                          event.startMin !== undefined && event.endMin !== undefined ? event.endMin - event.startMin : undefined,
+                      })
+                        .filter((w) => !ignored[windowKey(event.id, w)])
+                        .slice(0, 2)
+                    : [];
 
                 return (
                   <Animated.View
@@ -188,7 +152,7 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                     style={[
                       styles.eventCard,
                       ui && { borderLeftColor: ui.fg, borderLeftWidth: 3 },
-                      isPersonal && { borderLeftColor: dash.muted, borderLeftWidth: 3 },
+                      (isPrivateEvent || insufficient) && { borderLeftColor: dash.muted, borderLeftWidth: 3 },
                     ]}
                   >
                     {/* Event row */}
@@ -205,9 +169,13 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                         </Text>
                       </View>
                       {/* Score badge */}
-                      {isPersonal ? (
+                      {isPrivateEvent ? (
                         <View style={[styles.scoreBadge, { backgroundColor: '#F4F0EA' }]}>
                           <Text style={[styles.scoreBadgeText, { color: dash.muted }]}>Private</Text>
+                        </View>
+                      ) : insufficient ? (
+                        <View style={[styles.scoreBadge, { backgroundColor: '#F4F0EA' }]}>
+                          <Text style={[styles.scoreBadgeText, { color: dash.muted }]}>Still learning</Text>
                         </View>
                       ) : (
                         <View style={[styles.scoreBadge, { backgroundColor: ui!.bg }]}>
@@ -218,21 +186,22 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                     </View>
 
                     {/* Score message */}
-                    {!isPersonal && (
+                    {!isPrivateEvent && !insufficient && score && (
                       <Text style={[styles.scoreMsg, { color: ui!.fg + 'CC' }]}>
-                        {scoreMessage(score!, phaseName)}
+                        {ds.note ?? scoreMessage(score, ds.phaseLabel)}
                       </Text>
                     )}
-                    {isPersonal && (
+                    {insufficient && (
+                      <Text style={styles.scoreMsgMuted}>{ds.note}</Text>
+                    )}
+                    {isPrivateEvent && (
                       <Text style={styles.scoreMsgMuted}>
-                        You have something personal on this day. {PHASE_CONTEXT[phase]}. Build buffer time around it.
+                        You have something personal on this day. Build buffer time around it.
                       </Text>
                     )}
 
-                    {/* Better date suggestions — shown inline for tough/manageable
-                        events. Tapping moves a task inside the app, or moves a
-                        synced calendar event in its real calendar (after a
-                        confirmation). */}
+                    {/* Regular mode: next best dates. Tapping moves a task inside the app, or a
+                        synced calendar event in its real calendar (after a confirmation). */}
                     {betterDates.length > 0 && (
                       <View style={styles.betterDates}>
                         <Text style={styles.betterDatesLabel}>
@@ -255,6 +224,34 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                       </View>
                     )}
 
+                    {/* Adaptive modes: real windows with the reason, and a way to say no. */}
+                    {windows.length > 0 && (
+                      <View style={styles.betterDates}>
+                        <Text style={styles.betterDatesLabel}>
+                          {movingId === event.id ? '✦ Moving…' : '✦ Stronger windows — you decide'}
+                        </Text>
+                        {windows.map((w) => (
+                          <View key={windowKey(event.id, w)} style={styles.windowRow}>
+                            <TouchableOpacity
+                              style={[styles.dateChip, movingId === event.id && { opacity: 0.5 }]}
+                              disabled={!!movingId}
+                              onPress={() =>
+                                taskId ? updateTaskDate(taskId, w.dateISO) : moveEventTo(event, w.dateISO, w.startMin)
+                              }
+                            >
+                              <Text style={styles.dateChipText}>
+                                {format(fromISODate(w.dateISO), 'EEE, d MMM')} · {formatMinutes(w.startMin)}
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => ignoreSuggestion(windowKey(event.id, w))} hitSlop={8}>
+                              <Text style={styles.ignoreText}>Ignore</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.windowWhy}>{w.reasons.join(' · ')}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
                     {/* Same guidance flow as Task Sync: tap to reveal the
                         phase-aware PREPARE/PERFORM/RECOVER card — "keep this
                         date anyway" framing for amber/red, "make the most of
@@ -267,7 +264,7 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
                         <Text style={styles.keepBtnText}>Keep this date anyway</Text>
                       </TouchableOpacity>
                     )}
-                    {!isPersonal && score === 'green' && (
+                    {!isPrivateEvent && score === 'green' && (
                       <TouchableOpacity
                         style={styles.keepBtn}
                         onPress={() => setOpenPopupEventId(event.id)}
@@ -283,23 +280,26 @@ export function DayEventsModal({ dateISO, events, prediction, onClose }: Props) 
 
           <View style={styles.footer}>
             <Text style={styles.footerNote}>
-              ✦ Scores update automatically as your cycle progresses
+              {adaptive
+                ? '✦ Suggestions come from your own check-ins — you always decide'
+                : '✦ Scores update automatically as your cycle progresses'}
             </Text>
           </View>
         </View>
       </View>
     </Modal>
 
-    {popupEvent && popupResult && popupResult.score && (
+    {popupEvent && popupResult && popupResult.score && popupResult.guidancePhase && (
       <TaskGuidanceCard
         visible
         variant={popupResult.score === 'green' ? 'ideal' : 'blocked'}
         categoryLabel={
           TASK_SYNC_CATEGORIES.find((c) => c.id === popupEvent.categoryId)?.label ?? 'Event'
         }
-        phaseName={PHASE_NAME[popupResult.phase]}
-        approach={PHASE_APPROACH[CAPACITY_TO_PHASE_KEY[popupResult.phase]]}
-        guidance={taskGuidanceFor(popupEvent.categoryId, CAPACITY_TO_PHASE_KEY[popupResult.phase])}
+        phaseName={popupResult.phaseLabel}
+        phaseRowLabel={popupResult.phaseRowLabel}
+        approach={popupResult.approach}
+        guidance={taskGuidanceFor(popupEvent.categoryId, popupResult.guidancePhase)}
         color={SCORE_UI[popupResult.score].fg}
         onConfirm={() => setOpenPopupEventId(null)}
         onClose={() => setOpenPopupEventId(null)}
@@ -401,6 +401,9 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   dateChipText: { fontSize: 13, fontWeight: '700', color: '#3A5C2C' },
+  windowRow: { gap: 4, marginTop: 4 },
+  ignoreText: { fontSize: 12, color: dash.muted, fontWeight: '600', marginTop: 2 },
+  windowWhy: { fontSize: 11.5, color: dash.inkSoft, lineHeight: 16 },
   keepBtn: {
     alignSelf: 'flex-start',
     backgroundColor: dash.bg,

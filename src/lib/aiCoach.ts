@@ -27,6 +27,14 @@ export interface CoachContext {
   /** Age-based life-stage context (see lifeStage.ts coachContext) so advice
    *  fits her stage of life, not just her cycle day. */
   lifeStage?: string;
+  /** Which engine the user is on — irregular / perimenopause users get no cycle-phase talk. */
+  mode?: 'regular' | 'pcos_irregular' | 'perimenopause';
+  /** Today's readiness in words (from her own check-in). Never calendar data. */
+  stateSummary?: string;
+  /** Her strongest days this week, from check-ins only. Never calendar data. */
+  weekOutlook?: string;
+  /** Categories of tasks she planned in the app (never titles or labels). */
+  tasksSummary?: string;
 }
 
 export interface CoachReply {
@@ -110,7 +118,10 @@ export async function askCoach(message: string, context: CoachContext): Promise<
     if (used >= AI_DAILY_LIMIT) return { reply: '', remaining: 0, limitReached: true };
     await AsyncStorage.setItem(demoCountKey(todayISO()), String(used + 1));
     return {
-      reply: DEMO_TIPS[context.phase ?? 'follicular'],
+      reply:
+        context.mode && context.mode !== 'regular'
+          ? 'Start from how you feel today: put your most demanding work in the slot where your energy and focus are highest, and keep lighter tasks for when they dip. Add a check-in so I can be more specific. 🌿'
+          : DEMO_TIPS[context.phase ?? 'follicular'],
       remaining: AI_DAILY_LIMIT - used - 1,
       limitReached: false,
     };

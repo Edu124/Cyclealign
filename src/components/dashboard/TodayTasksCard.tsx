@@ -4,9 +4,9 @@ import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
-import { categoryById, greenDates, scoreForDate } from '@/lib/intelligence/taskScore';
+import { categoryById } from '@/lib/intelligence/taskScore';
 import { useTasks, tasksForDate } from '@/lib/stores/useTasks';
-import { usePrediction } from '@/lib/hooks/usePrediction';
+import { useScorer } from '@/lib/adaptive/useAdaptive';
 import { fromISODate } from '@/lib/dates';
 import { Icon } from './Icon';
 
@@ -28,15 +28,11 @@ export function TodayTasksCard({ dateISO }: Props) {
   const removeTask = useTasks((s) => s.removeTask);
   const recordFeedback = useTasks((s) => s.recordFeedback);
   const todays = tasksForDate(tasks, dateISO);
-  const prediction = usePrediction();
+  const scorer = useScorer();
 
   // Find the first task today that scores red — show a better-date suggestion.
-  const redTask = prediction
-    ? todays.find((t) => scoreForDate(t.category, dateISO, prediction).score === 'red')
-    : undefined;
-  const betterDate = prediction && redTask
-    ? greenDates(redTask.category, prediction, 30)[0]
-    : undefined;
+  const redTask = todays.find((t) => scorer.scoreFor(t.category, dateISO, t.label).score === 'red');
+  const betterDate = redTask ? scorer.betterDates(redTask.category, 1, { title: redTask.label, excludeDateISO: dateISO })[0] : undefined;
 
   // The day a suggested move lands on, ask once whether it actually helped.
   const feedbackTask = todays.find((t) => t.suggestedMove && !t.feedbackGiven);
@@ -58,7 +54,7 @@ export function TodayTasksCard({ dateISO }: Props) {
         <View style={styles.list}>
           {todays.map((t) => {
             const cat = categoryById(t.category);
-            const score = prediction ? scoreForDate(t.category, dateISO, prediction).score : null;
+            const score = scorer.scoreFor(t.category, dateISO, t.label).score;
             return (
               <Pressable key={t.id} onLongPress={() => removeTask(t.id)} style={styles.row}>
                 <Pressable onPress={() => toggleDone(t.id)} hitSlop={8}>
