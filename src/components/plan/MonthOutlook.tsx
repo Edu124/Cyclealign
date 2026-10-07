@@ -38,6 +38,8 @@ function worstScore(scores: (ScoreColor | null)[]): ScoreColor | null {
   return null;
 }
 
+const NEUTRAL_DOT = '#B8AFA4';
+
 const TINT: Record<ReadinessLevel, string | null> = {
   STRONG: '#56723F40',
   GOOD: '#56723F26',
@@ -83,7 +85,16 @@ export function MonthOutlook({ events, onDayPress }: Props) {
       const { score } = scorer.scoreFor(e.categoryId, e.dateISO, e.title);
       const existing = map[e.dateISO];
       const incoming = score;
-      if (!incoming) return;
+      if (!incoming) {
+        // Adaptive users with little history have no score yet — still show that something is planned.
+        if (adaptive && !existing) map[e.dateISO] = NEUTRAL_DOT;
+        return;
+      }
+      // a real score replaces the neutral placeholder
+      if (existing === NEUTRAL_DOT) {
+        map[e.dateISO] = SCORE_DOT[incoming];
+        return;
+      }
       // keep worst score colour
       if (!existing) {
         map[e.dateISO] = SCORE_DOT[incoming];
@@ -94,7 +105,7 @@ export function MonthOutlook({ events, onDayPress }: Props) {
       }
     });
     return map;
-  }, [events, scorer]);
+  }, [events, scorer, adaptive]);
 
   return (
     <View style={styles.wrap}>
