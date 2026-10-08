@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { phaseToShare } from '@/lib/communityPrivacy';
+import { resolveMode } from '@/lib/adaptive/mode';
 import { useEffect, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { TabScreen } from '@/components/ui';
@@ -45,8 +47,13 @@ export default function Circle() {
   const [adminPosting, setAdminPosting] = useState(false);
 
   const today = todayISO();
-  const phaseKey = prediction?.currentPhase ?? 'follicular';
-  const cycleDay = prediction?.dayOfCycle ?? 1;
+  const mode = resolveMode(profile);
+  const regular = mode === 'regular';
+  // The phase only exists for regular users with a logged cycle. Never invent one.
+  const ownPhase = regular ? prediction?.currentPhase ?? null : null;
+  // Reading content (the shop, the dopamine menu) still needs *a* key; irregular
+  // users get the neutral picks instead of a made-up phase.
+  const phaseKey = ownPhase ?? 'follicular';
   // @ts-ignore — is_admin added via migration; may not be in generated types yet
   const isAdmin = (profile as any)?.is_admin === true;
 
@@ -61,11 +68,13 @@ export default function Circle() {
   const topicPosts = visiblePosts.filter((p) => p.topicId === topic?.id);
   const feedPosts  = visiblePosts.filter((p) => !p.topicId);
 
-  async function handlePost(content: string, anonymous: boolean, toTopic: boolean) {
+  async function handlePost(content: string, anonymous: boolean, toTopic: boolean, sharePhase: boolean) {
     const topicId = toTopic ? (topic?.id ?? undefined) : undefined;
+    // Nothing about her cycle goes on a post unless she switched it on for this post.
+    const sharedPhase = phaseToShare({ optedIn: sharePhase, mode, phase: ownPhase });
     if (isSupabaseConfigured) {
       const newPost = await communityLib.createPost({
-        content, isAnonymous: anonymous, topicId, phaseKey, cycleDay,
+        content, isAnonymous: anonymous, topicId, phaseKey: sharedPhase ?? undefined,
       });
       if (newPost) addPost(newPost);
     } else {
@@ -75,8 +84,8 @@ export default function Circle() {
         topicId: topicId ?? null,
         content,
         isAnonymous: anonymous,
-        phaseKey,
-        cycleDay,
+        phaseKey: sharedPhase,
+        cycleDay: null,
         displayName: anonymous ? 'Anonymous' : (profile?.name ?? 'You'),
         createdAt: new Date().toISOString(),
         reactions: { felt_this: 0, sending_energy: 0, inspiring: 0 },
@@ -242,7 +251,7 @@ export default function Circle() {
       {/* ── SHOP TAB ── */}
       {activeTab === 'shop' && (
         <Animated.View entering={FadeInDown.delay(60).duration(400)}>
-          <DopamineMenuCard phaseKey={phaseKey} />
+          <DopamineMenuCard phaseKey={phaseKey} neutral={!ownPhase} />
         </Animated.View>
       )}
 
@@ -261,8 +270,7 @@ export default function Circle() {
           visible
           onClose={() => setComposerOpen(false)}
           onSubmit={handlePost}
-          currentPhase={phaseKey}
-          cycleDay={cycleDay}
+          sharablePhase={ownPhase}
           activeTopic={topic}
           defaultReplyToTopic={replyToTopic}
         />

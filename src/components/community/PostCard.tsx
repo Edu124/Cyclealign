@@ -34,6 +34,7 @@ function timeAgo(iso: string): string {
 }
 
 export function PostCard({ post, index, onReact }: Props) {
+  // A phase colour or label appears only on posts whose author chose to share it.
   const phaseColor = post.phaseKey ? phaseColors[post.phaseKey].base : dash.muted;
   const { blockUser, markReported, reportedPostIds } = useModeration();
   const isReported = reportedPostIds.includes(post.id);
@@ -76,7 +77,10 @@ export function PostCard({ post, index, onReact }: Props) {
         </View>
         <View style={styles.authorMeta}>
           <Text style={styles.authorName}>{post.displayName}</Text>
-          <Text style={styles.timeAgo}>{timeAgo(post.createdAt)}</Text>
+          <Text style={styles.timeAgo}>
+            {timeAgo(post.createdAt)}
+            {post.phaseKey ? ` · ${post.phaseKey === 'ovulation' ? 'Ovulation' : post.phaseKey.charAt(0).toUpperCase() + post.phaseKey.slice(1)} phase` : ''}
+          </Text>
         </View>
         {isReported && (
           <View style={styles.reportedPill}>

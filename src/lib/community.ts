@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { COMMUNITY_SHARE_PHASE_COLUMN } from '@/lib/communityPrivacy';
 import type { CommunityPost, DopamineItem, ReactionType, WeeklyTopic } from '@/types/models';
 
 export async function fetchActiveTopic(): Promise<WeeklyTopic | null> {
@@ -25,7 +26,7 @@ export async function fetchPosts(topicId?: string): Promise<CommunityPost[]> {
   if (!isSupabaseConfigured) return [];
   let query = supabase
     .from('community_posts')
-    .select('id, user_id, topic_id, content, is_anonymous, phase_key, cycle_day, created_at')
+    .select('id, user_id, topic_id, content, is_anonymous, phase_key, created_at')
     .order('created_at', { ascending: false })
     .limit(60);
   if (topicId) query = query.eq('topic_id', topicId);
@@ -65,7 +66,7 @@ export async function fetchPosts(topicId?: string): Promise<CommunityPost[]> {
       content: p.content,
       isAnonymous: p.is_anonymous,
       phaseKey: p.phase_key,
-      cycleDay: p.cycle_day,
+      cycleDay: null, // never exposed — day of cycle is not shared in Community
       displayName: p.is_anonymous ? 'Anonymous' : (nameMap[p.user_id] ?? 'Member'),
       createdAt: p.created_at,
       reactions: {
@@ -82,8 +83,8 @@ export async function createPost(params: {
   content: string;
   isAnonymous: boolean;
   topicId?: string;
+  /** Only set when she switched on "show my cycle phase" for this post. */
   phaseKey?: string;
-  cycleDay?: number;
 }): Promise<CommunityPost | null> {
   if (!isSupabaseConfigured) return null;
   const { data: { user } } = await supabase.auth.getUser();
@@ -96,9 +97,10 @@ export async function createPost(params: {
       content:      params.content,
       is_anonymous: params.isAnonymous,
       phase_key:    params.phaseKey ?? null,
-      cycle_day:    params.cycleDay ?? null,
+      cycle_day:    null, // the day of her cycle is never shared
+      ...(COMMUNITY_SHARE_PHASE_COLUMN ? { share_phase: !!params.phaseKey } : {}),
     })
-    .select('id, user_id, topic_id, content, is_anonymous, phase_key, cycle_day, created_at')
+    .select('id, user_id, topic_id, content, is_anonymous, phase_key, created_at')
     .single();
   if (!data) return null;
 
@@ -116,7 +118,7 @@ export async function createPost(params: {
     content: data.content,
     isAnonymous: data.is_anonymous,
     phaseKey: data.phase_key,
-    cycleDay: data.cycle_day,
+    cycleDay: null,
     displayName,
     createdAt: data.created_at,
     reactions: { felt_this: 0, sending_energy: 0, inspiring: 0 },

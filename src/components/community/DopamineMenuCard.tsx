@@ -222,9 +222,16 @@ const TRACK_STAGES = [
 
 interface Props {
   phaseKey: PhaseKey;
+  /** No cycle phase to tune to (irregular / perimenopause): show a neutral mix instead of an invented phase. */
+  neutral?: boolean;
 }
 
-export function DopamineMenuCard({ phaseKey }: Props) {
+/** A few picks from every phase's list — used when there is no phase to tune to. */
+function neutralMix<T>(byPhase: Record<PhaseKey, T[]>): T[] {
+  return (Object.values(byPhase) as T[][]).flatMap((list) => list.slice(0, 4));
+}
+
+export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   // Products whose photo failed to load fall back to the emoji tile.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
@@ -242,7 +249,9 @@ export function DopamineMenuCard({ phaseKey }: Props) {
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
   const [ratingFilter, setRatingFilter] = useState<string | null>(null);
 
-  const catalog = mode === 'shop' ? PHASE_PRODUCTS[phaseKey] : PHASE_FOODS[phaseKey];
+  const catalog = neutral
+    ? neutralMix(mode === 'shop' ? PHASE_PRODUCTS : PHASE_FOODS)
+    : mode === 'shop' ? PHASE_PRODUCTS[phaseKey] : PHASE_FOODS[phaseKey];
   const allBrands = [...new Set(catalog.map((p) => p.brand))];
 
   function switchMode(m: 'shop' | 'food') {
@@ -274,7 +283,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
   if (sortKey === 'rating')
     products = [...products].sort((a, b) => ratingFor(b.id).stars - ratingFor(a.id).stars);
 
-  const phaseColor = phaseColors[phaseKey].base;
+  const phaseColor = neutral ? dash.sage : phaseColors[phaseKey].base;
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
@@ -324,7 +333,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
         <View>
           <Text style={styles.title}>{mode === 'shop' ? 'Shop' : 'Food'}</Text>
           <Text style={[styles.subtitle, { color: phaseColor }]}>
-            {mode === 'shop' ? PHASE_LABELS[phaseKey] : 'Cravings, phase-tuned'}
+            {neutral ? (mode === 'shop' ? 'Comfort & care' : 'Cravings, your way') : mode === 'shop' ? PHASE_LABELS[phaseKey] : 'Cravings, phase-tuned'}
           </Text>
         </View>
         <View style={styles.controls}>
@@ -369,7 +378,7 @@ export function DopamineMenuCard({ phaseKey }: Props) {
         </View>
       </View>
 
-      <Text style={styles.tagline}>{PHASE_TAGLINES[phaseKey]}</Text>
+      <Text style={styles.tagline}>{neutral ? 'Something nice for yourself ✨' : PHASE_TAGLINES[phaseKey]}</Text>
 
       <View style={styles.noticePill}>
         <Text style={styles.noticeText}>

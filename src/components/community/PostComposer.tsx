@@ -17,9 +17,9 @@ import type { PhaseKey, WeeklyTopic } from '@/types/models';
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (content: string, isAnonymous: boolean, replyToTopic: boolean) => Promise<void>;
-  currentPhase: PhaseKey;
-  cycleDay: number;
+  onSubmit: (content: string, isAnonymous: boolean, replyToTopic: boolean, sharePhase: boolean) => Promise<void>;
+  /** Her cycle phase, offered as an opt-in. null = nothing to share (irregular / perimenopause / no cycle). */
+  sharablePhase: PhaseKey | null;
   activeTopic: WeeklyTopic | null;
   defaultReplyToTopic?: boolean;
 }
@@ -30,17 +30,18 @@ export function PostComposer({
   visible,
   onClose,
   onSubmit,
-  currentPhase,
-  cycleDay,
+  sharablePhase,
   activeTopic,
   defaultReplyToTopic = false,
 }: Props) {
   const [text, setText] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [replyToTopic, setReplyToTopic] = useState(defaultReplyToTopic);
+  // Off by default and reset after every post: she chooses each time.
+  const [sharePhase, setSharePhase] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const phaseColor = phaseColors[currentPhase].base;
+  const phaseColor = sharablePhase ? phaseColors[sharablePhase].base : dash.muted;
   const remaining = MAX - text.length;
   const canPost = text.trim().length > 0 && !submitting;
 
@@ -48,9 +49,10 @@ export function PostComposer({
     if (!canPost) return;
     setSubmitting(true);
     try {
-      await onSubmit(text.trim(), anonymous, replyToTopic);
+      await onSubmit(text.trim(), anonymous, replyToTopic, sharablePhase !== null && sharePhase);
       setText('');
       setAnonymous(false);
+      setSharePhase(false);
       onClose();
     } finally {
       setSubmitting(false);
@@ -80,13 +82,28 @@ export function PostComposer({
             </TouchableOpacity>
           </View>
 
-          {/* Phase badge preview */}
-          <View style={[styles.phaseBadge, { backgroundColor: phaseColor + '22' }]}>
-            <Text style={[styles.phaseBadgeText, { color: phaseColor }]}>
-              {currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1)} · Day {cycleDay}
-            </Text>
-            <Text style={styles.phaseBadgeNote}> will show on your post</Text>
-          </View>
+          {/* Optional: she can choose to show her cycle phase on this post. Never automatic. */}
+          {sharablePhase && (
+            <View style={[styles.phaseBadge, { backgroundColor: phaseColor + '22' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.phaseBadgeText, { color: phaseColor }]}>
+                  Show my cycle phase on this post
+                </Text>
+                <Text style={styles.phaseBadgeNote}>
+                  {sharePhase
+                    ? `Others will see "${sharablePhase.charAt(0).toUpperCase() + sharablePhase.slice(1)} phase". Off by default.`
+                    : 'Your phase stays private unless you turn this on.'}
+                </Text>
+              </View>
+              <Switch
+                testID="share-phase-toggle"
+                value={sharePhase}
+                onValueChange={setSharePhase}
+                trackColor={{ false: dash.line, true: phaseColor + '88' }}
+                thumbColor={sharePhase ? phaseColor : '#ccc'}
+              />
+            </View>
+          )}
 
           {/* Reply to topic toggle */}
           {activeTopic && (
@@ -187,10 +204,10 @@ const styles = StyleSheet.create({
   phaseBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
   },
   phaseBadgeText: { fontSize: 12, fontWeight: '700' },
   phaseBadgeNote: { fontSize: 11, color: dash.muted },
