@@ -74,6 +74,48 @@ export default function PrivacySettings() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Health information — what is collected and who can see it */}
+        <Animated.View entering={FadeInDown.delay(30).duration(400)}>
+          <SectionLabel>Your health information</SectionLabel>
+          <View style={styles.card}>
+            <Text style={styles.gdprIntro}>
+              If you add them, your cycle dates, sleep, focus, stress, symptoms and bleeding are
+              stored with your account so you can restore them on a new device. They are used only
+              to give you your own guidance, and are never sold or used for advertising.
+            </Text>
+            <View style={styles.gdprRow}>
+              <Text style={styles.gdprBullet}>💬</Text>
+              <View style={styles.gdprText}>
+                <Text style={styles.gdprTitle}>Community</Text>
+                <Text style={styles.gdprDesc}>
+                  Posts never include health information. You can choose to show your cycle phase on a
+                  single post — it's off by default, and your day of cycle is never shared.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.gdprRow}>
+              <Text style={styles.gdprBullet}>💛</Text>
+              <View style={styles.gdprText}>
+                <Text style={styles.gdprTitle}>Partner Mode</Text>
+                <Text style={styles.gdprDesc}>
+                  Your partner sees only what you switch on in the Circle tab — never your logs,
+                  symptoms or calendar.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.gdprRow}>
+              <Text style={styles.gdprBullet}>🌿</Text>
+              <View style={styles.gdprText}>
+                <Text style={styles.gdprTitle}>Ask Align</Text>
+                <Text style={styles.gdprDesc}>
+                  The coach is told how you're doing today (like energy, sleep and focus). It never
+                  receives your calendar events.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
+
         {/* Setting 1 — Calendar Sync (V2) */}
         <Animated.View entering={FadeInDown.delay(60).duration(400)}>
           <SectionLabel>Calendar</SectionLabel>

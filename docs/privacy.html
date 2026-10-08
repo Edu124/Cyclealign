@@ -18,18 +18,20 @@
 <body>
 
 <h1>CycleAlign Privacy Policy</h1>
-<p class="updated">Last updated: September 2026</p>
+<p class="updated">Last updated: October 2026</p>
 
-<p>CycleAlign ("we", "our", "the app") is a cycle-awareness and planning app. This policy explains what information we collect, why, and the rights you have over it. We built CycleAlign to compute as much as possible directly on your device — most of your cycle predictions never touch our servers at all.</p>
+<p>CycleAlign ("we", "our", "the app") is a cycle-awareness and planning app. This policy explains what information we collect, why, and the rights you have over it. We built CycleAlign to compute as much as possible directly on your device — most of your cycle predictions never touch our servers at all. CycleAlign adapts to how your body actually works: if your cycles are irregular or changing, it does not force you into a 28-day pattern, and it learns from what you tell us about your energy, sleep and focus instead.</p>
 
-<p><strong>Health disclaimer:</strong> CycleAlign offers general wellness and productivity guidance based on hormonal cycle patterns. It is not a medical device and does not provide medical advice, diagnosis, or treatment, and it is not a form of contraception. Always consult a qualified healthcare professional for medical concerns, symptoms, or reproductive health questions.</p>
+<p><strong>Health disclaimer:</strong> CycleAlign offers general wellness and productivity guidance based on hormonal cycle patterns. It is not a medical device and does not provide medical advice, diagnosis, or treatment, it does not diagnose PCOS, PCOD, perimenopause or any other condition, and it is not a form of contraception. Always consult a qualified healthcare professional for medical concerns, symptoms, or reproductive health questions.</p>
 
 <h2>What we collect</h2>
 <ul>
   <li><strong>Account information:</strong> name, email address, and authentication data if you sign in with Google or Apple.</li>
   <li><strong>Cycle data:</strong> period start/end dates, average cycle and period length — used to compute your phase predictions.</li>
-  <li><strong>Daily check-ins:</strong> energy level, mood, and optional notes you choose to log ("Quick Log").</li>
+  <li><strong>Daily check-ins:</strong> energy level, mood, and optional notes you choose to log ("Quick Log"). If you choose to add more detail, this can also include focus, decision confidence, sleep quality and hours, stress, symptoms you notice, and bleeding. Every one of these extra fields is optional.</li>
+  <li><strong>About you (optional):</strong> how predictable your cycles are and a short description of your situation (for example PCOS/PCOD, irregular cycles, perimenopause, postpartum). This is information you choose to give us so we can personalise recommendations. It is not a diagnosis, and you can change or remove it at any time in Profile.</li>
   <li><strong>Task and calendar data:</strong> task categories you plan (never task descriptions unless you type one), and — only if you explicitly connect it — access to your Google, Outlook or Apple Calendar to score existing events against your cycle phase and, only when you tap a suggested date and confirm, to move that event to the date you chose.</li>
+  <li><strong>Sensitive information:</strong> cycle, sleep, symptom, bleeding and health-context details are health-related, so we treat them as sensitive. They are used only to give you your own guidance, are protected by account-level access rules, and are never used for advertising or sold.</li>
   <li><strong>AI Coach conversations:</strong> if you use "Ask Align", your questions and the coach's replies are stored to your account and used to generate contextual answers.</li>
 </ul>
 
@@ -37,22 +39,29 @@
 <p>CycleAlign's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
 <ul>
   <li><strong>What we access:</strong> if you choose to sign in with Google, we receive your basic profile information (name, email address) to create and authenticate your account. If you choose to connect Google Calendar (entirely optional, and separate from sign-in), we request access to <strong>view and edit</strong> your calendar events. We read event titles and times to score them, and we change an event's date only when you tap a suggested date and confirm it. We never create or delete events, and calendar data is never shared or sold.</li>
-  <li><strong>How we use it:</strong> your Google profile info is used solely to sign you in. Your Google Calendar data is used solely to display your existing events inside CycleAlign and score them against your predicted cycle phase, so you can see which days may be more demanding. CycleAlign <strong>never creates, edits, or deletes</strong> any event on your Google Calendar, and never reads data from calendars you haven't explicitly connected.</li>
-  <li><strong>Who we share it with:</strong> your Google profile and Calendar data are <strong>not shared, sold, rented, or transferred to any third party</strong> — including our AI Coach ("Ask Align"). The AI Coach never receives your Google Calendar data or Google profile information; it only receives cycle data you've entered directly into the app (see "How we use it" below).</li>
+  <li><strong>How we use it:</strong> your Google profile info is used solely to sign you in. Your Google Calendar data is used solely to display your existing events inside CycleAlign and score them against your cycle phase or your own check-in patterns, so you can see which days may be more demanding. CycleAlign <strong>never creates or deletes</strong> any event on your Google Calendar. It changes an existing event's date or time only when you tap a suggested better time and confirm it, and it never reads data from calendars you haven't explicitly connected.</li>
+  <li><strong>Who we share it with:</strong> your Google profile and Calendar data are <strong>not shared, sold, rented, or transferred to any third party</strong> — including our AI Coach ("Ask Align"). The AI Coach never receives your Google Calendar data or Google profile information; it only receives information you've entered directly into the app, such as a summary of your check-ins (see "Where it's processed" below).</li>
   <li><strong>How it's protected:</strong> Google data is stored in our Supabase database, protected by row-level security policies that restrict access to your own account only, and transmitted using HTTPS/TLS encryption in transit.</li>
   <li><strong>Retention &amp; deletion:</strong> you can disconnect Google Calendar at any time from the Plan tab, which stops all further access immediately. Deleting your CycleAlign account (in-app or by emailing us, see "Delete your account" in Support) permanently removes any Google data we've stored, within 30 days.</li>
 </ul>
 <p><strong>Limited Use compliance statement:</strong> the use of raw or derived user data received from Google APIs by CycleAlign will adhere to the Google API Services User Data Policy, including the Limited Use requirements. We do not use Google user data — raw, aggregated, or derived — to train, develop, or improve any AI or machine-learning model, ours or any third party's.</p>
 
 <h2>How we use it</h2>
-<p>Your data is used solely to power CycleAlign's features: phase predictions, task timing recommendations, personalized insights, and the AI coach. We do not sell your data, and we do not use it for third-party advertising.</p>
+<p>Your data is used solely to power CycleAlign's features: phase predictions (only where your cycle is a reliable input), task and meeting timing recommendations, personalized insights and patterns drawn from your own check-ins, and the AI coach. We do not sell your data, and we do not use it for third-party advertising. The optional in-app shop never influences the timing recommendations we give you.</p>
 
 <h2>Where it's processed</h2>
 <ul>
   <li><strong>On your device:</strong> cycle predictions, phase calculations, and task scoring are computed locally.</li>
-  <li><strong>Supabase</strong> (our backend provider): stores your account, cycle logs, and daily check-ins so you can restore your data across devices.</li>
+  <li><strong>Supabase</strong> (our backend provider): stores your account, profile answers, cycle logs, and daily check-ins so you can restore your data across devices.</li>
   <li><strong>Google / Apple:</strong> used only for sign-in authentication, if you choose those options.</li>
-  <li><strong>Anthropic (Claude):</strong> if you use the AI Coach, your question and relevant cycle context are sent to Anthropic's API to generate a response. Anthropic does not use this data to train their models under our agreement with them.</li>
+  <li><strong>Anthropic (Claude):</strong> if you use the AI Coach, your question and the context you've chosen to share (such as your cycle phase where your cycle is a reliable input, and a summary of how you're doing today — energy, sleep, focus) are sent to Anthropic's API to generate a response. Your calendar events are never sent. Anthropic does not use this data to train their models under our agreement with them.</li>
+</ul>
+
+<h2>What other people can see</h2>
+<ul>
+  <li><strong>Partner Mode:</strong> entirely optional and controlled by you. Your partner sees only a short, general message about how you're doing and, if you switch it on, your cycle phase. They never see your logs, symptoms, bleeding, health context or calendar, and they cannot change your calendar or profile. You can switch sharing off or disconnect at any time.</li>
+  <li><strong>Community:</strong> your posts do not include any health information. Your cycle phase appears on a post only if you switch that on for that single post; your day of cycle, health context and symptoms are never shared.</li>
+  <li><strong>Clinician summary:</strong> if you choose to export a summary of what you've logged to take to a healthcare professional, it is created on your device and shared only through the share menu when you tap it.</li>
 </ul>
 
 <h2>Your rights</h2>

@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { palette, spacing } from '@/theme';
 
-const EFFECTIVE_DATE = '1 July 2026';
+const EFFECTIVE_DATE = 'October 2026';
 const CONTACT_EMAIL = 'hello@cyclealign.app';
 
 type Section = { title: string; body: string };
@@ -15,7 +15,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: '2. Description of Service',
-    body: `CycleAlign is a hormonal intelligence platform that uses cycle data you provide to generate personalised productivity and wellness guidance. The App operates in two modes: a fully offline demo mode and a cloud-synced account mode backed by Supabase. Features vary by subscription tier (Free or Premium).`,
+    body: `CycleAlign is a hormonal intelligence platform that uses the cycle data and daily check-ins you provide to generate personalised productivity and wellness guidance. If your cycles are irregular or changing, it relies on how you report feeling rather than on a cycle phase. The App operates in two modes: a fully offline demo mode and a cloud-synced account mode backed by Supabase. Features vary by subscription tier (Free or Premium).`,
   },
   {
     title: '3. Eligibility',
@@ -27,7 +27,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: '5. Privacy & Data',
-    body: `Your cycle and health data is processed primarily on your device. If you create an account, certain data is synced to our secure servers (Supabase) solely to provide the service. We do not sell, rent or share your personal data with third parties for marketing purposes. You can delete all your data at any time from Privacy Settings → Delete all my data. Full details are in our Privacy Policy.`,
+    body: `Your cycle and health data is processed primarily on your device. If you create an account, certain data — including your profile answers and any check-in details you add, such as sleep, focus, symptoms and bleeding — is synced to our secure servers (Supabase) solely to provide the service. We treat this as sensitive health-related information. We do not sell, rent or share your personal data with third parties for marketing purposes, and nothing about your health appears in Community or Partner Mode unless you choose to share it. You can delete all your data at any time from Privacy Settings → Delete all my data. Full details are in our Privacy Policy.`,
   },
   {
     title: '6. Subscription & Billing',
@@ -35,7 +35,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: '7. Health Disclaimer',
-    body: `CycleAlign provides general wellness and productivity guidance based on hormonal cycle patterns. It is not a medical device and does not provide medical advice, diagnoses or treatment. It is not a contraceptive tool and must not be used as one. Always consult a qualified healthcare professional for any medical concerns, symptoms or reproductive health questions. We expressly disclaim any liability for decisions made based on content in the App.`,
+    body: `CycleAlign provides general wellness and productivity guidance based on hormonal cycle patterns. It is not a medical device and does not provide medical advice, diagnoses or treatment, and it does not diagnose PCOS, PCOD, perimenopause or any other condition. Anything you tell us about your situation is context you provide, not a diagnosis. It is not a contraceptive tool and must not be used as one. Always consult a qualified healthcare professional for any medical concerns, symptoms or reproductive health questions. We expressly disclaim any liability for decisions made based on content in the App.`,
   },
   {
     title: '8. Acceptable Use',
