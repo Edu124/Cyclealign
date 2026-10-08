@@ -18,9 +18,7 @@ export function phaseToShare(args: {
 }
 
 /**
- * The `share_phase` column comes with migration 0013, which also strips phase
- * data from older posts and, server-side, from any post that doesn't opt in.
- * Keep this OFF until that migration has been applied — inserting a column that
- * doesn't exist yet would make every post fail.
+ * The `share_phase` column comes from migration 0013 (applied), which also strips
+ * phase data from older posts and, server-side, from any post that doesn't opt in.
  */
-export const COMMUNITY_SHARE_PHASE_COLUMN: boolean = false;
+export const COMMUNITY_SHARE_PHASE_COLUMN: boolean = true;

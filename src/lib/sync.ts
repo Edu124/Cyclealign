@@ -7,7 +7,7 @@ import { CycleLog, DailyLog, Profile } from '@/types/models';
  * make every profile / check-in upload fail. While off, these answers stay on
  * the device only (and restoreFromCloud keeps them).
  */
-export const SYNC_ADAPTIVE_COLUMNS: boolean = false;
+export const SYNC_ADAPTIVE_COLUMNS: boolean = true;
 
 // ── Push (local → cloud) ──────────────────────────────────────────────────────
 
