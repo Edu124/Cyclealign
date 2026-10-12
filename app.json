@@ -31,7 +31,6 @@
     },
     "android": {
       "package": "com.cyclealign.app",
-      "runtimeVersion": "1.1.3",
       "permissions": ["android.permission.POST_NOTIFICATIONS"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
