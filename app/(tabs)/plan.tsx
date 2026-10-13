@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Platform, StyleSheet, Text } from 'react-native';
+import { Alert, AppState, Platform, RefreshControl, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
@@ -64,26 +64,31 @@ export default function Plan() {
 
   // ── Auto re-sync ──────────────────────────────────────────────────────────
   // The connect flow takes a one-time snapshot; without this, events created
-  // AFTER connecting never appear. Re-sync silently whenever the screen gains
-  // focus or the app returns to the foreground (throttled to 30s), keeping the
-  // existing snapshot when a refresh fails (e.g. expired Google token).
+  // or renamed AFTER connecting never appear. Re-sync silently when the screen
+  // gains focus, when the app returns to the foreground, every minute while
+  // the Plan tab is open, when a day is opened, and on pull-to-refresh.
+  // Keeps the existing snapshot when a refresh fails (e.g. expired token).
   const lastSyncRef = useRef(0);
-  const refreshEvents = useCallback(() => {
+  const syncingRef = useRef(false);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+
+  const refreshEvents = useCallback(async (force = false) => {
     const now = Date.now();
-    if (now - lastSyncRef.current < 30_000) return;
+    if (syncingRef.current || (!force && now - lastSyncRef.current < 5_000)) return;
     const state = useCalendar.getState();
     if (!state.connected) return;
-    if (state.providerLabel === 'Apple Calendar' && isAppleCalendarSupported()) {
-      lastSyncRef.current = now;
-      fetchAppleCalendarEvents()
-        .then((evts) => useCalendar.getState().connectAppleCalendar(evts))
-        .catch(() => {});
-    } else if (state.providerLabel === 'Google Calendar' && state.googleAccessToken) {
-      lastSyncRef.current = now;
-      const token = state.googleAccessToken;
-      fetchGoogleCalendarEvents(token)
-        .then((evts) => useCalendar.getState().connectGoogle(token, evts))
-        .catch(async () => {
+    syncingRef.current = true;
+    lastSyncRef.current = now;
+    try {
+      if (state.providerLabel === 'Apple Calendar' && isAppleCalendarSupported()) {
+        const evts = await fetchAppleCalendarEvents();
+        useCalendar.getState().connectAppleCalendar(evts);
+      } else if (state.providerLabel === 'Google Calendar' && state.googleAccessToken) {
+        const token = state.googleAccessToken;
+        try {
+          const evts = await fetchGoogleCalendarEvents(token);
+          useCalendar.getState().connectGoogle(token, evts);
+        } catch {
           // The access token expires after ~1hr — this is the expected way
           // that first attempt fails, not an edge case. Mint a fresh one
           // from the refresh token and retry once before giving up.
@@ -92,16 +97,15 @@ export default function Plan() {
           const freshToken = await refreshGoogleAccessToken(refreshToken);
           if (!freshToken) return;
           useCalendar.getState().updateGoogleAccessToken(freshToken);
-          fetchGoogleCalendarEvents(freshToken)
-            .then((evts) => useCalendar.getState().connectGoogle(freshToken, evts))
-            .catch(() => {});
-        });
-    } else if (state.providerLabel === 'Outlook Calendar' && state.outlookAccessToken) {
-      lastSyncRef.current = now;
-      const token = state.outlookAccessToken;
-      fetchOutlookCalendarEvents(token)
-        .then((evts) => useCalendar.getState().connectOutlook(token, evts))
-        .catch(async () => {
+          const evts = await fetchGoogleCalendarEvents(freshToken);
+          useCalendar.getState().connectGoogle(freshToken, evts);
+        }
+      } else if (state.providerLabel === 'Outlook Calendar' && state.outlookAccessToken) {
+        const token = state.outlookAccessToken;
+        try {
+          const evts = await fetchOutlookCalendarEvents(token);
+          useCalendar.getState().connectOutlook(token, evts);
+        } catch {
           // Access tokens expire in ~1hr, same expected pattern as Google —
           // mint a fresh one from the refresh token and retry once. Microsoft
           // also rotates the refresh token on every use, so the new one MUST
@@ -110,16 +114,25 @@ export default function Plan() {
           if (!refreshToken) return;
           const fresh = await refreshOutlookAccessToken(refreshToken);
           if (!fresh) return;
-          fetchOutlookCalendarEvents(fresh.accessToken)
-            .then((evts) => useCalendar.getState().connectOutlook(fresh.accessToken, evts, fresh.refreshToken))
-            .catch(() => {});
-        });
+          const evts = await fetchOutlookCalendarEvents(fresh.accessToken);
+          useCalendar.getState().connectOutlook(fresh.accessToken, evts, fresh.refreshToken);
+        }
+      }
+    } catch {
+      // Network or permission problem — keep showing the last snapshot.
+    } finally {
+      syncingRef.current = false;
     }
   }, []);
 
+  // On focus, then every minute while the Plan tab stays open and the app is in front.
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
+      const timer = setInterval(() => {
+        if (AppState.currentState === 'active') refreshEvents();
+      }, 60_000);
+      return () => clearInterval(timer);
     }, [refreshEvents]),
   );
 
@@ -129,6 +142,12 @@ export default function Plan() {
     });
     return () => sub.remove();
   }, [refreshEvents]);
+
+  async function onPullRefresh() {
+    setPullRefreshing(true);
+    await refreshEvents(true);
+    setPullRefreshing(false);
+  }
 
   // Purge stale "(demo)" connections persisted by old app versions on iOS —
   // they masked the real connect flow (banner showed connected, so tapping
@@ -323,11 +342,19 @@ export default function Plan() {
   function handleDayPress(dateISO: string) {
     if (!allEvents.some((e) => e.dateISO === dateISO)) return;
     setSelectedDate(dateISO);
+    // Pick up any title or time she just changed in her calendar app.
+    refreshEvents();
   }
 
   return (
     <>
-      <TabScreen>
+      <TabScreen
+        refreshControl={
+          connected ? (
+            <RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} tintColor={palette.muted} />
+          ) : undefined
+        }
+      >
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={styles.title}>Your plan</Text>
           <Text style={styles.subtitle}>

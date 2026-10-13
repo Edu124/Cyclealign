@@ -1,4 +1,5 @@
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import type { ReactElement } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControlProps, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '@/theme';
 import { GradientBackground } from './GradientBackground';
@@ -8,10 +9,12 @@ interface Props {
   scroll?: boolean;
   contentStyle?: ViewStyle;
   gradient?: readonly [string, string, ...string[]];
+  /** Pull-to-refresh, for scrolling screens. */
+  refreshControl?: ReactElement<RefreshControlProps>;
 }
 
 /** Standard screen wrapper: pastel gradient + safe-area + optional scroll. */
-export function Screen({ children, scroll = true, contentStyle, gradient }: Props) {
+export function Screen({ children, scroll = true, contentStyle, gradient, refreshControl }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -35,6 +38,7 @@ export function Screen({ children, scroll = true, contentStyle, gradient }: Prop
             ]}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
+            refreshControl={refreshControl}
           >
             {children}
           </ScrollView>

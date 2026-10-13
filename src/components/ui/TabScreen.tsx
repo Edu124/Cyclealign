@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import type { ViewStyle } from 'react-native';
+import type { ReactElement, ReactNode } from 'react';
+import type { RefreshControlProps, ViewStyle } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Screen } from './Screen';
 import { spacing } from '@/theme';
@@ -9,6 +9,7 @@ interface Props {
   scroll?: boolean;
   contentStyle?: ViewStyle;
   gradient?: readonly [string, string, ...string[]];
+  refreshControl?: ReactElement<RefreshControlProps>;
 }
 
 /**
