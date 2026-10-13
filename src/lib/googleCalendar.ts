@@ -47,10 +47,21 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Whole words only (plus a plural "s"), so "hr" doesn't match "Shreya" or
+// "three", and "call" doesn't match "recall".
+const CATEGORY_PATTERNS: [string, RegExp][] = Object.entries(CATEGORY_KEYWORDS).map(([cat, keywords]) => [
+  cat,
+  new RegExp(`(^|[^a-z0-9])(${keywords.map(escapeRegExp).join('|')})(?:es|s)?(?![a-z0-9])`),
+]);
+
 export function inferCategory(summary: string): string {
   const s = summary.toLowerCase();
-  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (keywords.some((kw) => s.includes(kw))) return cat;
+  for (const [cat, pattern] of CATEGORY_PATTERNS) {
+    if (pattern.test(s)) return cat;
   }
   return 'MEETING'; // most calendar events are meetings by default
 }
