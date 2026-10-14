@@ -33,9 +33,16 @@ export default function BlogPostScreen() {
 
       {!loading && post && (
         <Animated.View entering={FadeIn.duration(400)}>
-          <View style={[styles.emojiCircle, { backgroundColor: post.accentColor + '22' }]}>
-            <Text style={styles.emoji}>{post.emoji}</Text>
-          </View>
+          {/* The post's image leads the article; posts without one keep the emoji badge. */}
+          {BLOG_IMAGES[post.title] ? (
+            <View style={[styles.imageCard, { aspectRatio: BLOG_IMAGES[post.title].aspect }]}>
+              <Image source={BLOG_IMAGES[post.title].source} style={styles.image} resizeMode="cover" />
+            </View>
+          ) : (
+            <View style={[styles.emojiCircle, { backgroundColor: post.accentColor + '22' }]}>
+              <Text style={styles.emoji}>{post.emoji}</Text>
+            </View>
+          )}
 
           {post.kicker && (
             <Animated.Text entering={FadeInDown.delay(40).duration(400)} style={styles.kicker}>
@@ -51,28 +58,15 @@ export default function BlogPostScreen() {
             {post.author} · {formatDate(post.publishedAt)}
           </Animated.Text>
 
-          {post.body.split(/\r?\n\r?\n/).map((para, i) => {
-            const inline = BLOG_IMAGES[post.title];
-            return (
-              <View key={i}>
-                <Animated.Text
-                  entering={FadeInDown.delay(200 + i * 60).duration(400)}
-                  style={styles.paragraph}
-                >
-                  {para}
-                </Animated.Text>
-
-                {inline && i === inline.afterParagraph && (
-                  <Animated.View
-                    entering={FadeInDown.delay(200 + (i + 0.5) * 60).duration(400)}
-                    style={[styles.imageCard, { aspectRatio: inline.aspect }]}
-                  >
-                    <Image source={inline.source} style={styles.image} resizeMode="cover" />
-                  </Animated.View>
-                )}
-              </View>
-            );
-          })}
+          {post.body.split(/\r?\n\r?\n/).map((para, i) => (
+            <Animated.Text
+              key={i}
+              entering={FadeInDown.delay(200 + i * 60).duration(400)}
+              style={styles.paragraph}
+            >
+              {para}
+            </Animated.Text>
+          ))}
         </Animated.View>
       )}
 

@@ -88,9 +88,16 @@ export function BlogListCard() {
               contentContainerStyle={[styles.modalContent, { paddingBottom: 48 + insets.bottom }]}
             >
               <Animated.View entering={FadeIn.duration(300)}>
-                <View style={[styles.emojiCircle, { backgroundColor: openPost.accentColor + '22' }]}>
-                  <Text style={styles.modalEmoji}>{openPost.emoji}</Text>
-                </View>
+                {/* The post's image leads the article; posts without one keep the emoji badge. */}
+                {openInline ? (
+                  <View style={[styles.inlineImageCard, { aspectRatio: openInline.aspect }]}>
+                    <Image source={openInline.source} style={styles.inlineImage} resizeMode="cover" />
+                  </View>
+                ) : (
+                  <View style={[styles.emojiCircle, { backgroundColor: openPost.accentColor + '22' }]}>
+                    <Text style={styles.modalEmoji}>{openPost.emoji}</Text>
+                  </View>
+                )}
 
                 {openPost.kicker && (
                   <Text style={styles.kicker}>{openPost.kicker}</Text>
@@ -100,14 +107,7 @@ export function BlogListCard() {
                 <Text style={styles.meta}>{openPost.author} · {formatDateLong(openPost.publishedAt)}</Text>
 
                 {openPost.body.split(/\r?\n\r?\n/).map((para, i) => (
-                  <View key={i}>
-                    <Text style={styles.paragraph}>{para}</Text>
-                    {openInline && i === openInline.afterParagraph && (
-                      <View style={[styles.inlineImageCard, { aspectRatio: openInline.aspect }]}>
-                        <Image source={openInline.source} style={styles.inlineImage} resizeMode="cover" />
-                      </View>
-                    )}
-                  </View>
+                  <Text key={i} style={styles.paragraph}>{para}</Text>
                 ))}
               </Animated.View>
             </ScrollView>
