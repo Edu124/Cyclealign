@@ -22,4 +22,36 @@ export const BLOG_IMAGES: Record<string, { source: number; aspect: number }> = {
     source: require('../../assets/blog/post-5.jpg'),
     aspect: 1983 / 793,
   },
+  'Why Burnout Hits High-Achieving Women Differently': {
+    source: require('../../assets/blog/post-7.jpg'),
+    aspect: 1672 / 940,
+  },
+  "Why Women Shouldn't Negotiate Salary During One Phase of Their Cycle": {
+    source: require('../../assets/blog/post-9.jpg'),
+    aspect: 1672 / 941,
+  },
+  'The Best Week to Launch Your Startup - According to Your Hormones': {
+    source: require('../../assets/blog/post-10.jpg'),
+    aspect: 1672 / 941,
+  },
+  "Why PMS Is Costing Companies Millions - And Nobody's Measuring It": {
+    source: require('../../assets/blog/post-11.jpg'),
+    aspect: 1672 / 941,
+  },
+  "CEO Performance Changes Across the Cycle - Here's What Nobody Measures": {
+    source: require('../../assets/blog/post-12.jpg'),
+    aspect: 1672 / 941,
+  },
+  'The Hormonal Productivity Calendar Every Woman Needs': {
+    source: require('../../assets/blog/post-13.jpg'),
+    aspect: 1672 / 941,
+  },
+  'Nobody Told Women This Productivity Secret. Until Now.': {
+    source: require('../../assets/blog/post-14.jpg'),
+    aspect: 1672 / 941,
+  },
+  'Why Your Calendar Is Sabotaging Your Career': {
+    source: require('../../assets/blog/post-15.jpg'),
+    aspect: 1672 / 941,
+  },
 };
