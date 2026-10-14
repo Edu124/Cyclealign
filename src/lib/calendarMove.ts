@@ -237,7 +237,22 @@ async function moveApple(rawId: string, newDateISO: string, deltaMin = 0): Promi
       x.setMinutes(x.getMinutes() + deltaMin);
       return x;
     };
-    await Calendar.updateEventAsync(rawId, { startDate: shift(ev.startDate), endDate: shift(ev.endDate) });
+    // On iOS, expo-calendar rewrites title, notes, location, alerts, all-day and
+    // availability from whatever is passed, so send the event's own values back
+    // with the new dates. Sending only the dates fails, or blanks those fields.
+    const details: Partial<Calendar.Event> = {
+      title: ev.title ?? '',
+      notes: ev.notes ?? '',
+      location: ev.location ?? undefined,
+      alarms: ev.alarms ?? [],
+      allDay: ev.allDay ?? false,
+      availability: ev.availability ?? Calendar.Availability.NOT_SUPPORTED,
+      startDate: shift(ev.startDate),
+      endDate: shift(ev.endDate),
+    };
+    if (ev.timeZone) details.timeZone = ev.timeZone;
+    if (ev.url) details.url = ev.url;
+    await Calendar.updateEventAsync(rawId, details);
     return { ok: true };
   } catch (err) {
     // EventKit refuses to edit an event you were only invited to.

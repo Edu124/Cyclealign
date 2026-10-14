@@ -287,24 +287,27 @@ export function DayEventsModal({ dateISO, events, onClose }: Props) {
           </View>
         </View>
       </View>
+
+      {/* Rendered inside the sheet's Modal: iOS won't present a second modal
+          opened from a sibling, so the popup silently never appeared there. */}
+      {popupEvent && popupResult && popupResult.score && popupResult.guidancePhase && (
+        <TaskGuidanceCard
+          visible
+          variant={popupResult.score === 'green' ? 'ideal' : 'blocked'}
+          categoryLabel={
+            TASK_SYNC_CATEGORIES.find((c) => c.id === popupEvent.categoryId)?.label ?? 'Event'
+          }
+          phaseName={popupResult.phaseLabel}
+          phaseRowLabel={popupResult.phaseRowLabel}
+          approach={popupResult.approach}
+          guidance={taskGuidanceFor(popupEvent.categoryId, popupResult.guidancePhase)}
+          color={SCORE_UI[popupResult.score].fg}
+          onConfirm={() => setOpenPopupEventId(null)}
+          onClose={() => setOpenPopupEventId(null)}
+        />
+      )}
     </Modal>
 
-    {popupEvent && popupResult && popupResult.score && popupResult.guidancePhase && (
-      <TaskGuidanceCard
-        visible
-        variant={popupResult.score === 'green' ? 'ideal' : 'blocked'}
-        categoryLabel={
-          TASK_SYNC_CATEGORIES.find((c) => c.id === popupEvent.categoryId)?.label ?? 'Event'
-        }
-        phaseName={popupResult.phaseLabel}
-        phaseRowLabel={popupResult.phaseRowLabel}
-        approach={popupResult.approach}
-        guidance={taskGuidanceFor(popupEvent.categoryId, popupResult.guidancePhase)}
-        color={SCORE_UI[popupResult.score].fg}
-        onConfirm={() => setOpenPopupEventId(null)}
-        onClose={() => setOpenPopupEventId(null)}
-      />
-    )}
     </>
   );
 }
