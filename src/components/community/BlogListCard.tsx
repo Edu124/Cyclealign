@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchBlogPosts } from '@/lib/blog';
 import { BLOG_IMAGES } from '@/lib/blogImages';
 import { dash, spacing } from '@/theme';
@@ -46,6 +47,8 @@ export function BlogListCard() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [openPost, setOpenPost] = useState<BlogPost | null>(null);
+  // The article is a full-screen modal, so keep the close button clear of the status bar / notch.
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     fetchBlogPosts().then((p) => {
@@ -75,12 +78,15 @@ export function BlogListCard() {
 
       {openPost && (
         <Modal visible animationType="slide" onRequestClose={() => setOpenPost(null)}>
-          <View style={styles.modalRoot}>
+          <View style={[styles.modalRoot, { paddingTop: insets.top }]}>
             <Pressable onPress={() => setOpenPost(null)} hitSlop={12} style={styles.close}>
               <Text style={styles.closeText}>✕</Text>
             </Pressable>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalContent}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[styles.modalContent, { paddingBottom: 48 + insets.bottom }]}
+            >
               <Animated.View entering={FadeIn.duration(300)}>
                 <View style={[styles.emojiCircle, { backgroundColor: openPost.accentColor + '22' }]}>
                   <Text style={styles.modalEmoji}>{openPost.emoji}</Text>
