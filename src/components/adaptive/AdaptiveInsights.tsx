@@ -1,4 +1,5 @@
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { router, type Href } from 'expo-router';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
@@ -26,6 +27,19 @@ export function AdaptiveInsights() {
             ? 'What your own check-ins show — sleep, energy, focus and symptoms as you report them.'
             : 'What your own check-ins show — the conditions where you tend to focus and decide best.'}
         </Text>
+      </View>
+
+      {/* Her answers put her on this check-in view; let her change them if they no longer fit. */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Want to see your cycle phases?</Text>
+        <Text style={styles.body}>
+          {mode === 'perimenopause'
+            ? 'You told us your cycle has been changing, so Insights is built from your daily check-ins. If that no longer fits, update your answers.'
+            : 'You told us your cycle is irregular or unpredictable, so Insights is built from your daily check-ins. If that has changed, update your answers.'}
+        </Text>
+        <Pressable style={styles.btn} onPress={() => router.push('/personalize' as Href)} testID="open-personalize-from-insights">
+          <Text style={styles.btnText}>Update my answers</Text>
+        </Pressable>
       </View>
 
       <PatternsCard />

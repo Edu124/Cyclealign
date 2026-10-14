@@ -106,7 +106,7 @@ export function LeadershipStateCard({ onOptimize }: Props) {
           <Text style={styles.primaryText}>Optimize My Day</Text>
         </Pressable>
         <Pressable style={styles.secondary} onPress={() => router.push('/ai-coach')}>
-          <Text style={styles.secondaryText}>Ask AI Companion</Text>
+          <Text style={styles.secondaryText}>Ask AI Align</Text>
         </Pressable>
       </View>
     </View>
