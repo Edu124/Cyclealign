@@ -14,12 +14,8 @@ export default function Phases() {
   const profile = useAppStore((s) => s.profile);
   const prediction = usePrediction();
 
-  // Irregular / perimenopause users see the same phase page (from the dates
-  // they gave at onboarding, marked as estimates) with their own check-in
-  // patterns underneath. Without a logged period there's no phase to show,
-  // so they get their patterns only.
-  const adaptive = !!profile && resolveMode(profile) !== 'regular';
-  if (adaptive && !prediction) {
+  // Irregular / perimenopause users aren't shown a phase explorer — their insights are their own patterns.
+  if (profile && resolveMode(profile) !== 'regular') {
     return (
       <TabScreen>
         <AdaptiveInsights />
@@ -48,11 +44,6 @@ export default function Phases() {
           You're on day {prediction.dayOfCycle} of a {prediction.cycleLength}-day
           cycle.
         </Text>
-        {adaptive && (
-          <Text style={styles.estimate}>
-            Your cycle varies, so these phases and dates are estimates based on the period dates you gave us.
-          </Text>
-        )}
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(120).duration(500)}>
@@ -81,12 +72,6 @@ export default function Phases() {
           </Animated.View>
         ))}
       </View>
-
-      {adaptive && (
-        <Animated.View entering={FadeInDown.delay(560).duration(500)}>
-          <AdaptiveInsights embedded />
-        </Animated.View>
-      )}
     </TabScreen>
   );
 }
@@ -96,6 +81,5 @@ const styles = StyleSheet.create({
   emptyText: { color: palette.inkSoft, fontSize: 16, textAlign: 'center' },
   title: { fontSize: 26, fontWeight: '800', color: palette.ink },
   subtitle: { fontSize: 15, color: palette.inkSoft, marginTop: 4 },
-  estimate: { fontSize: 13, color: palette.muted, marginTop: 6, lineHeight: 18 },
   list: { gap: spacing.md },
 });
