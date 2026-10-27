@@ -161,11 +161,13 @@ const FEATURES = [
   },
   {
     id: 'nutrition',
-    label: 'Nutrition Guidance\nas per Cycle',
-    intro: 'Simple food suggestions tailored to what your body craves in each phase.',
+    label: 'Nutrition Guidance\nas per Your Cycle',
+    intro: 'Eat well, in tune with you. Small, nourishing choices. One phase at a time.',
     circleBg: '#D0EDE4',
     iconColor: palette.tealDeep,
     Icon: IconDiet,
+    href: '/nutrition' as const,
+    cta: 'Explore your food guide',
   },
   {
     id: 'expert',
@@ -230,7 +232,7 @@ function FlipCard({ feature }: { feature: Feature }) {
             }}
             style={[styles.ctaBtn, { backgroundColor: feature.iconColor }]}
           >
-            <Text style={styles.ctaBtnText}>Ask now →</Text>
+            <Text style={styles.ctaBtnText}>{'cta' in feature ? feature.cta : 'Ask now →'}</Text>
           </Pressable>
         ) : (
           <Text style={styles.backHint}>Tap to flip back</Text>

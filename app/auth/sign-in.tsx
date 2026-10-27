@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
+import { useNutritionPrefs } from '@/lib/stores/useNutritionPrefs';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -33,6 +34,7 @@ export default function SignIn() {
       useSettings.getState().reset();
       useDailyLog.getState().reset();
       useAdaptivePrefs.getState().reset();
+      useNutritionPrefs.getState().reset();
       router.replace('/onboarding/role');
     }
   }

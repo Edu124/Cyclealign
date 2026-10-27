@@ -192,6 +192,9 @@ export default function RootLayout() {
             <Stack.Screen name="founder-letter"    options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="exit-preview"      options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="blog/[id]"         options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="nutrition/index"   options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="nutrition/[phase]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="nutrition/preferences" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="ai-coach"          options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="flash-sale"        options={{ animation: 'slide_from_bottom' }} />
           </Stack>

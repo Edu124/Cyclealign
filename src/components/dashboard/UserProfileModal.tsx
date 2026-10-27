@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
+import { useNutritionPrefs } from '@/lib/stores/useNutritionPrefs';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Avatar } from './Avatar';
@@ -64,6 +65,7 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
     useSettings.getState().reset();
     useDailyLog.getState().reset();
     useAdaptivePrefs.getState().reset();
+    useNutritionPrefs.getState().reset();
     useSubscription.getState().downgrade();
     await signOut();
     router.replace('/');

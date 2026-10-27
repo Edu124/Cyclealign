@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdaptivePrefs } from '@/lib/stores/useAdaptivePrefs';
+import { useNutritionPrefs } from '@/lib/stores/useNutritionPrefs';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -36,6 +37,7 @@ export default function SignUp() {
       useSettings.getState().reset();
       useDailyLog.getState().reset();
       useAdaptivePrefs.getState().reset();
+      useNutritionPrefs.getState().reset();
       if (name.trim()) useOnboarding.getState().set({ name: name.trim() });
       router.replace('/onboarding/role');
       setLoading(false);
