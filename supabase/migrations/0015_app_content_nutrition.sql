@@ -47,7 +47,7 @@ VALUES ('nutrition_guide', $guide$
   "phases": {
     "menstrual": {
       "name": "Menstrual Phase",
-      "label": "Period — Nourish & restore",
+      "label": "Menstrual — Nourish & restore",
       "when": "Your period days",
       "timing": "Often around days 1–5, but it varies",
       "emoji": [

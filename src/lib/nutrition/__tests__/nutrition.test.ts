@@ -9,7 +9,7 @@ const g = BUNDLED_GUIDE;
 describe('bundled nutrition guide', () => {
   it('is well-formed and has all four phases with the brief\'s copy', () => {
     expect(isNutritionGuide(g)).toBe(true);
-    expect(g.phases.menstrual.label).toBe('Period — Nourish & restore');
+    expect(g.phases.menstrual.label).toBe('Menstrual — Nourish & restore');
     expect(g.phases.follicular.label).toBe('Follicular — Build balanced habits');
     expect(g.phases.ovulation.label).toBe('Ovulation — Keep it varied');
     expect(g.phases.luteal.label).toBe('Luteal — Stay nourished');
