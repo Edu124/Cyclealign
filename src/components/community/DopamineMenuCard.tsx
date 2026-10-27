@@ -36,6 +36,8 @@ interface Product {
   tag?: string;
   /** Product photo (Unsplash CDN); emoji doubles as loading/failure fallback. */
   image: string;
+  /** Bundles only: what's in the box, shown under the name. */
+  includes?: string;
 }
 
 const img = (id: string) =>
@@ -43,6 +45,17 @@ const img = (id: string) =>
 
 const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
   menstrual: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'm14', emoji: '🎀', name: 'Satin Sleep Bonnet', brand: 'Gilt & Grace', price: 219, tag: 'New', image: img('1706120475559-119ef9294109') },
+    { id: 'm15', emoji: '😴', name: 'Silky Sleep Mask', brand: 'Cloud Nine Living', price: 149, image: img('1687435703153-88f6bc0cdcff') },
+    { id: 'm16', emoji: '🧦', name: 'Cozy Sock Trio', brand: 'Hearth & Haven', price: 149, image: img('1730448111621-c0524e75b0e8') },
+    { id: 'm17', emoji: '🌡️', name: 'Knit Hot-Water Bottle', brand: 'Hearth & Haven', price: 349, tag: 'Cozy Pick', image: img('1773747608435-0fa80d11a32f') },
+    { id: 'm18', emoji: '🐰', name: 'Mini Bunny Plush', brand: 'Cloud Nine Living', price: 349, image: img('1567169866456-a0759b6bb0c8') },
+    { id: 'm19', emoji: '🧂', name: 'Bath Salts & Shower Steamers', brand: 'Bloom & Ember', price: 269, image: img('1636333885549-86304699925f') },
+    { id: 'm20', emoji: '💋', name: 'Lip Balm & Lip Mask', brand: 'Aster Skin', price: 169, image: img('1768235146463-328c98e7234d') },
+    { id: 'm21', emoji: '🎁', name: 'Period Comfort Kit', brand: 'CycleAlign Edit', price: 599, tag: 'Bundle', includes: 'Hot-water bottle, cozy socks, tea, chocolate & a comfort card', image: img('1513201099705-a9746e1e201f') },
+    { id: 'm22', emoji: '🛁', name: 'Me-Time Box', brand: 'CycleAlign Edit', price: 599, tag: 'Bundle', includes: 'Hot chocolate, cookies, candle & sleep mask', image: img('1762411245614-e0f145ba7183') },
+    // Original picks.
     { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak',     brand: 'Bloom & Ember',    price: 1299, tag: 'Best Seller', image: img('1507652313519-d4e9174996dd') },
     { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set',     brand: 'Bloom & Ember',    price: 1699,                    image: img('1602874801007-bd458bb1b8b6') },
     { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box',  brand: 'Cocoa Theory',     price: 899,  tag: 'Fan Fave',    image: img('1511381939415-e44015466834') },
@@ -58,6 +71,16 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'm13', emoji: '📿', name: 'Comfort Bracelet',       brand: 'Gilt & Grace',     price: 799,                     image: img('1602173574767-37ac01994b2a') },
   ],
   follicular: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'f14', emoji: '📓', name: 'Everyday Gratitude Journal', brand: 'Paper Petal', price: 219, tag: 'New', image: img('1591195852468-03a01d1375d6') },
+    { id: 'f15', emoji: '🖍️', name: 'Pen & Highlighter Set', brand: 'Paper Petal', price: 139, image: img('1771868421764-a3de7fd9c4c1') },
+    { id: 'f16', emoji: '🌈', name: 'Sticker & Washi Tape Pack', brand: 'Paper Petal', price: 139, image: img('1777401085816-0192a4e2a7b0') },
+    { id: 'f17', emoji: '🗂️', name: 'Compact Desk Organiser', brand: 'Paper Petal', price: 269, image: img('1777917845221-f92884c1b61b') },
+    { id: 'f18', emoji: '💌', name: 'Affirmation Card Deck', brand: 'Paper Petal', price: 169, image: img('1779238226253-5ad05931521c') },
+    { id: 'f19', emoji: '✅', name: 'Mini Habit Planner', brand: 'Paper Petal', price: 219, image: img('1632772998001-cc9bf6f7c852') },
+    { id: 'f20', emoji: '👜', name: 'Everyday Tote & Pouch', brand: 'Hearth & Haven', price: 269, image: img('1544816155-12df9643f363') },
+    { id: 'f21', emoji: '🎯', name: 'Focus Mode Box', brand: 'CycleAlign Edit', price: 449, tag: 'Bundle', includes: 'Mini planner, pens, coffee sachets & a snack', image: img('1506784983877-45594efa4cbe') },
+    // Original picks.
     { id: 'f1', emoji: '📓', name: 'Manifestation Journal', brand: 'Paper Petal', price: 1499, tag: 'Trending',    image: img('1517842645767-c639042777db') },
     { id: 'f2', emoji: '🎨', name: 'Art Supply Kit',        brand: 'Studio Muse', price: 2699,                    image: img('1513364776144-60967b0f800f') },
     { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set',      brand: 'Leaf & Letter', price: 1999, tag: 'Best Seller', image: img('1485955900006-10f4d324d411') },
@@ -73,6 +96,18 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'f13', emoji: '🎨', name: 'Watercolor Kit',        brand: 'Studio Muse', price: 1799,                    image: img('1510832842230-87253f48d74f') },
   ],
   ovulation: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'o14', emoji: '✨', name: 'Neutral Claw Clip', brand: 'Gilt & Grace', price: 149, tag: 'New', image: img('1635423759716-53ccaa71b3fa') },
+    { id: 'o15', emoji: '🎀', name: 'Hair Bow & Tie Set', brand: 'Gilt & Grace', price: 139, image: img('1776267033953-25f51bc59120') },
+    { id: 'o16', emoji: '💎', name: 'Minimal Stud Earrings', brand: 'Gilt & Grace', price: 219, tag: 'Trending', image: img('1693212793204-bcea856c75fe') },
+    { id: 'o17', emoji: '🤍', name: 'Heart Pendant Necklace', brand: 'Gilt & Grace', price: 349, image: img('1589128777073-263566ae5e4d') },
+    { id: 'o18', emoji: '💍', name: 'Adjustable Ring Set', brand: 'Gilt & Grace', price: 219, image: img('1543294001-f7cd5d7fb516') },
+    { id: 'o19', emoji: '🐚', name: 'Charm Bracelet', brand: 'Gilt & Grace', price: 269, image: img('1786052337516-9fb23fcf36de') },
+    { id: 'o20', emoji: '🌟', name: 'Dainty Anklet', brand: 'Gilt & Grace', price: 219, image: img('1744722091259-ed1cf11ac97f') },
+    { id: 'o21', emoji: '🧸', name: 'Cute Bag Charm', brand: 'Gilt & Grace', price: 169, image: img('1778278553445-9cb87c89c60f') },
+    { id: 'o22', emoji: '💅', name: 'Press-On Nails & Nail Stickers', brand: 'Aster Skin', price: 199, image: img('1754799670410-b282791342c3') },
+    { id: 'o23', emoji: '🏆', name: 'Little-Win Celebration Box', brand: 'CycleAlign Edit', price: 499, tag: 'Bundle', includes: 'Chocolate, a small accessory & an achievement card', image: img('1608755728617-aefab37d2edd') },
+    // Original picks.
     { id: 'o1', emoji: '👗', name: 'Statement Set',        brand: 'Maison Rosette', price: 4999, tag: 'Hot Pick',    image: img('1515886657613-9f3515b0c78f') },
     { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit',      brand: 'Lumi Beauty',    price: 3199, tag: 'Best Seller', image: img('1522335789203-aabd1fc54bc9') },
     { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', brand: 'Petal Post',     price: 2199,                    image: img('1490750967868-88aa4486c946') },
@@ -88,6 +123,17 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
     { id: 'o13', emoji: '📸', name: 'Instant Camera',      brand: 'Maison Rosette', price: 4999, tag: 'New',         image: img('1516962126636-27ad087061cc') },
   ],
   luteal: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'l14', emoji: '🎗️', name: 'Satin Scrunchie Pack', brand: 'Gilt & Grace', price: 149, tag: 'New', image: img('1788079961873-e1663ddf5ec0') },
+    { id: 'l15', emoji: '🌸', name: 'Skincare Headband', brand: 'Gilt & Grace', price: 149, image: img('1782776852521-77b0aed8831d') },
+    { id: 'l16', emoji: '🌀', name: 'Heatless Curling Set', brand: 'Gilt & Grace', price: 299, image: img('1516429084384-3aa965e20ff7') },
+    { id: 'l17', emoji: '🧖‍♀️', name: 'Sheet Mask Duo', brand: 'Aster Skin', price: 149, image: img('1670201203270-7bc9b329d2eb') },
+    { id: 'l18', emoji: '🤲', name: 'Travel Hand Cream', brand: 'Aster Skin', price: 169, image: img('1619451427882-6aaaded0cc61') },
+    { id: 'l19', emoji: '🌷', name: 'Body Lotion & Mist', brand: 'Aster Skin', price: 269, image: img('1784902538196-c7d914e3ecce') },
+    { id: 'l20', emoji: '☕', name: 'Cute Mug', brand: 'Hearth & Haven', price: 319, image: img('1702281718578-2d4bd167f375') },
+    { id: 'l21', emoji: '🕯️', name: 'Mini Scented Candle', brand: 'Bloom & Ember', price: 269, image: img('1640095889747-2090ee12fa7d') },
+    { id: 'l22', emoji: '🌧️', name: 'Bad-Day Rescue Box', brand: 'CycleAlign Edit', price: 449, tag: 'Bundle', includes: 'A small treat, sheet mask, scrunchie & an uplifting note', image: img('1707944145479-12755f0434d8') },
+    // Original picks.
     { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', brand: 'Aster Skin',       price: 1899, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
     { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set',   brand: 'Cloud Nine Living', price: 2999,                   image: img('1522771739844-6a9f6d5f14af') },
     { id: 'l3', emoji: '📚', name: 'Novel Bundle',         brand: 'Fable & Fern',     price: 2499, tag: 'Cozy Pick',  image: img('1463320726281-696a485928c7') },
@@ -107,6 +153,16 @@ const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
 // Food mode — pure craving-fulfilment, phase-tuned like everything else.
 const PHASE_FOODS: Record<PhaseKey, Product[]> = {
   menstrual: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'fm14', emoji: '🍫', name: 'Chocolate Bar Trio', brand: 'Cocoa Theory', price: 99, tag: 'New', image: img('1610450949065-1f2841536c88') },
+    { id: 'fm15', emoji: '🟤', name: 'Chocolate Truffle Box', brand: 'Cocoa Theory', price: 199, image: img('1757450317518-9d385619f5ee') },
+    { id: 'fm16', emoji: '🍪', name: 'Choc Chip Cookies', brand: 'Cocoa Theory', price: 139, image: img('1499636136210-6f4ee915583e') },
+    { id: 'fm17', emoji: '🧁', name: 'Fudgy Brownies', brand: 'Midnight Kitchen', price: 149, image: img('1636743715220-d8f8dd900b87') },
+    { id: 'fm18', emoji: '☁️', name: 'Marshmallow Pack', brand: 'Candy Comet', price: 99, image: img('1518646455738-c17d10184f5e') },
+    { id: 'fm19', emoji: '☕', name: 'Hot Chocolate Sachets', brand: 'Steep Story', price: 99, tag: 'Cozy Pick', image: img('1637572815755-c4b80092dce1') },
+    { id: 'fm20', emoji: '🫖', name: 'Herbal Tea Selection', brand: 'Steep Story', price: 199, image: img('1766232574096-4c4380105cc7') },
+    { id: 'fm21', emoji: '🍵', name: 'Masala Chai Premix', brand: 'Steep Story', price: 119, image: img('1761483281417-778013dc0177') },
+    // Original picks.
     { id: 'fm1', emoji: '🍫', name: 'Dark Chocolate Ritual',   brand: 'Cocoa Theory',     price: 349, tag: 'Most craved', image: img('1511381939415-e44015466834') },
     { id: 'fm2', emoji: '🍜', name: 'Comfort Ramen Bowl',      brand: 'Midnight Kitchen', price: 429,                    image: img('1569718212165-3a8278d5f624') },
     { id: 'fm3', emoji: '🧀', name: 'Molten Mac & Cheese',     brand: 'Midnight Kitchen', price: 379,                    image: img('1543339494-b4cd4f7ba686') },
@@ -122,6 +178,16 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'fm13', emoji: '🍩', name: 'Cinnamon Donut Trio',    brand: 'Cocoa Theory',     price: 299,                    image: img('1646615077267-97c6088b74d9') },
   ],
   follicular: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'ff14', emoji: '🍵', name: 'Instant Matcha Mix', brand: 'Steep Story', price: 269, tag: 'Trending', image: img('1589698272390-0501a07619bb') },
+    { id: 'ff15', emoji: '🧊', name: 'Cold-Coffee Mix', brand: 'Steep Story', price: 119, image: img('1771210849472-84a07b2e793a') },
+    { id: 'ff16', emoji: '🍋', name: 'Sugar-Free Drink Mix', brand: 'Steep Story', price: 119, image: img('1717439062391-1c2932e1c051') },
+    { id: 'ff17', emoji: '🥜', name: 'Trail Mix Pouch', brand: 'Masala Moon', price: 149, image: img('1767877609689-beff32b9c0ac') },
+    { id: 'ff18', emoji: '🌰', name: 'Roasted Cashews & Mixed Nuts', brand: 'Masala Moon', price: 199, image: img('1726771517475-e7acdd34cd8a') },
+    { id: 'ff19', emoji: '🫘', name: 'Roasted Chickpeas', brand: 'Masala Moon', price: 89, image: img('1776765828683-eb5ec29711e2') },
+    { id: 'ff20', emoji: '🍘', name: 'Baked Herb Crackers', brand: 'Masala Moon', price: 99, image: img('1764025262245-8fc7d2d72c15') },
+    { id: 'ff21', emoji: '🧇', name: 'Waffle & Pancake Mix', brand: 'Midnight Kitchen', price: 219, image: img('1773533276932-4ee7ea1d6361') },
+    // Original picks.
     { id: 'ff1', emoji: '☕', name: 'Oat Latte Boost',         brand: 'Steep Story',      price: 229, tag: 'Trending',    image: img('1512568400610-62da28bc8a13') },
     { id: 'ff2', emoji: '🧋', name: 'Brown Sugar Boba',        brand: 'Midnight Kitchen', price: 269,                    image: img('1558857563-b371033873b8') },
     { id: 'ff3', emoji: '🍕', name: 'Garden Veggie Pizza',     brand: 'Midnight Kitchen', price: 499,                    image: img('1513104890138-7c749659a591') },
@@ -137,6 +203,16 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'ff13', emoji: '🍫', name: 'Protein Energy Bites',   brand: 'Cocoa Theory',     price: 279, tag: 'New',         image: img('1734773487516-078839ea277f') },
   ],
   ovulation: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'fo14', emoji: '🎁', name: 'Chocolate Gift Box', brand: 'Cocoa Theory', price: 399, tag: 'Hot Pick', image: img('1687795097254-f019f9d7fd17') },
+    { id: 'fo15', emoji: '🐻', name: 'Gummy Bear Pack', brand: 'Candy Comet', price: 99, image: img('1635342219731-4ae2bf39e1e9') },
+    { id: 'fo16', emoji: '🍬', name: 'Sour Candy Mix', brand: 'Candy Comet', price: 59, image: img('1499195333224-3ce974eecb47') },
+    { id: 'fo17', emoji: '🍭', name: 'Lollipops & Fruit Chews', brand: 'Candy Comet', price: 59, image: img('1687499466474-df90c4d7a54a') },
+    { id: 'fo18', emoji: '🍡', name: 'Candy Assortment', brand: 'Candy Comet', price: 169, image: img('1696524491699-6754027c14d9') },
+    { id: 'fo19', emoji: '🍿', name: 'Flavoured Popcorn', brand: 'Masala Moon', price: 89, image: img('1766728905072-ecb543cd6bf5') },
+    { id: 'fo20', emoji: '🫙', name: 'Dessert Jar', brand: 'Midnight Kitchen', price: 219, image: img('1768203634412-bdcf48b83161') },
+    { id: 'fo21', emoji: '🧁', name: 'Mini Muffins', brand: 'Midnight Kitchen', price: 139, image: img('1767634480773-37e4b962fa1d') },
+    // Original picks.
     { id: 'fo1', emoji: '🍰', name: 'Celebration Cheesecake',  brand: 'Midnight Kitchen', price: 599, tag: 'Hot Pick',    image: img('1524351199678-941a58a3df50') },
     { id: 'fo2', emoji: '🧋', name: 'Boba Date Flight',        brand: 'Midnight Kitchen', price: 349,                    image: img('1558857563-b371033873b8') },
     { id: 'fo3', emoji: '🍕', name: 'Wood-fired Pizza Night',  brand: 'Midnight Kitchen', price: 649,                    image: img('1513104890138-7c749659a591') },
@@ -152,6 +228,16 @@ const PHASE_FOODS: Record<PhaseKey, Product[]> = {
     { id: 'fo13', emoji: '🥂', name: 'Golden Hour Mocktail',   brand: 'Steep Story',      price: 379, tag: 'Trending',    image: img('1654074517219-85e6f3f6f85d') },
   ],
   luteal: [
+    // Dopamine Shop brief (catalogue v1) — new first.
+    { id: 'fl14', emoji: '🤍', name: 'Peri-Peri Makhana', brand: 'Masala Moon', price: 129, tag: 'Most craved', image: img('1710421576768-ff985fa63b60') },
+    { id: 'fl15', emoji: '🥔', name: 'Masala Chips', brand: 'Masala Moon', price: 59, image: img('1760997707695-f0b5527e5de9') },
+    { id: 'fl16', emoji: '🥨', name: 'Namkeen Mini Packs', brand: 'Masala Moon', price: 59, image: img('1791989396500-127d525aa9f7') },
+    { id: 'fl17', emoji: '🍫', name: 'Chocolate-Coated Almonds', brand: 'Cocoa Theory', price: 169, image: img('1646151067116-80a86e5eee69') },
+    { id: 'fl18', emoji: '🟫', name: 'Brownie Bites', brand: 'Cocoa Theory', price: 149, tag: 'Fan Fave', image: img('1762922425478-7049c54bfbec') },
+    { id: 'fl19', emoji: '🧇', name: 'Wafer & Mini Choc Packs', brand: 'Cocoa Theory', price: 89, image: img('1772986234414-ada1a1cef8e4') },
+    { id: 'fl20', emoji: '🍪', name: 'Cookie Bites Box', brand: 'Midnight Kitchen', price: 139, image: img('1558961363-fa8fdf82db35') },
+    { id: 'fl21', emoji: '☕', name: 'Coffee Sachets', brand: 'Steep Story', price: 119, image: img('1770123366817-743776f66d6a') },
+    // Original picks.
     { id: 'fl1', emoji: '🧀', name: 'Extra-Cheese Mac',        brand: 'Midnight Kitchen', price: 399, tag: 'Most craved', image: img('1543339494-b4cd4f7ba686') },
     { id: 'fl2', emoji: '🍜', name: 'Cozy Ramen Supreme',      brand: 'Midnight Kitchen', price: 469,                    image: img('1569718212165-3a8278d5f624') },
     { id: 'fl3', emoji: '🍰', name: 'Salted Caramel Cheesecake', brand: 'Midnight Kitchen', price: 379,                  image: img('1524351199678-941a58a3df50') },
@@ -417,6 +503,9 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
               <View style={styles.productBody}>
               <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
               <Text style={styles.productBrand}>{product.brand}</Text>
+              {product.includes ? (
+                <Text style={styles.productIncludes} numberOfLines={3}>Includes: {product.includes}</Text>
+              ) : null}
               <Text style={[styles.productPrice, { color: phaseColor }]}>{formatPrice(product.price)}</Text>
               {inCart ? (
                 <View style={styles.qtyRow}>
@@ -987,6 +1076,7 @@ const styles = StyleSheet.create({
   productEmoji: { fontSize: 30 },
   productName: { fontSize: 13, fontWeight: '600', color: dash.ink, lineHeight: 17 },
   productBrand: { fontSize: 11, color: dash.muted },
+  productIncludes: { fontSize: 11, color: dash.inkSoft, lineHeight: 15 },
   productPrice: { fontSize: 14, fontWeight: '700' },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   qtyBtn: { width: 28, height: 28, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
