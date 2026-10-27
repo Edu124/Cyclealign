@@ -61,6 +61,8 @@ export interface NutritionGuide {
   version: number;
   title: string;
   intro: string;
+  /** The core message: balanced, varied eating all month. Optional so older remote copies still load. */
+  basics?: string;
   disclaimer: string;
   careNote: string;
   phases: Record<PhaseKey, PhaseGuide>;

@@ -12,6 +12,7 @@ import { useNutritionPrefs } from '@/lib/stores/useNutritionPrefs';
 import {
   Disclaimer,
   NutritionScreen,
+  PHASE_TEXT,
   PhaseVisual,
   nutritionStyles as ns,
   prefsSummary,
@@ -41,6 +42,7 @@ export default function NutritionHome() {
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={ns.title}>{guide.title}</Text>
           <Text style={ns.sub}>{guide.intro}</Text>
+          {guide.basics ? <Text style={[ns.small, { marginTop: 8 }]}>{guide.basics}</Text> : null}
         </Animated.View>
 
         {/* Where she probably is — always as an estimate, never as a fact. */}
@@ -48,11 +50,11 @@ export default function NutritionHome() {
           {estimate.phase && current ? (
             <>
               <View style={[ns.chip, { backgroundColor: phaseBanner[estimate.phase].bg }]}>
-                <Text style={[ns.chipText, { color: phaseBanner[estimate.phase].accent }]}>
+                <Text style={[ns.chipText, { color: PHASE_TEXT[estimate.phase] }]}>
                   {estimate.confidence === 'rough' ? 'ROUGH ESTIMATE' : 'ESTIMATED PHASE'}
                 </Text>
               </View>
-              <Text style={ns.cardTitle}>You're probably in your {current.name.replace(' Phase', '').toLowerCase()} phase</Text>
+              <Text style={ns.cardTitle}>{current.label.split(' — ')[0]} phase</Text>
               <Text style={ns.small}>{estimate.note}</Text>
               <Pressable style={ns.btn} onPress={() => router.push(phaseHref(estimate.phase!))}>
                 <Text style={ns.btnText}>Open the {current.name.toLowerCase()} guide</Text>
@@ -84,7 +86,7 @@ export default function NutritionHome() {
                   <Text style={styles.phaseLabel}>{p.label}</Text>
                   <Text style={styles.phaseWhen} numberOfLines={2}>{p.when}</Text>
                   {isCurrent && (
-                    <Text style={[styles.nowTag, { color: phaseBanner[key].accent }]}>Estimated now</Text>
+                    <Text style={[styles.nowTag, { color: PHASE_TEXT[key] }]}>Estimated now</Text>
                   )}
                 </Pressable>
               </Animated.View>
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
   nowTag: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   savedRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
   savedDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  savedMeta: { fontSize: 11.5, fontWeight: '800', color: dash.muted, letterSpacing: 0.2 },
+  savedMeta: { fontSize: 11.5, fontWeight: '800', color: dash.inkSoft, letterSpacing: 0.2 },
   savedText: { fontSize: 14, color: dash.ink, lineHeight: 20 },
-  savedStar: { fontSize: 20, color: '#C9A96E' },
+  savedStar: { fontSize: 20, color: '#9C7424' },
 });

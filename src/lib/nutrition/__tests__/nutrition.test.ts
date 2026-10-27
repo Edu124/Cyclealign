@@ -101,6 +101,10 @@ describe('phase estimate', () => {
     expect(e.note).toMatch(/estimated/i);
   });
 
+  it('never presents ovulation as confirmed', () => {
+    expect(estimateNutritionPhase(pred({ currentPhase: 'ovulation' }), 'reliable').note).toMatch(/can't confirm ovulation/);
+  });
+
   it('makes no claim without logs or for irregular cycles', () => {
     expect(estimateNutritionPhase(null, 'reliable').phase).toBeNull();
     expect(estimateNutritionPhase(pred(), 'none').phase).toBeNull();

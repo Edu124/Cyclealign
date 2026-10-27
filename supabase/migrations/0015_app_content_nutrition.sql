@@ -42,8 +42,9 @@ VALUES ('nutrition_guide', $guide$
   "version": 1,
   "title": "Eat well, in tune with you.",
   "intro": "Small, nourishing choices. One phase at a time.",
+  "basics": "Balanced, varied meals matter all month — no phase needs a special diet. These ideas simply make it easier to plan.",
   "disclaimer": "This guide offers general nutrition ideas to support everyday wellbeing. Your nutritional needs and cycle may be different. These suggestions are not a substitute for personalised medical or dietetic advice.",
-  "careNote": "Please speak to a doctor if you have heavy bleeding, persistent tiredness, severe pain, or symptoms that disrupt your daily life.",
+  "careNote": "Please speak to a doctor if you have heavy bleeding, persistent tiredness, severe pain, or symptoms that disrupt your daily life. For advice on supplements, talk to a qualified clinician.",
   "phases": {
     "menstrual": {
       "name": "Menstrual Phase",

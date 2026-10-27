@@ -14,6 +14,7 @@ import { useNutritionPrefs } from '@/lib/stores/useNutritionPrefs';
 import {
   Disclaimer,
   NutritionScreen,
+  PHASE_TEXT,
   PhaseVisual,
   nutritionStyles as ns,
   prefsSummary,
@@ -54,7 +55,8 @@ export default function NutritionPhase() {
 
   const foods = p.foods.map((g) => formatFoodGroup(g, prefs)).filter(Boolean) as { label: string; text: string }[];
   const meals = p.meals.map((m) => pickMeal(m, prefs));
-  const accent = phaseBanner[phase].accent;
+  const accent = PHASE_TEXT[phase];
+  const dot = phaseBanner[phase].accent;
 
   const idx = PHASE_ORDER.indexOf(phase);
   const prev = PHASE_ORDER[(idx + 3) % 4];
@@ -90,7 +92,7 @@ export default function NutritionPhase() {
           <Text style={ns.cardTitle}>Foods to add to your plate</Text>
           {foods.map((f) => (
             <View key={f.label} style={styles.bulletRow}>
-              <View style={[styles.bullet, { backgroundColor: accent }]} />
+              <View style={[styles.bullet, { backgroundColor: dot }]} />
               <Text style={styles.bulletText}>
                 <Text style={styles.bulletLabel}>{f.label}: </Text>
                 {f.text}
@@ -183,8 +185,8 @@ const styles = StyleSheet.create({
   mealText: { flex: 1, fontSize: 15, color: dash.ink, lineHeight: 22 },
   mealAlt: { flex: 1, fontSize: 14, color: dash.inkSoft, lineHeight: 21 },
   mealAltLabel: { fontWeight: '700', color: dash.inkSoft },
-  star: { fontSize: 22, color: dash.muted, lineHeight: 24 },
-  starOn: { color: '#C9A96E' },
+  star: { fontSize: 22, color: '#7A7268', lineHeight: 24 },
+  starOn: { color: '#9C7424' },
 
   prefsRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', paddingTop: 8, borderTopWidth: 1, borderTopColor: dash.line },
   prefsLink: { fontSize: 13, fontWeight: '800', color: dash.sageDeep },

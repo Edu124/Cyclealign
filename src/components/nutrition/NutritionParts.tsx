@@ -9,6 +9,17 @@ import type { NutritionGuide, PhaseGuide } from '@/lib/nutrition/guide';
 import type { FoodPrefs } from '@/lib/nutrition/filter';
 import { ALLERGEN_LABELS } from '@/lib/nutrition/guide';
 
+/**
+ * Phase colours dark enough to read as text (WCAG AA ≥ 4.5:1 on white and on
+ * the phase's own tint). The lighter `phaseBanner` accents stay for dots and borders.
+ */
+export const PHASE_TEXT: Record<PhaseKey, string> = {
+  menstrual: '#A03D31',
+  follicular: '#8C5A12',
+  ovulation: '#466A2C',
+  luteal: '#8C5A12',
+};
+
 export function NutritionScreen({ title, children }: { title: string; children: ReactNode }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -74,9 +85,9 @@ export const nutritionStyles = StyleSheet.create({
   card: { backgroundColor: dash.card, borderRadius: 22, padding: 18, gap: 10, borderWidth: 1, borderColor: dash.line },
   cardTitle: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
   body: { fontSize: 14.5, color: dash.inkSoft, lineHeight: 22 },
-  small: { fontSize: 12.5, color: dash.muted, lineHeight: 18 },
+  small: { fontSize: 12.5, color: dash.inkSoft, lineHeight: 18 },
   sectionTitle: { fontFamily: fonts.headingBold, fontSize: 19, color: dash.ink },
-  btn: { backgroundColor: dash.sage, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  btn: { backgroundColor: dash.sageDeep, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   btnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
   ghostBtn: { borderRadius: 14, paddingVertical: 11, alignItems: 'center', borderWidth: 1, borderColor: dash.line, backgroundColor: dash.card },
   ghostBtnText: { color: dash.sageDeep, fontWeight: '800', fontSize: 14 },
