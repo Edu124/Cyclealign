@@ -106,6 +106,30 @@ function IconDiet({ color }: { color: string }) {
   );
 }
 
+function IconPerimenopause({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Path d="M8 21a9 9 0 0 1 18 0" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M4.5 21h25" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M17 5.5v3M8.6 9.1l2 2M25.4 9.1l-2 2" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M8 26.5c1.5-1.2 3-1.2 4.5 0s3 1.2 4.5 0 3-1.2 4.5 0 3 1.2 4.5 0" stroke={color} strokeWidth={1.8}
+        strokeLinecap="round" opacity={0.7} />
+    </Svg>
+  );
+}
+
+function IconSexualWellness({ color }: { color: string }) {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 34 34" fill="none">
+      <Path
+        d="M15 27C8.5 22.4 5.5 18.4 5.5 14.6 5.5 11.9 7.7 9.7 10.4 9.7c1.8 0 3.4.9 4.6 2.4 1.2-1.5 2.8-2.4 4.6-2.4 2.7 0 4.9 2.2 4.9 4.9 0 3.8-3 7.8-9.5 12.4Z"
+        stroke={color} strokeWidth={2.2} strokeLinejoin="round"
+      />
+      <Path d="M26.5 4.5l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z" fill={color} opacity={0.75} />
+    </Svg>
+  );
+}
+
 // ── feature data ──────────────────────────────────────────────────────────────
 
 const FEATURES = [
@@ -177,6 +201,22 @@ const FEATURES = [
     iconColor: palette.roseDeep,
     Icon: IconExpert,
     href: '/talk-to-expert' as const,
+  },
+  {
+    id: 'perimenopause',
+    label: 'Perimenopause',
+    intro: 'Make sense of the shifts as your cycle changes — sleep, energy and symptoms, with gentle guidance for this stage.',
+    circleBg: '#EEE3F0',
+    iconColor: '#8A5A90',
+    Icon: IconPerimenopause,
+  },
+  {
+    id: 'sexual-wellness',
+    label: 'Sexual\nWellness',
+    intro: 'Understand how desire, comfort and intimacy can change across your cycle — private, judgement-free guidance.',
+    circleBg: '#FBE1E7',
+    iconColor: '#AD4F69',
+    Icon: IconSexualWellness,
   },
 ];
 
