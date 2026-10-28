@@ -9,9 +9,11 @@
 // Auth:    the x-cron-secret header must match the vault secret
 //          `partner_digest_cron_secret` (see migration 0011).
 //
-// Safe to call repeatedly: a link is skipped if it was updated in the last
-// STALE_AFTER_HOURS (the app writes with her exact local date, which is more
-// precise than this job's UTC date, so we never overwrite a fresh one).
+// Safe to call repeatedly. A link is refreshed when it hasn't been updated
+// for STALE_AFTER_HOURS, or when what's shown was published on an earlier day
+// and no longer matches today (her phase moved on while the app sat closed or
+// in the background). Anything published today is left alone, so a change she
+// just made on her phone is never overwritten (see shouldRefreshLink).
 // Add ?dryRun=1 to see what would change without writing anything.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -23,6 +25,7 @@ import {
   pickAdaptiveMessage,
   pickPartnerMessage,
   resolveModeFromAnswers,
+  shouldRefreshLink,
 } from '../_shared/partnerDigest.ts';
 
 const STALE_AFTER_HOURS = 20;
@@ -62,22 +65,18 @@ Deno.serve(async (req) => {
   const force = url.searchParams.get('force') === '1';
 
   const todayISO = new Date().toISOString().slice(0, 10);
-  const cutoff = Date.now() - STALE_AFTER_HOURS * 3_600_000;
+  const now = Date.now();
 
   const { data: links, error } = await supabase
     .from('partner_links')
-    .select('id, user_id, share_phase, share_tough_day, shared_updated_at')
+    .select('id, user_id, share_phase, share_tough_day, shared_phase, shared_tough_day, shared_message, shared_updated_at')
     .eq('status', 'active');
   if (error) return json({ error: error.message }, 500);
 
-  const due = (links ?? []).filter(
-    (l) => force || !l.shared_updated_at || new Date(l.shared_updated_at).getTime() < cutoff,
-  );
-
-  const result = { active: links?.length ?? 0, due: due.length, updated: 0, skipped: 0, failed: 0 };
+  const result = { active: links?.length ?? 0, due: 0, updated: 0, skipped: 0, failed: 0 };
   const preview: unknown[] = [];
 
-  for (const link of due) {
+  for (const link of links ?? []) {
     try {
       const [{ data: profile }, { data: cycles }, { data: todaysLog }] = await Promise.all([
         supabase.from('profiles').select('avg_cycle_length, avg_period_length, cycle_regularity, health_context').eq('id', link.user_id).maybeSingle(),
@@ -135,6 +134,17 @@ Deno.serve(async (req) => {
           shared_updated_at: new Date().toISOString(),
         };
       }
+
+      const due = force || shouldRefreshLink({
+        sharedUpdatedAt: link.shared_updated_at,
+        current: { shared_phase: link.shared_phase, shared_tough_day: link.shared_tough_day, shared_message: link.shared_message },
+        next: patch,
+        todayISO,
+        now,
+        staleAfterHours: STALE_AFTER_HOURS,
+      });
+      if (!due) continue;
+      result.due++;
 
       if (dryRun) {
         preview.push({ link: link.id, mode, phase: phaseForPreview, toughDay: toughForPreview, message: patch.shared_message });

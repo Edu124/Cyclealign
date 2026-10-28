@@ -22,6 +22,8 @@ import {
   getOrCreateMyInvite,
   markPingsSeen,
   PHASE_LABEL,
+  publishAdaptiveStatus,
+  publishDigestedStatus,
   revokeLink,
   sendSupportPing,
   updateSharingSettings,
@@ -30,6 +32,7 @@ import {
 import { dash, phaseBanner } from '@/theme';
 import { resolveMode } from '@/lib/adaptive/mode';
 import { useAppStore } from '@/lib/stores/useAppStore';
+import { usePrediction } from '@/lib/hooks/usePrediction';
 import type { PhaseKey } from '@/types/models';
 
 const SUGGESTED_MESSAGES = [
@@ -63,6 +66,7 @@ function relativeTime(iso: string): string {
 
 export function PartnerSyncCard() {
   const adaptive = resolveMode(useAppStore((s) => s.profile)) !== 'regular';
+  const prediction = usePrediction();
   const [myInvite, setMyInvite] = useState<PartnerLink | null | undefined>(undefined);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [partnerLink, setPartnerLink] = useState<PartnerLink | null | undefined>(undefined);
@@ -110,8 +114,14 @@ export function PartnerSyncCard() {
   async function handleToggle(field: 'sharePhase' | 'shareToughDay' | 'shareEnergyMood', value: boolean) {
     if (!myInvite) return;
     haptic();
-    setMyInvite({ ...myInvite, [field]: value });
+    const next = { ...myInvite, [field]: value };
+    setMyInvite(next);
     await updateSharingSettings(myInvite.id, { [field]: value });
+    // Show — or withdraw — it for her partner straight away, instead of
+    // leaving the old value visible until her phase next changes.
+    if (next.status !== 'active') return;
+    if (adaptive) await publishAdaptiveStatus(next);
+    else if (prediction) await publishDigestedStatus(next, prediction);
   }
 
   async function handleRevoke() {

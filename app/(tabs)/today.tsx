@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { TabScreen } from '@/components/ui';
@@ -39,6 +39,16 @@ import { todayISO } from '@/lib/dates';
 import { dash } from '@/theme';
 
 export default function Today() {
+  // Bumped each time the app returns to the foreground. Re-rendering recomputes
+  // the prediction for today's date (the day may have changed while the app sat
+  // in the background) and re-sends her partner status.
+  const [resumeTick, setResumeTick] = useState(0);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') setResumeTick((t) => t + 1);
+    });
+    return () => sub.remove();
+  }, []);
   const profile = useAppStore((s) => s.profile);
   const addCycleLog = useAppStore((s) => s.addCycleLog);
   const editLastPeriodRange = useAppStore((s) => s.editLastPeriodRange);
@@ -89,7 +99,7 @@ export default function Today() {
       if (mode === 'regular' && prediction) publishDigestedStatus(link, prediction);
       else publishAdaptiveStatus(link);
     });
-  }, [mode, prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()], partnerMessageBucket(todayISO())]);
+  }, [mode, prediction?.currentPhase, prediction ? capacityPhaseFor(prediction) : null, prediction?.isOverdue, dailyLogs[todayISO()], partnerMessageBucket(todayISO()), resumeTick]);
 
   // Retail Therapy: reacts to today's Quick Log (trigger sale / dissolve orders).
   // The shop never reacts to the health state of irregular / perimenopause users.

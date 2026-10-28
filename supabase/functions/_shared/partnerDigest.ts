@@ -258,3 +258,38 @@ export function pickAdaptiveMessage(tone: 'good' | 'tough' | 'unknown', dateISO:
   const pool = ADAPTIVE_PARTNER_MESSAGES[tone];
   return pool[partnerMessageBucket(dateISO) % pool.length];
 }
+
+/** What a partner currently sees on a link row. */
+export interface SharedSnapshot {
+  shared_phase: string | null;
+  shared_tough_day: boolean | null;
+  shared_message: string | null;
+}
+
+/**
+ * Should the server refresh job overwrite this link?
+ *  - always when it hasn't been updated for STALE_AFTER_HOURS (she hasn't opened the app);
+ *  - also when what's shown was published on an earlier day and no longer
+ *    matches today — her phase or message moved on while the app sat closed
+ *    or in the background. Anything published today is left alone, so a
+ *    change she just made on her phone is never overwritten.
+ */
+export function shouldRefreshLink(input: {
+  sharedUpdatedAt: string | null;
+  current: SharedSnapshot;
+  next: SharedSnapshot;
+  todayISO: string;
+  now: number;
+  staleAfterHours: number;
+}): boolean {
+  const { sharedUpdatedAt, current, next, todayISO, now, staleAfterHours } = input;
+  if (!sharedUpdatedAt) return true;
+  const updated = new Date(sharedUpdatedAt).getTime();
+  if (Number.isNaN(updated) || now - updated > staleAfterHours * 3_600_000) return true;
+  const fromEarlierDay = new Date(updated).toISOString().slice(0, 10) < todayISO;
+  const changed =
+    current.shared_phase !== next.shared_phase ||
+    current.shared_tough_day !== next.shared_tough_day ||
+    current.shared_message !== next.shared_message;
+  return fromEarlierDay && changed;
+}
