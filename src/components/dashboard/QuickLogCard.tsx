@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 
 const LOG_HISTORY = '/log-history' as Href;
@@ -42,9 +42,11 @@ export function QuickLogCard({ dateISO }: Props) {
     symptoms: existing?.symptoms ?? [],
     bleeding: existing?.bleeding,
   });
-  // Irregular / perimenopause users get the extra inputs open by default — their
-  // recommendations depend on them. Everyone else keeps the 20-second log.
-  const [showDetails, setShowDetails] = useState(mode !== 'regular');
+  // The optional extra inputs open in a popup so the card stays a 20-second log.
+  const [showDetails, setShowDetails] = useState(false);
+  const detailCount =
+    [details.focus, details.decisionConfidence, details.sleepQuality, details.sleepHours, details.stress, details.bleeding]
+      .filter((v) => v !== undefined && v !== null && v !== '').length + (details.symptoms.length > 0 ? 1 : 0);
 
   const canSubmit = energy > 0 && mood !== '';
   const hintText  = hint(energy, mood);
@@ -146,12 +148,44 @@ export function QuickLogCard({ dateISO }: Props) {
         ))}
       </View>
 
-      <Pressable onPress={() => setShowDetails((v) => !v)} hitSlop={6} testID="toggle-details">
-        <Text style={styles.moreToggle}>{showDetails ? '− Fewer details' : '+ More detail (optional)'}</Text>
+      <Pressable
+        onPress={() => setShowDetails(true)}
+        hitSlop={6}
+        testID="toggle-details"
+        accessibilityRole="button"
+        accessibilityLabel={detailCount > 0 ? `Details added, ${detailCount}. Edit details` : 'Add more detail, optional'}
+      >
+        <Text style={styles.moreToggle}>
+          {detailCount > 0
+            ? `✓ ${detailCount} detail${detailCount === 1 ? '' : 's'} added · Edit`
+            : mode !== 'regular'
+              ? '+ More detail — sleep, focus, symptoms (helps your plan)'
+              : '+ More detail (optional)'}
+        </Text>
       </Pressable>
-      {showDetails && (
-        <CheckInDetails value={details} onChange={(patch) => setDetails((d) => ({ ...d, ...patch }))} mode={mode} />
-      )}
+
+      <Modal visible={showDetails} transparent animationType="slide" onRequestClose={() => setShowDetails(false)}>
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowDetails(false)} accessibilityLabel="Close" />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle} accessibilityRole="header">More detail</Text>
+              <Pressable onPress={() => setShowDetails(false)} hitSlop={12} accessibilityLabel="Close">
+                <Text style={styles.sheetClose}>✕</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.sheetSub}>All optional — skip anything you like.</Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+              <CheckInDetails value={details} onChange={(patch) => setDetails((d) => ({ ...d, ...patch }))} mode={mode} />
+            </ScrollView>
+            <Pressable style={styles.submit} onPress={() => setShowDetails(false)} testID="details-done">
+              <Text style={styles.submitText}>Done</Text>
+            </Pressable>
+            <Text style={styles.sheetNote}>Your details are kept with today's log when you tap Save log.</Text>
+          </View>
+        </View>
+      </Modal>
 
       <Text style={styles.label}>One win</Text>
       <TextInput
@@ -194,7 +228,24 @@ const styles = StyleSheet.create({
     borderColor: dash.line,
   },
   title: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
-  moreToggle: { fontSize: 13, fontWeight: '700', color: dash.sage, marginTop: 10 },
+  moreToggle: { fontSize: 13, fontWeight: '700', color: dash.sageDeep, marginTop: 10, paddingVertical: 4 },
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+  sheet: {
+    backgroundColor: dash.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '88%',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    gap: 8,
+  },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: dash.line, alignSelf: 'center', marginBottom: 6 },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sheetTitle: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
+  sheetClose: { fontSize: 16, color: dash.inkSoft },
+  sheetSub: { fontSize: 13, color: dash.inkSoft },
+  sheetNote: { fontSize: 11.5, color: dash.inkSoft, textAlign: 'center' },
   historyLink: { fontSize: 13, color: dash.sage, fontWeight: '700' },
   label: { fontSize: 13, fontWeight: '700', color: dash.inkSoft, marginTop: 8 },
   required: { color: '#C2683F' },
