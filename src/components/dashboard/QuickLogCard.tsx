@@ -3,7 +3,14 @@ import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import { router, type Href } from 'expo-router';
 
 const LOG_HISTORY = '/log-history' as Href;
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeIn,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { dash } from '@/theme';
 import { fonts } from '@/theme/fonts';
 import { MOODS_QUICK, useDailyLog } from '@/lib/stores/useDailyLog';
@@ -47,6 +54,25 @@ export function QuickLogCard({ dateISO }: Props) {
   const detailCount =
     [details.focus, details.decisionConfidence, details.sleepQuality, details.sleepHours, details.stress, details.bleeding]
       .filter((v) => v !== undefined && v !== null && v !== '').length + (details.symptoms.length > 0 ? 1 : 0);
+
+  // Popup transition: the backdrop fades and the card scales 0.92 → 1 on open,
+  // and plays back in reverse on close before the popup is removed.
+  const popup = useSharedValue(0);
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: popup.value }));
+  const popupStyle = useAnimatedStyle(() => ({
+    opacity: popup.value,
+    transform: [{ scale: 0.92 + 0.08 * popup.value }],
+  }));
+  function openDetails() {
+    setShowDetails(true);
+    popup.value = 0;
+    popup.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }
+  function closeDetails() {
+    popup.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.cubic) }, (finished) => {
+      if (finished) runOnJS(setShowDetails)(false);
+    });
+  }
 
   const canSubmit = energy > 0 && mood !== '';
   const hintText  = hint(energy, mood);
@@ -149,7 +175,7 @@ export function QuickLogCard({ dateISO }: Props) {
       </View>
 
       <Pressable
-        onPress={() => setShowDetails(true)}
+        onPress={openDetails}
         hitSlop={6}
         testID="toggle-details"
         accessibilityRole="button"
@@ -164,14 +190,16 @@ export function QuickLogCard({ dateISO }: Props) {
         </Text>
       </Pressable>
 
-      <Modal visible={showDetails} transparent animationType="slide" onRequestClose={() => setShowDetails(false)}>
+      {/* Centred popup with a smooth fade + scale both ways. */}
+      <Modal visible={showDetails} transparent animationType="none" onRequestClose={closeDetails}>
         <View style={styles.sheetOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowDetails(false)} accessibilityLabel="Close" />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
+          <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={closeDetails} accessibilityLabel="Close" />
+          </Animated.View>
+          <Animated.View style={[styles.sheet, popupStyle]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle} accessibilityRole="header">More detail</Text>
-              <Pressable onPress={() => setShowDetails(false)} hitSlop={12} accessibilityLabel="Close">
+              <Pressable onPress={closeDetails} hitSlop={12} accessibilityLabel="Close">
                 <Text style={styles.sheetClose}>✕</Text>
               </Pressable>
             </View>
@@ -179,11 +207,11 @@ export function QuickLogCard({ dateISO }: Props) {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
               <CheckInDetails value={details} onChange={(patch) => setDetails((d) => ({ ...d, ...patch }))} mode={mode} />
             </ScrollView>
-            <Pressable style={styles.submit} onPress={() => setShowDetails(false)} testID="details-done">
+            <Pressable style={styles.submit} onPress={closeDetails} testID="details-done">
               <Text style={styles.submitText}>Done</Text>
             </Pressable>
             <Text style={styles.sheetNote}>Your details are kept with today's log when you tap Save log.</Text>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -229,18 +257,29 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
   moreToggle: { fontSize: 13, fontWeight: '700', color: dash.sageDeep, marginTop: 10, paddingVertical: 4 },
-  sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: {
-    backgroundColor: dash.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '88%',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    gap: 8,
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: dash.line, alignSelf: 'center', marginBottom: 6 },
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.38)' },
+  sheet: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '86%',
+    backgroundColor: dash.card,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 16,
+    gap: 8,
+    shadowColor: '#2E2A26',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 12,
+  },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sheetTitle: { fontFamily: fonts.heading, fontSize: 18, color: dash.ink },
   sheetClose: { fontSize: 16, color: dash.inkSoft },
