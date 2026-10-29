@@ -23,8 +23,18 @@ export function useNutritionGuide(): NutritionGuide {
       .then(({ data }) => {
         const remote = (data as { data?: unknown } | null)?.data;
         if (!isNutritionGuide(remote)) return;
-        cached = remote;
-        if (alive) setGuide(remote);
+        // A copy saved before photos were added keeps the app's photo for each phase.
+        const merged: NutritionGuide = {
+          ...remote,
+          phases: Object.fromEntries(
+            Object.entries(remote.phases).map(([k, p]) => [
+              k,
+              { ...p, image: p.image ?? BUNDLED_GUIDE.phases[k as keyof NutritionGuide['phases']].image },
+            ]),
+          ) as NutritionGuide['phases'],
+        };
+        cached = merged;
+        if (alive) setGuide(merged);
       }, () => {});
     return () => {
       alive = false;

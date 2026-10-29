@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { dash, phaseBanner } from '@/theme';
@@ -36,11 +36,12 @@ export function NutritionScreen({ title, children }: { title: string; children: 
 }
 
 /**
- * The phase's picture. Until the client supplies food photos this is a soft
- * illustration of the phase's foods; it carries the same alt text a photo would.
+ * The phase's picture: a food photo over the emoji illustration, like the Shop
+ * cards — the emoji shows while the photo loads and stays if it fails.
  */
 export function PhaseVisual({ phase, guide, size = 'card' }: { phase: PhaseKey; guide: PhaseGuide; size?: 'card' | 'hero' }) {
   const hero = size === 'hero';
+  const [failed, setFailed] = useState(false);
   return (
     <View
       style={[styles.visual, hero && styles.visualHero, { backgroundColor: phaseBanner[phase].bg }]}
@@ -53,6 +54,15 @@ export function PhaseVisual({ phase, guide, size = 'card' }: { phase: PhaseKey; 
           {e}
         </Text>
       ))}
+      {guide.image && !failed ? (
+        <Image
+          source={{ uri: guide.image }}
+          style={styles.visualImage}
+          resizeMode="cover"
+          onError={() => setFailed(true)}
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
     </View>
   );
 }
@@ -110,8 +120,9 @@ const styles = StyleSheet.create({
   backChevron: { fontSize: 28, color: dash.ink, marginTop: -2 },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: dash.ink },
 
-  visual: { height: 92, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  visualHero: { height: 150, borderRadius: 22, gap: 14 },
+  visual: { height: 110, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden' },
+  visualHero: { height: 190, borderRadius: 22, gap: 14 },
+  visualImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   visualEmoji: { fontSize: 30 },
   visualEmojiHero: { fontSize: 46 },
   visualEmojiMid: { marginTop: -10 },

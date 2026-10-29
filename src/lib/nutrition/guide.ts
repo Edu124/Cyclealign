@@ -50,6 +50,8 @@ export interface PhaseGuide {
   when: string;
   timing: string;
   emoji: string[];
+  /** Food photo (Unsplash CDN); the emoji illustration shows while it loads or if it fails. */
+  image?: string;
   imageAlt: string;
   intro: string;
   foods: FoodGroup[];
