@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CycleLog, PhaseKey, Profile } from '@/types/models';
 import { pushCycleLog, pushProfile, updateCycleLogDate } from '@/lib/sync';
+import { periodLengthFromLogs } from '@/lib/prediction/periodLength';
 
 interface AppState {
   profile: Profile | null;
@@ -66,6 +67,14 @@ export const useAppStore = create<AppState>()(
           ].sort((a, b) => (a.startDate < b.startDate ? 1 : -1)),
         });
         updateCycleLogDate(oldStartDate, updated).catch(() => {});
+
+        // The period she just marked is real data: predictions use her actual
+        // period length from now on, not only the onboarding estimate.
+        const profile = get().profile;
+        if (profile) {
+          const length = periodLengthFromLogs(get().cycleLogs, profile.avgPeriodLength);
+          if (length !== profile.avgPeriodLength) get().updateProfile({ avgPeriodLength: length });
+        }
       },
       setLastNotifiedPhase: (phase) => set({ lastNotifiedPhase: phase }),
       completeOnboarding: () => set({ onboardingComplete: true }),

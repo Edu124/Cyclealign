@@ -60,7 +60,7 @@ export default function CycleStep() {
         label="How long does your period usually last?"
         value={avgPeriodLength}
         min={2}
-        max={8}
+        max={10}
         unit="days"
         onChange={(v) => set({ avgPeriodLength: v })}
       />
