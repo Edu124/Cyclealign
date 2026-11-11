@@ -16,6 +16,7 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { dash, phaseColors, spacing } from '@/theme';
 import { ratingFor } from '@/lib/retailTherapy/catalog';
 import { sendOrderNotification } from '@/lib/notifications';
+import { CATEGORIES, MOODS, SHOP_CATALOG, type ShopCategory, type ShopMood, type ShopProduct } from '@/lib/shop/catalog';
 import type { PhaseKey } from '@/types/models';
 
 interface CartItem {
@@ -26,262 +27,8 @@ interface CartItem {
   qty: number;
 }
 
-interface Product {
-  id: string;
-  emoji: string;
-  name: string;
-  /** Fictional brand — no real trademarks in the dopamine shop. */
-  brand: string;
-  price: number;
-  tag?: string;
-  /** Product photo (Unsplash CDN); emoji doubles as loading/failure fallback. */
-  image: string;
-  /** Bundles only: what's in the box, shown under the name. */
-  includes?: string;
-}
+type Product = ShopProduct;
 
-const img = (id: string) =>
-  `https://images.unsplash.com/photo-${id}?w=600&q=80&auto=format&fit=crop`;
-
-const PHASE_PRODUCTS: Record<PhaseKey, Product[]> = {
-  menstrual: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'm14', emoji: '🎀', name: 'Satin Sleep Bonnet', brand: 'Gilt & Grace', price: 219, tag: 'New', image: img('1706120475559-119ef9294109') },
-    { id: 'm15', emoji: '😴', name: 'Silky Sleep Mask', brand: 'Cloud Nine Living', price: 149, image: img('1687435703153-88f6bc0cdcff') },
-    { id: 'm16', emoji: '🧦', name: 'Cozy Sock Trio', brand: 'Hearth & Haven', price: 149, image: img('1730448111621-c0524e75b0e8') },
-    { id: 'm17', emoji: '🌡️', name: 'Knit Hot-Water Bottle', brand: 'Hearth & Haven', price: 349, tag: 'Cozy Pick', image: img('1773747608435-0fa80d11a32f') },
-    { id: 'm18', emoji: '🐰', name: 'Mini Bunny Plush', brand: 'Cloud Nine Living', price: 349, image: img('1567169866456-a0759b6bb0c8') },
-    { id: 'm19', emoji: '🧂', name: 'Bath Salts', brand: 'Bloom & Ember', price: 269, image: img('1636333885549-86304699925f') },
-    { id: 'm20', emoji: '💋', name: 'Nourishing Lip Balm', brand: 'Aster Skin', price: 169, image: img('1768235146463-328c98e7234d') },
-    { id: 'm21', emoji: '🎁', name: 'Period Comfort Kit', brand: 'CycleAlign Edit', price: 599, tag: 'Bundle', includes: 'Hot-water bottle, cozy socks, tea, chocolate & a comfort card', image: img('1513201099705-a9746e1e201f') },
-    { id: 'm22', emoji: '🛁', name: 'Me-Time Box', brand: 'CycleAlign Edit', price: 599, tag: 'Bundle', includes: 'Hot chocolate, cookies, candle & sleep mask', image: img('1762411245614-e0f145ba7183') },
-    { id: 'm23', emoji: '👄', name: 'Overnight Lip Mask', brand: 'Aster Skin', price: 169, image: img('1780400357777-b4025c8ac516') },
-    { id: 'm24', emoji: '🫧', name: 'Shower Steamers', brand: 'Bloom & Ember', price: 269, image: img('1690583368332-c1931e70e53e') },
-    { id: 'm25', emoji: '🛋️', name: 'Mini Cushion', brand: 'Cloud Nine Living', price: 349, image: img('1629949008265-af1bcaf59786') },
-    // Original picks.
-    { id: 'm1', emoji: '🛁', name: 'Lavender Bath Soak',     brand: 'Bloom & Ember',    price: 1299, tag: 'Best Seller', image: img('1507652313519-d4e9174996dd') },
-    { id: 'm2', emoji: '🕯️', name: 'Calming Candle Set',     brand: 'Bloom & Ember',    price: 1699,                    image: img('1602874801007-bd458bb1b8b6') },
-    { id: 'm3', emoji: '🍫', name: 'Premium Chocolate Box',  brand: 'Cocoa Theory',     price: 899,  tag: 'Fan Fave',    image: img('1511381939415-e44015466834') },
-    { id: 'm4', emoji: '🧸', name: 'Weighted Comfort Plush', brand: 'Cloud Nine Living', price: 2499,                    image: img('1559454403-b8fb88521f11') },
-    { id: 'm5', emoji: '🍵', name: 'Herbal Tea Collection',  brand: 'Steep Story',      price: 1099,                    image: img('1544787219-7f47ccb76574') },
-    { id: 'm6', emoji: '🌡️', name: 'Heating Pad Deluxe',     brand: 'Hearth & Haven',   price: 1999, tag: 'New',         image: img('1584100936595-c0654b55a2e2') },
-    { id: 'm7', emoji: '🧦', name: 'Cozy Sock Set',          brand: 'Hearth & Haven',   price: 699,                     image: img('1615486364462-ef6363adbc18') },
-    { id: 'm8', emoji: '🧴', name: 'Body Oil Ritual',        brand: 'Aster Skin',       price: 1599, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
-    { id: 'm9', emoji: '📖', name: 'Cycle Journal',          brand: 'Paper Petal',      price: 999,                     image: img('1517842645767-c639042777db') },
-    { id: 'm10', emoji: '🛌', name: 'Cloud Blanket',          brand: 'Cloud Nine Living', price: 2199,                    image: img('1600369672770-985fd30004eb') },
-    { id: 'm11', emoji: '🧦', name: 'Warm Slipper Boots',     brand: 'Hearth & Haven',   price: 1299,                    image: img('1603487742131-4160ec999306') },
-    { id: 'm12', emoji: '🍯', name: 'Honey Ginger Balm',      brand: 'Aster Skin',       price: 899,  tag: 'New',         image: img('1599305090598-fe179d501227') },
-    { id: 'm13', emoji: '📿', name: 'Comfort Bracelet',       brand: 'Gilt & Grace',     price: 799,                     image: img('1602173574767-37ac01994b2a') },
-  ],
-  follicular: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'f14', emoji: '📓', name: 'Everyday Gratitude Journal', brand: 'Paper Petal', price: 219, tag: 'New', image: img('1591195852468-03a01d1375d6') },
-    { id: 'f15', emoji: '🖍️', name: 'Pen & Highlighter Set', brand: 'Paper Petal', price: 139, image: img('1771868421764-a3de7fd9c4c1') },
-    { id: 'f16', emoji: '🌈', name: 'Washi Tape Set', brand: 'Paper Petal', price: 139, image: img('1777401085816-0192a4e2a7b0') },
-    { id: 'f17', emoji: '🗂️', name: 'Compact Desk Organiser', brand: 'Paper Petal', price: 269, image: img('1777917845221-f92884c1b61b') },
-    { id: 'f18', emoji: '💌', name: 'Affirmation Card Deck', brand: 'Paper Petal', price: 169, image: img('1779238226253-5ad05931521c') },
-    { id: 'f19', emoji: '✅', name: 'Mini Habit Planner', brand: 'Paper Petal', price: 219, image: img('1632772998001-cc9bf6f7c852') },
-    { id: 'f20', emoji: '👜', name: 'Everyday Tote Bag', brand: 'Hearth & Haven', price: 269, image: img('1544816155-12df9643f363') },
-    { id: 'f21', emoji: '🎯', name: 'Focus Mode Box', brand: 'CycleAlign Edit', price: 449, tag: 'Bundle', includes: 'Mini planner, pens, coffee sachets & a snack', image: img('1506784983877-45594efa4cbe') },
-    { id: 'f22', emoji: '📒', name: 'Everyday Notebook', brand: 'Paper Petal', price: 219, image: img('1554757387-fa0367573d09') },
-    { id: 'f23', emoji: '🖍️', name: 'Colour Pencil Set', brand: 'Paper Petal', price: 139, image: img('1782495385091-72b93539fccf') },
-    { id: 'f24', emoji: '💮', name: 'Decorative Sticker Pack', brand: 'Paper Petal', price: 139, image: img('1633533452206-8ab246b00e30') },
-    { id: 'f25', emoji: '🗃️', name: 'Pen Holder', brand: 'Paper Petal', price: 269, image: img('1767116291082-8a34a33554d9') },
-    { id: 'f26', emoji: '🪞', name: 'Self-Reflection Prompt Cards', brand: 'Paper Petal', price: 169, image: img('1779238227496-832e967d63db') },
-    { id: 'f27', emoji: '🗓️', name: 'Weekly Planner', brand: 'Paper Petal', price: 219, image: img('1768055105012-4c53791b2877') },
-    { id: 'f28', emoji: '👝', name: 'Makeup Pouch', brand: 'Hearth & Haven', price: 269, image: img('1538022890810-8f4000ca9a10') },
-    // Original picks.
-    { id: 'f1', emoji: '📓', name: 'Manifestation Journal', brand: 'Paper Petal', price: 1499, tag: 'Trending',    image: img('1517842645767-c639042777db') },
-    { id: 'f2', emoji: '🎨', name: 'Art Supply Kit',        brand: 'Studio Muse', price: 2699,                    image: img('1513364776144-60967b0f800f') },
-    { id: 'f3', emoji: '🌱', name: 'Indoor Plant Set',      brand: 'Leaf & Letter', price: 1999, tag: 'Best Seller', image: img('1485955900006-10f4d324d411') },
-    { id: 'f4', emoji: '🎵', name: 'Wireless Earbuds',      brand: 'Auralite',    price: 5999,                    image: img('1590658268037-6bf12165a8df') },
-    { id: 'f5', emoji: '💪', name: 'Home Workout Set',      brand: 'FormaFit',    price: 1299,                    image: img('1517836357463-d25dfeac3438') },
-    { id: 'f6', emoji: '✏️', name: 'Stationery Bundle',     brand: 'Paper Petal', price: 1199, tag: 'New',         image: img('1456735190827-d1262f71b8a3') },
-    { id: 'f7', emoji: '🥾', name: 'Trail Sneakers',        brand: 'FormaFit',    price: 3499, tag: 'New',         image: img('1542291026-7eec264c27ff') },
-    { id: 'f8', emoji: '🎧', name: 'Focus Playlist Speaker', brand: 'Auralite',   price: 4499,                    image: img('1608043152269-423dbba4e7e1') },
-    { id: 'f9', emoji: '🗓️', name: 'Goal Planner',          brand: 'Paper Petal', price: 899,                     image: img('1513128034602-7814ccaddd4e') },
-    { id: 'f10', emoji: '🚴', name: 'Resistance Bands Set', brand: 'FormaFit',    price: 999,                     image: img('1584735935682-2f2b69dff9d2') },
-    { id: 'f11', emoji: '🖊️', name: 'Fine-Tip Pen Set',     brand: 'Paper Petal', price: 699,  tag: 'New',         image: img('1585336261022-680e295ce3fe') },
-    { id: 'f12', emoji: '🪴', name: 'Desk Plant Duo',        brand: 'Leaf & Letter', price: 1399,                   image: img('1533090161767-e6ffed986c88') },
-    { id: 'f13', emoji: '🎨', name: 'Watercolor Kit',        brand: 'Studio Muse', price: 1799,                    image: img('1510832842230-87253f48d74f') },
-  ],
-  ovulation: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'o14', emoji: '✨', name: 'Neutral Claw Clip', brand: 'Gilt & Grace', price: 149, tag: 'New', image: img('1635423759716-53ccaa71b3fa') },
-    { id: 'o15', emoji: '🎀', name: 'Hair Bow & Tie Set', brand: 'Gilt & Grace', price: 139, image: img('1776267033953-25f51bc59120') },
-    { id: 'o16', emoji: '💎', name: 'Minimal Stud Earrings', brand: 'Gilt & Grace', price: 219, tag: 'Trending', image: img('1693212793204-bcea856c75fe') },
-    { id: 'o17', emoji: '🤍', name: 'Heart Pendant Necklace', brand: 'Gilt & Grace', price: 349, image: img('1589128777073-263566ae5e4d') },
-    { id: 'o18', emoji: '💍', name: 'Adjustable Ring Set', brand: 'Gilt & Grace', price: 219, image: img('1543294001-f7cd5d7fb516') },
-    { id: 'o19', emoji: '🐚', name: 'Charm Bracelet', brand: 'Gilt & Grace', price: 269, image: img('1786052337516-9fb23fcf36de') },
-    { id: 'o20', emoji: '🌟', name: 'Dainty Anklet', brand: 'Gilt & Grace', price: 219, image: img('1744722091259-ed1cf11ac97f') },
-    { id: 'o21', emoji: '🧸', name: 'Cute Bag Charm', brand: 'Gilt & Grace', price: 169, image: img('1778278553445-9cb87c89c60f') },
-    { id: 'o22', emoji: '💅', name: 'Press-On Nails', brand: 'Aster Skin', price: 199, image: img('1754799670410-b282791342c3') },
-    { id: 'o23', emoji: '🏆', name: 'Little-Win Celebration Box', brand: 'CycleAlign Edit', price: 499, tag: 'Bundle', includes: 'Chocolate, a small accessory & an achievement card', image: img('1608755728617-aefab37d2edd') },
-    { id: 'o24', emoji: '🌸', name: 'Pastel Mini Claw Clips', brand: 'Gilt & Grace', price: 149, tag: 'New', image: img('1588489976274-368bab745eaa') },
-    { id: 'o25', emoji: '🌼', name: 'Decorative Hair Clips', brand: 'Gilt & Grace', price: 139, image: img('1758723208958-c18fa48aaff3') },
-    { id: 'o26', emoji: '⭕', name: 'Everyday Hoop Earrings', brand: 'Gilt & Grace', price: 219, image: img('1708220040824-b273dd0a17cc') },
-    { id: 'o27', emoji: '🌙', name: 'Layered Necklace', brand: 'Gilt & Grace', price: 349, image: img('1599643478518-a784e5dc4c8f') },
-    { id: 'o28', emoji: '⛓️', name: 'Everyday Chain Bracelet', brand: 'Gilt & Grace', price: 269, image: img('1777999802051-f6f0296e76af') },
-    { id: 'o29', emoji: '🦶', name: 'Decorative Anklet', brand: 'Gilt & Grace', price: 219, image: img('1774978237834-237b7aa7bd6c') },
-    { id: 'o30', emoji: '🔑', name: 'Cute Keychain', brand: 'Gilt & Grace', price: 169, image: img('1762587596660-738308fe432e') },
-    { id: 'o31', emoji: '✨', name: 'Nail Art Stickers', brand: 'Aster Skin', price: 199, image: img('1607779097040-26e80aa78e66') },
-    // Original picks.
-    { id: 'o1', emoji: '👗', name: 'Statement Set',        brand: 'Maison Rosette', price: 4999, tag: 'Hot Pick',    image: img('1515886657613-9f3515b0c78f') },
-    { id: 'o2', emoji: '💄', name: 'Glow Makeup Kit',      brand: 'Lumi Beauty',    price: 3199, tag: 'Best Seller', image: img('1522335789203-aabd1fc54bc9') },
-    { id: 'o3', emoji: '💐', name: 'Fresh Flower Bouquet', brand: 'Petal Post',     price: 2199,                    image: img('1490750967868-88aa4486c946') },
-    { id: 'o4', emoji: '✨', name: 'Pearl Jewelry Set',    brand: 'Gilt & Grace',   price: 3499,                    image: img('1515562141207-7a88fb7ce338') },
-    { id: 'o5', emoji: '🌟', name: 'Skincare Glow Set',    brand: 'Aster Skin',     price: 3999, tag: 'Trending',    image: img('1608571423902-eed4a5ad8108') },
-    { id: 'o6', emoji: '👜', name: 'Mini Crossbody Bag',   brand: 'Maison Rosette', price: 4499,                    image: img('1591561954557-26941169b49e') },
-    { id: 'o7', emoji: '💋', name: 'Statement Lip Set',    brand: 'Lumi Beauty',    price: 1899, tag: 'New',         image: img('1596462502278-27bfdc403348') },
-    { id: 'o8', emoji: '🕶️', name: 'Sunglasses Edit',      brand: 'Maison Rosette', price: 2999,                    image: img('1577803645773-f96470509666') },
-    { id: 'o9', emoji: '🎀', name: 'Hair Accessory Set',   brand: 'Gilt & Grace',   price: 1299,                    image: img('1549236177-77e8271c34b6') },
-    { id: 'o10', emoji: '💍', name: 'Statement Ring',      brand: 'Gilt & Grace',   price: 2499, tag: 'Trending',    image: img('1708222169835-6329be77bee6') },
-    { id: 'o11', emoji: '👠', name: 'Date Night Heels',    brand: 'Maison Rosette', price: 3999,                    image: img('1535043934128-cf0b28d52f95') },
-    { id: 'o12', emoji: '🌹', name: 'Rose Perfume',        brand: 'Lumi Beauty',    price: 2899,                    image: img('1523293182086-7651a899d37f') },
-    { id: 'o13', emoji: '📸', name: 'Instant Camera',      brand: 'Maison Rosette', price: 4999, tag: 'New',         image: img('1516962126636-27ad087061cc') },
-  ],
-  luteal: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'l14', emoji: '🎗️', name: 'Satin Scrunchie Pack', brand: 'Gilt & Grace', price: 149, tag: 'New', image: img('1788079961873-e1663ddf5ec0') },
-    { id: 'l15', emoji: '🌸', name: 'Skincare Headband', brand: 'Gilt & Grace', price: 149, image: img('1782776852521-77b0aed8831d') },
-    { id: 'l16', emoji: '🌀', name: 'Heatless Curling Set', brand: 'Gilt & Grace', price: 299, image: img('1516429084384-3aa965e20ff7') },
-    { id: 'l17', emoji: '🧖‍♀️', name: 'Sheet Mask Duo', brand: 'Aster Skin', price: 149, image: img('1670201203270-7bc9b329d2eb') },
-    { id: 'l18', emoji: '🤲', name: 'Travel Hand Cream', brand: 'Aster Skin', price: 169, image: img('1619451427882-6aaaded0cc61') },
-    { id: 'l19', emoji: '🌷', name: 'Body Mist', brand: 'Aster Skin', price: 269, image: img('1784902538196-c7d914e3ecce') },
-    { id: 'l20', emoji: '☕', name: 'Cute Mug', brand: 'Hearth & Haven', price: 319, image: img('1702281718578-2d4bd167f375') },
-    { id: 'l21', emoji: '🕯️', name: 'Mini Scented Candle', brand: 'Bloom & Ember', price: 269, image: img('1640095889747-2090ee12fa7d') },
-    { id: 'l22', emoji: '🌧️', name: 'Bad-Day Rescue Box', brand: 'CycleAlign Edit', price: 449, tag: 'Bundle', includes: 'A small treat, sheet mask, scrunchie & an uplifting note', image: img('1707944145479-12755f0434d8') },
-    { id: 'l23', emoji: '🧴', name: 'Body Lotion', brand: 'Aster Skin', price: 269, image: img('1763503839418-2b45c3d7a3c3') },
-    { id: 'l24', emoji: '🥤', name: 'Reusable Tumbler', brand: 'Hearth & Haven', price: 319, image: img('1729192293999-ffbdc97cbac9') },
-    // Original picks.
-    { id: 'l1', emoji: '🌿', name: 'Face Mask Collection', brand: 'Aster Skin',       price: 1899, tag: 'Self-Care',  image: img('1608248543803-ba4f8c70ae0b') },
-    { id: 'l2', emoji: '🛋️', name: 'Comfort Pillow Set',   brand: 'Cloud Nine Living', price: 2999,                   image: img('1522771739844-6a9f6d5f14af') },
-    { id: 'l3', emoji: '📚', name: 'Novel Bundle',         brand: 'Fable & Fern',     price: 2499, tag: 'Cozy Pick',  image: img('1463320726281-696a485928c7') },
-    { id: 'l4', emoji: '🧘', name: 'Yoga Mat & Blocks',    brand: 'FormaFit',         price: 3999,                   image: img('1544367567-0f2fcb009e0b') },
-    { id: 'l5', emoji: '🫖', name: 'Comfort Tea Kit',      brand: 'Steep Story',      price: 1399, tag: 'Best Seller', image: img('1576092768241-dec231879fc3') },
-    { id: 'l6', emoji: '🌸', name: 'Aromatherapy Set',     brand: 'Bloom & Ember',    price: 2299,                   image: img('1540555700478-4be289fbecef') },
-    { id: 'l7', emoji: '🧦', name: 'Fuzzy Slipper Socks',  brand: 'Cloud Nine Living', price: 899,                   image: img('1613151848917-80e67f421fff') },
-    { id: 'l8', emoji: '🕯️', name: 'Wind-Down Candle',     brand: 'Bloom & Ember',    price: 1499, tag: 'Cozy Pick', image: img('1612293905607-b003de9e54fb') },
-    { id: 'l9', emoji: '📓', name: 'Gratitude Journal',    brand: 'Fable & Fern',     price: 999,                    image: img('1529651737248-dad5e287768e') },
-    { id: 'l10', emoji: '🧣', name: 'Knit Scarf',          brand: 'Hearth & Haven',   price: 1199,                   image: img('1670764732518-a4cec3b0dc09') },
-    { id: 'l11', emoji: '🕯️', name: 'Soy Candle Trio',     brand: 'Bloom & Ember',    price: 1699, tag: 'Cozy Pick', image: img('1602874801007-bd458bb1b8b6') },
-    { id: 'l12', emoji: '📻', name: 'Vinyl Record Set',    brand: 'Fable & Fern',     price: 2299,                   image: img('1602848597941-0d3d3a2c1241') },
-    { id: 'l13', emoji: '🫂', name: 'Weighted Blanket',    brand: 'Cloud Nine Living', price: 3499, tag: 'Best Seller', image: img('1605189549971-305d135c8269') },
-  ],
-};
-
-// Food mode — pure craving-fulfilment, phase-tuned like everything else.
-const PHASE_FOODS: Record<PhaseKey, Product[]> = {
-  menstrual: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'fm14', emoji: '🍫', name: 'Chocolate Bar Trio', brand: 'Cocoa Theory', price: 99, tag: 'New', image: img('1610450949065-1f2841536c88') },
-    { id: 'fm15', emoji: '🟤', name: 'Chocolate Truffle Box', brand: 'Cocoa Theory', price: 199, image: img('1757450317518-9d385619f5ee') },
-    { id: 'fm16', emoji: '🍪', name: 'Choc Chip Cookies', brand: 'Cocoa Theory', price: 139, image: img('1499636136210-6f4ee915583e') },
-    { id: 'fm17', emoji: '🧁', name: 'Fudgy Brownies', brand: 'Midnight Kitchen', price: 149, image: img('1636743715220-d8f8dd900b87') },
-    { id: 'fm18', emoji: '☁️', name: 'Marshmallow Pack', brand: 'Candy Comet', price: 99, image: img('1518646455738-c17d10184f5e') },
-    { id: 'fm19', emoji: '☕', name: 'Hot Chocolate Sachets', brand: 'Steep Story', price: 99, tag: 'Cozy Pick', image: img('1637572815755-c4b80092dce1') },
-    { id: 'fm20', emoji: '🫖', name: 'Herbal Tea Selection', brand: 'Steep Story', price: 199, image: img('1766232574096-4c4380105cc7') },
-    { id: 'fm21', emoji: '🍵', name: 'Masala Chai Premix', brand: 'Steep Story', price: 119, image: img('1761483281417-778013dc0177') },
-    { id: 'fm22', emoji: '🍫', name: 'Dark Chocolate Bar', brand: 'Cocoa Theory', price: 99, image: img('1772986258634-a729cd51aea4') },
-    { id: 'fm23', emoji: '🍓', name: 'Flavoured Fruit Tea', brand: 'Steep Story', price: 199, image: img('1499531011814-14b20e46c785') },
-    // Original picks.
-    { id: 'fm1', emoji: '🍫', name: 'Dark Chocolate Ritual',   brand: 'Cocoa Theory',     price: 349, tag: 'Most craved', image: img('1511381939415-e44015466834') },
-    { id: 'fm2', emoji: '🍜', name: 'Comfort Ramen Bowl',      brand: 'Midnight Kitchen', price: 429,                    image: img('1569718212165-3a8278d5f624') },
-    { id: 'fm3', emoji: '🧀', name: 'Molten Mac & Cheese',     brand: 'Midnight Kitchen', price: 379,                    image: img('1543339494-b4cd4f7ba686') },
-    { id: 'fm4', emoji: '🫖', name: 'Chamomile Calm Tea',      brand: 'Steep Story',      price: 199,                    image: img('1576092768241-dec231879fc3') },
-    { id: 'fm5', emoji: '🍪', name: 'Warm Cookies & Chai',     brand: 'Steep Story',      price: 249, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
-    { id: 'fm6', emoji: '🎁', name: 'Midnight Chocolate Box',  brand: 'Cocoa Theory',     price: 549,                    image: img('1481391319762-47dff72954d9') },
-    { id: 'fm7', emoji: '🍩', name: 'Glazed Donut Duo',        brand: 'Midnight Kitchen', price: 279,                    image: img('1551024601-bec78aea704b') },
-    { id: 'fm8', emoji: '🥤', name: 'Iced Chocolate Shake',    brand: 'Cocoa Theory',     price: 329, tag: 'Fan Fave',    image: img('1572490122747-3968b75cc699') },
-    { id: 'fm9', emoji: '🍲', name: 'Spiced Soup Bowl',        brand: 'Midnight Kitchen', price: 399,                    image: img('1613844237701-8f3664fc2eff') },
-    { id: 'fm10', emoji: '🍿', name: 'Buttered Popcorn Bowl',  brand: 'Midnight Kitchen', price: 249,                    image: img('1691480213129-106b2c7d1ee8') },
-    { id: 'fm11', emoji: '🥧', name: 'Warm Apple Pie Slice',   brand: 'Midnight Kitchen', price: 349, tag: 'Cozy Pick',   image: img('1524351199678-941a58a3df50') },
-    { id: 'fm12', emoji: '🍯', name: 'Honey Ginger Tea',       brand: 'Steep Story',      price: 219,                    image: img('1630623093145-f606591c2546') },
-    { id: 'fm13', emoji: '🍩', name: 'Cinnamon Donut Trio',    brand: 'Cocoa Theory',     price: 299,                    image: img('1646615077267-97c6088b74d9') },
-  ],
-  follicular: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'ff14', emoji: '🍵', name: 'Instant Matcha Mix', brand: 'Steep Story', price: 269, tag: 'Trending', image: img('1589698272390-0501a07619bb') },
-    { id: 'ff15', emoji: '🧊', name: 'Cold-Coffee Mix', brand: 'Steep Story', price: 119, image: img('1771210849472-84a07b2e793a') },
-    { id: 'ff16', emoji: '🍋', name: 'Sugar-Free Drink Mix', brand: 'Steep Story', price: 119, image: img('1717439062391-1c2932e1c051') },
-    { id: 'ff17', emoji: '🥜', name: 'Trail Mix Pouch', brand: 'Masala Moon', price: 149, image: img('1767877609689-beff32b9c0ac') },
-    { id: 'ff18', emoji: '🌰', name: 'Roasted Cashews & Mixed Nuts', brand: 'Masala Moon', price: 199, image: img('1726771517475-e7acdd34cd8a') },
-    { id: 'ff19', emoji: '🫘', name: 'Roasted Chickpeas', brand: 'Masala Moon', price: 89, image: img('1776765828683-eb5ec29711e2') },
-    { id: 'ff20', emoji: '🍘', name: 'Baked Herb Crackers', brand: 'Masala Moon', price: 99, image: img('1764025262245-8fc7d2d72c15') },
-    { id: 'ff21', emoji: '🧇', name: 'Waffle & Pancake Mix', brand: 'Midnight Kitchen', price: 219, image: img('1773533276932-4ee7ea1d6361') },
-    { id: 'ff22', emoji: '🌰', name: 'Roasted Almonds', brand: 'Masala Moon', price: 199, image: img('1608797178974-15b35a64ede9') },
-    { id: 'ff23', emoji: '🥞', name: 'Pancake Mix', brand: 'Midnight Kitchen', price: 219, image: img('1757635964104-67218db55bca') },
-    // Original picks.
-    { id: 'ff1', emoji: '☕', name: 'Oat Latte Boost',         brand: 'Steep Story',      price: 229, tag: 'Trending',    image: img('1512568400610-62da28bc8a13') },
-    { id: 'ff2', emoji: '🧋', name: 'Brown Sugar Boba',        brand: 'Midnight Kitchen', price: 269,                    image: img('1558857563-b371033873b8') },
-    { id: 'ff3', emoji: '🍕', name: 'Garden Veggie Pizza',     brand: 'Midnight Kitchen', price: 499,                    image: img('1513104890138-7c749659a591') },
-    { id: 'ff4', emoji: '🍰', name: 'Berry Cheesecake Slice',  brand: 'Midnight Kitchen', price: 329,                    image: img('1524351199678-941a58a3df50') },
-    { id: 'ff5', emoji: '🍵', name: 'Green Tea Ritual',        brand: 'Steep Story',      price: 189,                    image: img('1576092768241-dec231879fc3') },
-    { id: 'ff6', emoji: '🍫', name: 'Energy Chocolate Chunks', brand: 'Cocoa Theory',     price: 299, tag: 'New',         image: img('1511381939415-e44015466834') },
-    { id: 'ff7', emoji: '🥗', name: 'Superfood Salad Bowl',    brand: 'Midnight Kitchen', price: 429, tag: 'New',         image: img('1512621776951-a57141f2eefd') },
-    { id: 'ff8', emoji: '🍓', name: 'Berry Smoothie Bowl',     brand: 'Steep Story',      price: 349,                    image: img('1610970881699-44a5587cabec') },
-    { id: 'ff9', emoji: '🥐', name: 'Almond Croissant',        brand: 'Midnight Kitchen', price: 249,                    image: img('1586657263857-346c4b712ff5') },
-    { id: 'ff10', emoji: '🥑', name: 'Avocado Toast Duo',      brand: 'Midnight Kitchen', price: 379, tag: 'Trending',    image: img('1687276287139-88f7333c8ca4') },
-    { id: 'ff11', emoji: '🍋', name: 'Citrus Energy Water',    brand: 'Steep Story',      price: 179,                    image: img('1517093911940-08cb5b3952e7') },
-    { id: 'ff12', emoji: '🥙', name: 'Veggie Wrap',            brand: 'Midnight Kitchen', price: 349,                    image: img('1585238342107-49a3cdace47f') },
-    { id: 'ff13', emoji: '🍫', name: 'Protein Energy Bites',   brand: 'Cocoa Theory',     price: 279, tag: 'New',         image: img('1734773487516-078839ea277f') },
-  ],
-  ovulation: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'fo14', emoji: '🎁', name: 'Chocolate Gift Box', brand: 'Cocoa Theory', price: 399, tag: 'Hot Pick', image: img('1687795097254-f019f9d7fd17') },
-    { id: 'fo15', emoji: '🐻', name: 'Gummy Bear Pack', brand: 'Candy Comet', price: 99, image: img('1635342219731-4ae2bf39e1e9') },
-    { id: 'fo16', emoji: '🍬', name: 'Sour Candy Mix', brand: 'Candy Comet', price: 59, image: img('1499195333224-3ce974eecb47') },
-    { id: 'fo17', emoji: '🍭', name: 'Swirl Lollipops', brand: 'Candy Comet', price: 59, image: img('1687499466474-df90c4d7a54a') },
-    { id: 'fo18', emoji: '🍡', name: 'Candy Assortment', brand: 'Candy Comet', price: 169, image: img('1696524491699-6754027c14d9') },
-    { id: 'fo19', emoji: '🍿', name: 'Flavoured Popcorn', brand: 'Masala Moon', price: 89, image: img('1766728905072-ecb543cd6bf5') },
-    { id: 'fo20', emoji: '🫙', name: 'Dessert Jar', brand: 'Midnight Kitchen', price: 219, image: img('1768203634412-bdcf48b83161') },
-    { id: 'fo21', emoji: '🧁', name: 'Mini Muffins', brand: 'Midnight Kitchen', price: 139, image: img('1767634480773-37e4b962fa1d') },
-    { id: 'fo22', emoji: '🫘', name: 'Jelly Sweets', brand: 'Candy Comet', price: 99, image: img('1673291247957-273a4a214dea') },
-    { id: 'fo23', emoji: '🍬', name: 'Fruit Chews', brand: 'Candy Comet', price: 59, image: img('1588756264692-d396bca41fb1') },
-    { id: 'fo24', emoji: '🍰', name: 'Mini Cakes', brand: 'Midnight Kitchen', price: 139, image: img('1530648672449-81f6c723e2f1') },
-    // Original picks.
-    { id: 'fo1', emoji: '🍰', name: 'Celebration Cheesecake',  brand: 'Midnight Kitchen', price: 599, tag: 'Hot Pick',    image: img('1524351199678-941a58a3df50') },
-    { id: 'fo2', emoji: '🧋', name: 'Boba Date Flight',        brand: 'Midnight Kitchen', price: 349,                    image: img('1558857563-b371033873b8') },
-    { id: 'fo3', emoji: '🍕', name: 'Wood-fired Pizza Night',  brand: 'Midnight Kitchen', price: 649,                    image: img('1513104890138-7c749659a591') },
-    { id: 'fo4', emoji: '☕', name: 'Latte Art Date',          brand: 'Steep Story',      price: 259,                    image: img('1512568400610-62da28bc8a13') },
-    { id: 'fo5', emoji: '🎁', name: 'Chocolate Tasting Box',   brand: 'Cocoa Theory',     price: 699, tag: 'Fan Fave',    image: img('1481391319762-47dff72954d9') },
-    { id: 'fo6', emoji: '🫖', name: 'High Tea Set',            brand: 'Steep Story',      price: 449,                    image: img('1544787219-7f47ccb76574') },
-    { id: 'fo7', emoji: '🍹', name: 'Sparkling Mocktail',      brand: 'Steep Story',      price: 349, tag: 'Trending',    image: img('1634496064950-02f043806b09') },
-    { id: 'fo8', emoji: '🍣', name: 'Date Night Sushi Set',    brand: 'Midnight Kitchen', price: 799,                    image: img('1553621042-f6e147245754') },
-    { id: 'fo9', emoji: '🧁', name: 'Celebration Cupcakes',    brand: 'Cocoa Theory',     price: 449,                    image: img('1599785209707-a456fc1337bb') },
-    { id: 'fo10', emoji: '🍾', name: 'Sparkling Juice Toast',  brand: 'Steep Story',      price: 399, tag: 'Hot Pick',    image: img('1619604394993-45c3ae65d12d') },
-    { id: 'fo11', emoji: '🍓', name: 'Chocolate Dipped Berries', brand: 'Cocoa Theory',   price: 449,                    image: img('1511381939415-e44015466834') },
-    { id: 'fo12', emoji: '🍱', name: 'Date Night Bento',       brand: 'Midnight Kitchen', price: 649,                    image: img('1696677049263-cc38af1c7681') },
-    { id: 'fo13', emoji: '🥂', name: 'Golden Hour Mocktail',   brand: 'Steep Story',      price: 379, tag: 'Trending',    image: img('1654074517219-85e6f3f6f85d') },
-  ],
-  luteal: [
-    // Dopamine Shop brief (catalogue v1) — new first.
-    { id: 'fl14', emoji: '🤍', name: 'Peri-Peri Makhana', brand: 'Masala Moon', price: 129, tag: 'Most craved', image: img('1710421576768-ff985fa63b60') },
-    { id: 'fl15', emoji: '🥔', name: 'Masala Chips', brand: 'Masala Moon', price: 59, image: img('1760997707695-f0b5527e5de9') },
-    { id: 'fl16', emoji: '🥨', name: 'Namkeen Mini Packs', brand: 'Masala Moon', price: 59, image: img('1791989396500-127d525aa9f7') },
-    { id: 'fl17', emoji: '🍫', name: 'Chocolate-Coated Almonds', brand: 'Cocoa Theory', price: 169, image: img('1646151067116-80a86e5eee69') },
-    { id: 'fl18', emoji: '🟫', name: 'Brownie Bites', brand: 'Cocoa Theory', price: 149, tag: 'Fan Fave', image: img('1762922425478-7049c54bfbec') },
-    { id: 'fl19', emoji: '🧇', name: 'Wafer & Mini Choc Packs', brand: 'Cocoa Theory', price: 89, image: img('1772986234414-ada1a1cef8e4') },
-    { id: 'fl20', emoji: '🍪', name: 'Cookie Bites Box', brand: 'Midnight Kitchen', price: 139, image: img('1558961363-fa8fdf82db35') },
-    { id: 'fl21', emoji: '☕', name: 'Coffee Sachets', brand: 'Steep Story', price: 119, image: img('1770123366817-743776f66d6a') },
-    { id: 'fl22', emoji: '🌶️', name: 'Peri-Peri Chips', brand: 'Masala Moon', price: 59, image: img('1647764430080-6000fbe7efee') },
-    { id: 'fl23', emoji: '🍪', name: 'Assorted Cookies', brand: 'Midnight Kitchen', price: 139, image: img('1582623201359-74e936ed48c4') },
-    // Original picks.
-    { id: 'fl1', emoji: '🧀', name: 'Extra-Cheese Mac',        brand: 'Midnight Kitchen', price: 399, tag: 'Most craved', image: img('1543339494-b4cd4f7ba686') },
-    { id: 'fl2', emoji: '🍜', name: 'Cozy Ramen Supreme',      brand: 'Midnight Kitchen', price: 469,                    image: img('1569718212165-3a8278d5f624') },
-    { id: 'fl3', emoji: '🍰', name: 'Salted Caramel Cheesecake', brand: 'Midnight Kitchen', price: 379,                  image: img('1524351199678-941a58a3df50') },
-    { id: 'fl4', emoji: '🍫', name: 'Midnight Chocolate Chunks', brand: 'Cocoa Theory',   price: 329,                    image: img('1511381939415-e44015466834') },
-    { id: 'fl5', emoji: '🍕', name: 'Comfort Pizza',           brand: 'Midnight Kitchen', price: 549,                    image: img('1513104890138-7c749659a591') },
-    { id: 'fl6', emoji: '🍪', name: 'Masala Chai & Cookies',   brand: 'Steep Story',      price: 229, tag: 'Fan Fave',    image: img('1544787219-7f47ccb76574') },
-    { id: 'fl7', emoji: '🍲', name: 'Slow-Cooked Stew',        brand: 'Midnight Kitchen', price: 549, tag: 'Cozy Pick',   image: img('1664741662725-bd131742b7b7') },
-    { id: 'fl8', emoji: '☕', name: 'Cinnamon Chai Latte',      brand: 'Steep Story',      price: 249,                    image: img('1512568400610-62da28bc8a13') },
-    { id: 'fl9', emoji: '🍫', name: 'Warm Brownie Bite',       brand: 'Cocoa Theory',     price: 299, tag: 'Most craved', image: img('1624353365286-3f8d62daad51') },
-    { id: 'fl10', emoji: '🍪', name: 'Double Choc Cookies',    brand: 'Cocoa Theory',     price: 279, tag: 'Fan Fave',    image: img('1590080874088-eec64895b423') },
-    { id: 'fl11', emoji: '🍲', name: 'Creamy Tomato Soup',     brand: 'Midnight Kitchen', price: 349,                    image: img('1629978444632-9f63ba0eff47') },
-    { id: 'fl12', emoji: '🫖', name: 'Golden Milk Latte',      brand: 'Steep Story',      price: 269, tag: 'Cozy Pick',   image: img('1576092768241-dec231879fc3') },
-    { id: 'fl13', emoji: '🧀', name: 'Baked Brie Bites',       brand: 'Midnight Kitchen', price: 429,                    image: img('1760445530689-16fdc698aeb3') },
-  ],
-};
 
 // ── Filter & sort (Amazon-style) ──────────────────────────────────────────────
 
@@ -295,10 +42,10 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 const PRICE_RANGES: { key: string; label: string; min: number; max: number }[] = [
-  { key: 'p1', label: 'Under ₹500',      min: 0,    max: 499 },
-  { key: 'p2', label: '₹500 – ₹1,000',   min: 500,  max: 1000 },
-  { key: 'p3', label: '₹1,000 – ₹2,000', min: 1000, max: 2000 },
-  { key: 'p4', label: 'Over ₹2,000',     min: 2000, max: Infinity },
+  { key: 'p1', label: 'Under ₹100',    min: 0,   max: 99 },
+  { key: 'p2', label: '₹100 – ₹199',   min: 100, max: 199 },
+  { key: 'p3', label: '₹200 – ₹399',   min: 200, max: 399 },
+  { key: 'p4', label: '₹400 & above',  min: 400, max: Infinity },
 ];
 
 const RATING_OPTIONS: { key: string; label: string; min: number }[] = [
@@ -341,9 +88,22 @@ interface Props {
   neutral?: boolean;
 }
 
-/** A few picks from every phase's list — used when there is no phase to tune to. */
-function neutralMix<T>(byPhase: Record<PhaseKey, T[]>): T[] {
-  return (Object.values(byPhase) as T[][]).flatMap((list) => list.slice(0, 4));
+const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.label])) as Record<ShopCategory, string>;
+
+function vegLabel(p: Product): string | null {
+  if (!p.food) return null;
+  if (p.veg === true) return 'Vegetarian';
+  if (p.veg === false) return 'Contains gelatin — not vegetarian';
+  return 'Check the label for egg and other ingredients';
+}
+
+function DetailRow({ label, text }: { label: string; text: string }) {
+  return (
+    <View style={styles.detailBlock}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailText}>{text}</Text>
+    </View>
+  );
 }
 
 export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
@@ -355,8 +115,12 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
   const [address, setAddress] = useState({ name: '', street: '', city: '' });
   const [orderNumber] = useState(() => `CA${Math.floor(100000 + Math.random() * 900000)}`);
 
-  // ── Mode, filter & sort ────────────────────────────────────────────────────
-  const [mode, setMode] = useState<'shop' | 'food'>('shop');
+  // ── Browse (brief section 4), filter & sort ───────────────────────────────
+  const [category, setCategory] = useState<ShopCategory | 'all'>('all');
+  const [mood, setMood] = useState<ShopMood | null>(null);
+  const [vegOnly, setVegOnly] = useState(false);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [detail, setDetail] = useState<Product | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('featured');
@@ -364,24 +128,31 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
   const [ratingFilter, setRatingFilter] = useState<string | null>(null);
 
-  const catalog = neutral
-    ? neutralMix(mode === 'shop' ? PHASE_PRODUCTS : PHASE_FOODS)
-    : mode === 'shop' ? PHASE_PRODUCTS[phaseKey] : PHASE_FOODS[phaseKey];
+  // Every product in the brief is browsable. With a known phase, the ones
+  // suggested for it come first; bundles get their own section on "All".
+  const browsing = category === 'all' && !mood;
+  const catalog = SHOP_CATALOG.filter((p) => {
+    if (category === 'all' ? p.category === 'bundles' && browsing : p.category !== category) return false;
+    if (mood && !p.moods.includes(mood)) return false;
+    return true;
+  });
+  const bundles = SHOP_CATALOG.filter((p) => p.category === 'bundles');
   const allBrands = [...new Set(catalog.map((p) => p.brand))];
 
-  function switchMode(m: 'shop' | 'food') {
-    if (m === mode) return;
-    setMode(m);
-    // Brands differ between catalogs — stale filters would empty the grid.
+  function clearFilters() {
     setBrandFilter([]);
     setPriceFilter(null);
     setRatingFilter(null);
+    setVegOnly(false);
+    setInStockOnly(false);
   }
 
   const activeFilterCount =
-    brandFilter.length + (priceFilter ? 1 : 0) + (ratingFilter ? 1 : 0);
+    brandFilter.length + (priceFilter ? 1 : 0) + (ratingFilter ? 1 : 0) + (vegOnly ? 1 : 0) + (inStockOnly ? 1 : 0);
 
   let products = catalog.filter((p) => {
+    if (vegOnly && !(p.food && p.veg === true)) return false;
+    if (inStockOnly && p.availability !== 'in-stock') return false;
     if (brandFilter.length > 0 && !brandFilter.includes(p.brand)) return false;
     if (priceFilter) {
       const range = PRICE_RANGES.find((r) => r.key === priceFilter)!;
@@ -393,6 +164,9 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
     }
     return true;
   });
+  if (sortKey === 'featured' && !neutral) {
+    products = [...products].sort((a, b) => Number(b.phase === phaseKey) - Number(a.phase === phaseKey));
+  }
   if (sortKey === 'priceAsc') products = [...products].sort((a, b) => a.price - b.price);
   if (sortKey === 'priceDesc') products = [...products].sort((a, b) => b.price - a.price);
   if (sortKey === 'rating')
@@ -446,24 +220,13 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
       {/* Header: title + the 4 controls (mode toggle · filter · sort · cart) */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>{mode === 'shop' ? 'Shop' : 'Food'}</Text>
+          <Text style={styles.title}>Dopamine Shop</Text>
           <Text style={[styles.subtitle, { color: phaseColor }]}>
-            {neutral ? (mode === 'shop' ? 'Comfort & care' : 'Cravings, your way') : mode === 'shop' ? PHASE_LABELS[phaseKey] : 'Cravings, phase-tuned'}
+            {neutral ? 'Small treats, picked for you' : PHASE_LABELS[phaseKey]}
           </Text>
         </View>
         <View style={styles.controls}>
-          <View style={styles.modeToggle}>
-            {(['shop', 'food'] as const).map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => switchMode(m)}
-                style={[styles.modeBtn, mode === m && { backgroundColor: phaseColor }]}
-              >
-                <Text style={styles.modeBtnEmoji}>{m === 'shop' ? '🛍️' : '🍜'}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Pressable style={styles.iconBtn} onPress={() => setFilterOpen(true)}>
+          <Pressable style={styles.iconBtn} onPress={() => setFilterOpen(true)} accessibilityLabel="Filters">
             <Text style={styles.iconBtnGlyph}>☰</Text>
             {activeFilterCount > 0 && (
               <View style={[styles.badge, { backgroundColor: phaseColor }]}>
@@ -471,7 +234,7 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
               </View>
             )}
           </Pressable>
-          <Pressable style={styles.iconBtn} onPress={() => setSortOpen(true)}>
+          <Pressable style={styles.iconBtn} onPress={() => setSortOpen(true)} accessibilityLabel="Sort">
             <Text style={styles.iconBtnGlyph}>⇅</Text>
             {sortKey !== 'featured' && (
               <View style={[styles.badge, { backgroundColor: phaseColor }]}>
@@ -501,6 +264,94 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
         </Text>
       </View>
 
+      {/* Shop by mood (brief section 4) */}
+      <Text style={styles.navLabel}>Shop by mood</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+        {MOODS.map((m) => {
+          const on = mood === m.key;
+          return (
+            <Pressable
+              key={m.key}
+              onPress={() => setMood(on ? null : m.key)}
+              style={[styles.navChip, on && { backgroundColor: phaseColor, borderColor: phaseColor }]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+            >
+              <Text style={[styles.navChipText, on && styles.navChipTextOn]}>{m.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Shop by category (brief section 4) */}
+      <Text style={styles.navLabel}>Shop by category</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+        {[{ key: 'all' as const, label: 'All', emoji: '✨' }, ...CATEGORIES].map((c) => {
+          const on = category === c.key;
+          return (
+            <Pressable
+              key={c.key}
+              onPress={() => setCategory(c.key)}
+              style={[styles.navChip, on && { backgroundColor: phaseColor, borderColor: phaseColor }]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+            >
+              <Text style={[styles.navChipText, on && styles.navChipTextOn]}>{c.emoji} {c.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Curated CycleAlign bundles (brief section 3): every item listed, one clear total. */}
+      {browsing && (
+        <>
+          <Text style={styles.sectionHeading}>Curated CycleAlign bundles</Text>
+          <Text style={styles.sectionNote}>Optional sets to shop by mood or occasion — not medical products.</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bundleRow}>
+            {bundles.map((b) => {
+              const inCart = cart.find((c) => c.id === b.id);
+              return (
+                <Pressable key={b.id} style={styles.bundleCard} onPress={() => setDetail(b)} accessibilityLabel={`${b.name}, ${formatPrice(b.price)}`}>
+                  <View style={styles.bundleImageWrap}>
+                    <Text style={styles.productEmoji}>{b.emoji}</Text>
+                    {!imgFailed[b.id] && (
+                      <Image
+                        source={{ uri: b.image }}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                        onError={() => setImgFailed((f) => ({ ...f, [b.id]: true }))}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.bundleBody}>
+                    <Text style={styles.productName}>{b.name}</Text>
+                    <Text style={styles.bundleIncludesLabel}>Includes</Text>
+                    {(b.includes ?? []).map((it) => (
+                      <Text key={it} style={styles.bundleItem}>• {it}</Text>
+                    ))}
+                    <View style={styles.bundleTotalRow}>
+                      <Text style={styles.bundleTotalLabel}>Total</Text>
+                      <Text style={[styles.productPrice, { color: phaseColor }]}>{formatPrice(b.price)}</Text>
+                    </View>
+                    <Pressable
+                      style={[styles.addBtn, { backgroundColor: phaseColor + '18', borderColor: phaseColor, borderWidth: 1 }]}
+                      onPress={() => addToCart(b)}
+                    >
+                      <Text style={[styles.addBtnText, { color: phaseColor }]}>{inCart ? `In cart · ${inCart.qty}` : 'Add bundle'}</Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </>
+      )}
+
+      <Text style={styles.sectionHeading}>
+        {mood ? MOODS.find((m) => m.key === mood)!.label : category === 'all' ? (neutral ? 'All products' : 'Picked for your phase first') : CATEGORY_LABEL[category]}
+        <Text style={styles.sectionCount}>  {products.length}</Text>
+      </Text>
+
       {/* Product grid */}
       <View style={styles.grid}>
         {products.map((product, i) => {
@@ -508,9 +359,10 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
           return (
             <Animated.View
               key={product.id}
-              entering={FadeInDown.delay(i * 50).duration(300)}
+              entering={FadeInDown.delay(Math.min(i, 8) * 50).duration(300)}
               style={styles.productCard}
             >
+              <Pressable onPress={() => setDetail(product)} accessibilityRole="button" accessibilityLabel={`${product.name}, ${formatPrice(product.price)}. Details`}>
               <View style={styles.productImageWrap}>
                 <Text style={styles.productEmoji}>{product.emoji}</Text>
                 {!imgFailed[product.id] && (
@@ -531,11 +383,17 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
               </View>
               <View style={styles.productBody}>
               <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-              <Text style={styles.productBrand}>{product.brand}</Text>
+              <Text style={styles.productDesc} numberOfLines={2}>{product.description}</Text>
               {product.includes ? (
-                <Text style={styles.productIncludes} numberOfLines={3}>Includes: {product.includes}</Text>
+                <Text style={styles.productIncludes} numberOfLines={3}>Includes: {product.includes.join(', ')}</Text>
               ) : null}
               <Text style={[styles.productPrice, { color: phaseColor }]}>{formatPrice(product.price)}</Text>
+              <Text style={product.availability === 'in-stock' ? styles.inStock : styles.limited}>
+                {product.availability === 'in-stock' ? '● In stock' : '● Limited availability'}
+              </Text>
+              </View>
+              </Pressable>
+              <View style={styles.productActions}>
               {inCart ? (
                 <View style={styles.qtyRow}>
                   <Pressable style={[styles.qtyBtn, { borderColor: phaseColor }]} onPress={() => updateQty(product.id, -1)}>
@@ -563,7 +421,7 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
       {products.length === 0 && (
         <View style={styles.emptyFilter}>
           <Text style={styles.emptyFilterText}>Nothing matches these filters.</Text>
-          <Pressable onPress={() => { setBrandFilter([]); setPriceFilter(null); setRatingFilter(null); }}>
+          <Pressable onPress={() => { clearFilters(); setMood(null); setCategory('all'); }}>
             <Text style={[styles.emptyFilterClear, { color: phaseColor }]}>Clear filters</Text>
           </Pressable>
         </View>
@@ -585,10 +443,7 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
           <Pressable style={styles.sheet} onPress={() => {}}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Filters</Text>
-              <Pressable
-                onPress={() => { setBrandFilter([]); setPriceFilter(null); setRatingFilter(null); }}
-                hitSlop={8}
-              >
+              <Pressable onPress={clearFilters} hitSlop={8}>
                 <Text style={[styles.sheetClear, { color: phaseColor }]}>Clear all</Text>
               </Pressable>
             </View>
@@ -631,6 +486,30 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
               })}
             </View>
 
+            <Text style={styles.sheetSection}>Dietary preference</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                onPress={() => setVegOnly((v) => !v)}
+                style={[styles.filterChip, vegOnly && { backgroundColor: phaseColor + '22', borderColor: phaseColor }]}
+              >
+                <Text style={[styles.filterChipText, vegOnly && { color: phaseColor, fontWeight: '800' }]}>
+                  {vegOnly ? '✓ ' : ''}Vegetarian (verified items)
+                </Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.sheetSection}>Availability</Text>
+            <View style={styles.chipWrap}>
+              <Pressable
+                onPress={() => setInStockOnly((v) => !v)}
+                style={[styles.filterChip, inStockOnly && { backgroundColor: phaseColor + '22', borderColor: phaseColor }]}
+              >
+                <Text style={[styles.filterChipText, inStockOnly && { color: phaseColor, fontWeight: '800' }]}>
+                  {inStockOnly ? '✓ ' : ''}In stock only
+                </Text>
+              </Pressable>
+            </View>
+
             <Text style={styles.sheetSection}>Customer rating</Text>
             <View style={styles.chipWrap}>
               {RATING_OPTIONS.map((r) => {
@@ -658,6 +537,56 @@ export function DopamineMenuCard({ phaseKey, neutral = false }: Props) {
               </Text>
             </Pressable>
           </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Product details (brief section 4) */}
+      <Modal visible={!!detail} animationType="slide" transparent onRequestClose={() => setDetail(null)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setDetail(null)}>
+          {detail && (
+            <Pressable style={[styles.sheet, styles.detailSheet]} onPress={() => {}}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 8 }}>
+                <View style={styles.detailImageWrap}>
+                  <Text style={styles.detailEmoji}>{detail.emoji}</Text>
+                  {!imgFailed[detail.id] && (
+                    <Image source={{ uri: detail.image }} style={styles.productImage} resizeMode="cover" accessibilityLabel={detail.name} />
+                  )}
+                </View>
+                <View style={styles.sheetHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.sheetTitle}>{detail.name}</Text>
+                    <Text style={styles.productBrand}>{detail.brand} · {CATEGORY_LABEL[detail.category]}</Text>
+                  </View>
+                  <Text style={[styles.detailPrice, { color: phaseColor }]}>{formatPrice(detail.price)}</Text>
+                </View>
+                <Text style={styles.detailDesc}>{detail.description}</Text>
+                {detail.includes && (
+                  <View style={styles.detailBlock}>
+                    <Text style={styles.detailLabel}>What's in the box</Text>
+                    {detail.includes.map((it) => (
+                      <Text key={it} style={styles.detailText}>• {it}</Text>
+                    ))}
+                    <Text style={styles.detailText}>Total: {formatPrice(detail.price)}</Text>
+                  </View>
+                )}
+                <DetailRow label="Availability" text={detail.availability === 'in-stock' ? 'In stock' : 'Limited — only where storage and delivery allow'} />
+                {vegLabel(detail) && <DetailRow label="Dietary" text={vegLabel(detail)!} />}
+                <DetailRow
+                  label={detail.food ? 'Ingredients, allergens & storage' : 'Size & material'}
+                  text={detail.food
+                    ? 'Shown on the pack. Full ingredients, allergens, storage and expiry details are confirmed with the supplier before launch.'
+                    : 'Size, quantity and material details are confirmed with the supplier before launch.'}
+                />
+                <DetailRow label="Delivery & returns" text="This is a feel-good preview — no payment is taken and nothing is shipped yet. Delivery details and the return policy will appear here when ordering opens." />
+              </ScrollView>
+              <Pressable
+                style={[styles.stepBtn, { backgroundColor: phaseColor }]}
+                onPress={() => { addToCart(detail); setDetail(null); }}
+              >
+                <Text style={styles.stepBtnText}>Add to Cart · {formatPrice(detail.price)}</Text>
+              </Pressable>
+            </Pressable>
+          )}
         </Pressable>
       </Modal>
 
@@ -1091,6 +1020,34 @@ const styles = StyleSheet.create({
   noticePill: { backgroundColor: '#FFF8E7', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 },
   noticeText: { fontSize: 12, color: '#9A7B2E', textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  navLabel: { fontSize: 12, fontWeight: '800', color: dash.inkSoft, letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 4 },
+  chipRow: { gap: 8, paddingVertical: 2 },
+  navChip: { borderRadius: 999, borderWidth: 1, borderColor: dash.line, backgroundColor: '#F9F6F1', paddingHorizontal: 12, paddingVertical: 8 },
+  navChipText: { fontSize: 13, fontWeight: '600', color: dash.ink },
+  navChipTextOn: { color: '#FFFFFF', fontWeight: '800' },
+  sectionHeading: { fontSize: 16, fontWeight: '800', color: dash.ink, marginTop: 8 },
+  sectionCount: { fontSize: 13, fontWeight: '600', color: dash.inkSoft },
+  sectionNote: { fontSize: 12, color: dash.inkSoft, marginTop: -2 },
+  bundleRow: { gap: 12, paddingVertical: 4 },
+  bundleCard: { width: 230, backgroundColor: '#F9F6F1', borderRadius: 16, overflow: 'hidden' },
+  bundleImageWrap: { height: 120, backgroundColor: '#F0EBE5', alignItems: 'center', justifyContent: 'center' },
+  bundleBody: { padding: 12, gap: 3 },
+  bundleIncludesLabel: { fontSize: 11, fontWeight: '800', color: dash.inkSoft, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  bundleItem: { fontSize: 12.5, color: dash.ink, lineHeight: 18 },
+  bundleTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+  bundleTotalLabel: { fontSize: 13, fontWeight: '700', color: dash.inkSoft },
+  productDesc: { fontSize: 11.5, color: dash.inkSoft, lineHeight: 15 },
+  productActions: { paddingHorizontal: 12, paddingBottom: 12 },
+  inStock: { fontSize: 11, fontWeight: '700', color: '#56723F' },
+  limited: { fontSize: 11, fontWeight: '700', color: '#9A4A26' },
+  detailSheet: { maxHeight: '90%' },
+  detailImageWrap: { height: 190, borderRadius: 16, overflow: 'hidden', backgroundColor: '#F0EBE5', alignItems: 'center', justifyContent: 'center' },
+  detailEmoji: { fontSize: 48 },
+  detailPrice: { fontSize: 20, fontWeight: '800' },
+  detailDesc: { fontSize: 14, color: dash.ink, lineHeight: 21 },
+  detailBlock: { backgroundColor: '#F9F6F1', borderRadius: 12, padding: 10, gap: 2 },
+  detailLabel: { fontSize: 11.5, fontWeight: '800', color: dash.inkSoft, textTransform: 'uppercase', letterSpacing: 0.4 },
+  detailText: { fontSize: 13, color: dash.ink, lineHeight: 19 },
   productCard: { width: '47%', backgroundColor: '#F9F6F1', borderRadius: 14, overflow: 'hidden' },
   productImageWrap: {
     height: 110,
