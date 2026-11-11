@@ -6,6 +6,11 @@ import { useNotificationPrefs } from '@/lib/stores/useNotificationPrefs';
 import { currentLibrary } from '@/lib/notify/service';
 import { resyncNotifications } from '@/lib/notify/useNotifications';
 import { palette } from '@/theme';
+import { Platform } from 'react-native';
+import { useRatingPrompt, ratingBlockReason } from '@/lib/rating';
+import { useFeatureFlags } from '@/lib/featureFlags';
+import { useDailyLog } from '@/lib/stores/useDailyLog';
+import { isQuietNow } from '@/lib/notify/decide';
 
 function stamp(ms: number | null | undefined): string {
   if (!ms) return '—';
@@ -24,6 +29,18 @@ export default function NotificationDebug() {
   const sync = ledger.lastSync;
   const items = Object.values(ledger.items).sort((a, b) => a.at - b.at);
   const lib = currentLibrary();
+  const rating = useRatingPrompt();
+  const flags = useFeatureFlags();
+  const checkIns = Object.keys(useDailyLog((s) => s.logs)).length;
+  const ratingReason = ratingBlockReason(rating, {
+    now: Date.now(),
+    platform: Platform.OS,
+    enabled: flags.ratingPrompt,
+    signedInAndOnboarded: true,
+    checkIns,
+    otherPromptRecently: false,
+    quietHours: isQuietNow(new Date(), lib.config),
+  });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -53,6 +70,14 @@ export default function NotificationDebug() {
             k="Prefs"
             v={`on=${prefs.enabled} ${prefs.dailyHour}:${String(prefs.dailyMinute).padStart(2, '0')} inApp=${prefs.inApp} evening=${prefs.eveningCheckin} periodConfirm=${prefs.periodConfirm} preview=${prefs.descriptivePreviews}`}
           />
+        </Section>
+
+        <Section title="Rating prompt">
+          <Line k="Status" v={ratingReason ?? 'eligible now'} />
+          <Line k="Asked" v={`${rating.shownCount}× · last ${stamp(rating.lastShownAt)}`} />
+          <Line k="Active days / check-ins" v={`${rating.activeDays.length} / ${checkIns}`} />
+          <Line k="Rated / opted out" v={`${rating.rated} / ${rating.optedOut}`} />
+          <Line k="Flags" v={`rhythmOnboarding=${flags.rhythmOnboarding} ratingPrompt=${flags.ratingPrompt}`} />
         </Section>
 
         <Section title="Skip reasons">

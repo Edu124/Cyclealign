@@ -97,8 +97,8 @@ describe('LocalStatisticalEngine', () => {
     expect(p.nextPeriodStart).toBe('2026-07-01');
   });
 
-  it('clamps implausible cycle lengths into a safe range', () => {
-    expect(effectiveCycleLength(2)).toBe(21);
-    expect(effectiveCycleLength(120)).toBe(45);
+  it('clamps values outside the 15–90 day entry range', () => {
+    expect(effectiveCycleLength(2)).toBe(15);
+    expect(effectiveCycleLength(120)).toBe(90);
   });
 });

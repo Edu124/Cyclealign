@@ -25,6 +25,7 @@ import { useSubscription } from '@/lib/stores/useSubscription';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/models';
 import { resetNotificationsForSignOut } from '@/lib/notify/service';
+import { cycleLengthLabel, periodLengthLabel } from '@/lib/rhythm';
 
 interface Props {
   visible: boolean;
@@ -126,9 +127,9 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
 
           {/* Stats */}
           <Animated.View entering={FadeInDown.delay(80).duration(320)} style={styles.stats}>
-            <StatCell label="Cycle"  value={`${profile.avgCycleLength} days`} />
+            <StatCell label="Cycle"  value={cycleLengthLabel(profile)} />
             <View style={styles.statDivider} />
-            <StatCell label="Period" value={`${profile.avgPeriodLength} days`} />
+            <StatCell label="Period" value={periodLengthLabel(profile)} />
           </Animated.View>
 
           {/* Actions */}

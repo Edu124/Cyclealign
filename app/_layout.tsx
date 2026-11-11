@@ -24,6 +24,7 @@ import { useSubscription } from '@/lib/stores/useSubscription';
 import { pullState, pushCycleLog, pushProfile } from '@/lib/sync';
 import { isCompleteProfile } from '@/lib/restoreSession';
 import { useNotificationListeners } from '@/lib/notify/useNotifications';
+import { refreshFeatureFlags } from '@/lib/featureFlags';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -96,7 +97,14 @@ function useCloudHydration() {
 
     pullState().then(({ profile, cycleLogs, dailyLogs, subscriptionTier }) => {
       if (isCompleteProfile(profile)) {
-        setProfile(profile);
+        // Rhythm answers saved before migration 0018 exist only on this device: keep them.
+        const local = useAppStore.getState().profile;
+        const keep = local && (local.id === profile.id || local.id.startsWith('local-')) ? local : null;
+        setProfile({
+          ...profile,
+          cycleLengthPreference: profile.cycleLengthPreference ?? keep?.cycleLengthPreference,
+          periodDurationPreference: profile.periodDurationPreference ?? keep?.periodDurationPreference,
+        });
         // A complete cloud profile means onboarding finished on some device —
         // never send a returning user through onboarding again.
         completeOnboarding();
@@ -154,6 +162,9 @@ export default function RootLayout() {
   useCloudHydration();
   useAuthDeepLink();
   useNotificationListeners();
+  useEffect(() => {
+    refreshFeatureFlags();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

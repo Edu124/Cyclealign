@@ -140,23 +140,27 @@ export function isToughDay(
 // A port of the app's LocalStatisticalEngine + capacityPhaseFromDay, reduced
 // to what the digest needs. The test file compares it with the real engine.
 
-const MIN_CYCLE = 21;
-const MAX_CYCLE = 45;
+const MIN_CYCLE = 15;
+const MAX_CYCLE = 90;
 
 function clampCycle(value: number): number {
-  if (Number.isNaN(value)) return 28;
+  if (!Number.isFinite(value)) return 28;
   return Math.round(Math.min(MAX_CYCLE, Math.max(MIN_CYCLE, value)));
 }
 
+/** Same rule as the app: median of the latest 6 completed cycles, once there are two. */
 function effectiveCycleLength(avgCycleLength: number, starts: string[]): number {
-  const sorted = starts.filter(Boolean).slice().sort();
-  if (sorted.length >= 3) {
-    const gaps: number[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const gap = isoToDays(sorted[i]) - isoToDays(sorted[i - 1]);
-      if (gap >= MIN_CYCLE && gap <= MAX_CYCLE) gaps.push(gap);
-    }
-    if (gaps.length > 0) return clampCycle(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+  const sorted = Array.from(new Set(starts.filter(Boolean))).sort();
+  const gaps: number[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = isoToDays(sorted[i]) - isoToDays(sorted[i - 1]);
+    if (gap >= MIN_CYCLE && gap <= MAX_CYCLE) gaps.push(gap);
+  }
+  const recent = gaps.slice(-6).sort((a, b) => a - b);
+  if (recent.length >= 2) {
+    const mid = Math.floor(recent.length / 2);
+    const median = recent.length % 2 ? recent[mid] : (recent[mid - 1] + recent[mid]) / 2;
+    return clampCycle(Math.round(median));
   }
   return clampCycle(avgCycleLength);
 }
@@ -170,7 +174,7 @@ export function capacityPhaseForDate(input: {
   todayISO: string;
 }): CapacityPhase {
   const cycleLength = effectiveCycleLength(input.avgCycleLength, input.periodStarts);
-  const periodLength = Math.max(2, Math.min(input.avgPeriodLength || 5, 10));
+  const periodLength = Math.max(1, Math.min(Math.round(input.avgPeriodLength) || 5, 15));
 
   let elapsed = isoToDays(input.todayISO) - isoToDays(input.lastPeriodStart);
   while (elapsed > cycleLength) elapsed -= cycleLength;

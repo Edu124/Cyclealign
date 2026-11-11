@@ -23,6 +23,7 @@ import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import type { CycleLog, Profile } from '@/types/models';
 import { palette, spacing } from '@/theme';
+import { rhythmToProfile } from '@/lib/rhythm';
 
 function notify(msg: string) {
   // window.alert works on web; Alert.alert works on iOS/Android. The old
@@ -86,8 +87,7 @@ export default function AccountStep() {
       email:          email.trim() || undefined,
       gender:         'female',
       birthDate:      draft.birthDate ?? '',
-      avgCycleLength:  draft.avgCycleLength,
-      avgPeriodLength: draft.avgPeriodLength,
+      ...rhythmToProfile(draft),
       role:            draft.role ?? undefined,
       cycleRegularity: draft.cycleRegularity ?? undefined,
       healthContext:   draft.healthContext ?? undefined,

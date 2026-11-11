@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CycleRegularity, Gender, HealthContext } from '@/types/models';
+import type { CycleRegularity, Gender, HealthContext, RhythmPreference } from '@/types/models';
 
 export interface OnboardingDraft {
   role: string | null;
@@ -11,6 +11,9 @@ export interface OnboardingDraft {
   avgPeriodLength: number;
   /** True when user picked "I don't know" — defaults to 28 days, flags for recalibration. */
   unknownCycleLength: boolean;
+  /** "Let's understand your rhythm": known / varies / unsure for each field. */
+  cycleLengthPreference: RhythmPreference;
+  periodDurationPreference: RhythmPreference;
   notificationEnabled: boolean;
   /** Optional personalisation answers (user-provided context, not a diagnosis). */
   cycleRegularity: CycleRegularity | null;
@@ -32,6 +35,8 @@ const initial: OnboardingDraft = {
   avgCycleLength: 28,
   avgPeriodLength: 5,
   unknownCycleLength: false,
+  cycleLengthPreference: 'known',
+  periodDurationPreference: 'known',
   notificationEnabled: false,
   cycleRegularity: null,
   healthContext: null,

@@ -16,6 +16,7 @@ import { LeadershipStateCard } from '@/components/adaptive/LeadershipStateCard';
 import { OptimizeDayModal } from '@/components/adaptive/OptimizeDayModal';
 import { ClinicianPromptCard, PatternsCard, PersonalizePromptCard } from '@/components/adaptive/InsightCards';
 import { useAdaptive } from '@/lib/adaptive/useAdaptive';
+import { phaseReliability } from '@/lib/adaptive/mode';
 import { EditPeriodDatesModal } from '@/components/dashboard/EditPeriodDatesModal';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { useAppStore } from '@/lib/stores/useAppStore';
@@ -57,6 +58,9 @@ export default function Today() {
   const [editDateOpen, setEditDateOpen] = useState(false);
   const [optimizeOpen, setOptimizeOpen] = useState(false);
   const { mode } = useAdaptive();
+  const cycleLogs = useAppStore((s) => s.cycleLogs);
+  // Variable or unknown cycles / sparse history: general guidance + check-ins, no confident phase claims.
+  const lowConfidence = phaseReliability(profile, cycleLogs) === 'partial';
 
   const logInsight = prediction ? analyzeLogs(dailyLogs, prediction) : null;
 
@@ -189,6 +193,8 @@ export default function Today() {
             capacity={capacity}
             hero={HERO_GUIDANCE[capPhase]}
             onEditPress={() => setEditDateOpen(true)}
+            lowConfidence={lowConfidence}
+            onCheckInPress={() => router.push('/check-in')}
           />
         </Animated.View>
 
@@ -259,9 +265,11 @@ export default function Today() {
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(290).duration(450)}>
-          <TodayFocusCard tiles={FOCUS_TILES[capPhase]} />
-        </Animated.View>
+        {!lowConfidence && (
+          <Animated.View entering={FadeInDown.delay(290).duration(450)}>
+            <TodayFocusCard tiles={FOCUS_TILES[capPhase]} />
+          </Animated.View>
+        )}
 
         <Animated.View entering={FadeInDown.delay(360).duration(450)}>
           <TodayTasksCard dateISO={dateISO} />

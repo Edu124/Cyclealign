@@ -148,11 +148,13 @@ function PhaseCard({
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function PeriodStep() {
-  const { lastPeriodStart, avgCycleLength, avgPeriodLength, cycleRegularity, healthContext, set } = useOnboarding();
+  const { lastPeriodStart, avgCycleLength, avgPeriodLength, cycleRegularity, healthContext, cycleLengthPreference, set } = useOnboarding();
   // Irregular / changing cycles: a single "last period" date isn't a basis for a phase, so it's optional.
   const regularMode = resolveMode({ cycleRegularity: cycleRegularity ?? undefined, healthContext: healthContext ?? undefined }) === 'regular';
 
-  const prediction = lastPeriodStart && regularMode
+  // No phase preview from a cycle length she doesn't know — we'd only be guessing.
+  const lengthKnown = cycleLengthPreference === 'known';
+  const prediction = lastPeriodStart && regularMode && lengthKnown
     ? predict({
         lastPeriodStart,
         avgCycleLength,
@@ -177,7 +179,7 @@ export default function PeriodStep() {
       title="When did your last period start?"
       subtitle={
         regularMode
-          ? "We'll use this to pinpoint exactly where you are in your cycle right now."
+          ? "We'll use this to estimate where you are in your cycle. You can update it anytime."
           : "Optional. We won't turn this into a phase prediction — it's just a record you can keep."
       }
       nextDisabled={regularMode && !lastPeriodStart}

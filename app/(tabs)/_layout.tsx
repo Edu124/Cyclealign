@@ -5,6 +5,7 @@ import { TabBarIcon } from '@/components/ui/TabBarIcon';
 import { ExitFlowOverlay } from '@/components/exit/ExitFlowOverlay';
 import { ReferralCloseNudge } from '@/components/exit/ReferralCloseNudge';
 import { NotificationPopupHost } from '@/components/notify/NotificationPopupHost';
+import { RatingPromptHost } from '@/components/notify/RatingPromptHost';
 import { useNotificationSync } from '@/lib/notify/useNotifications';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { dash } from '@/theme';
@@ -107,6 +108,8 @@ export default function TabsLayout() {
       <ReferralCloseNudge />
       {/* In-app pop-up for today's message, and routing for tapped notifications. */}
       <NotificationPopupHost />
+      {/* Occasional "rate CycleAlign" pop-up (App Store / Google Play). */}
+      <RatingPromptHost />
     </>
   );
 }

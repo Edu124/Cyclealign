@@ -20,7 +20,7 @@ export function getPhases(
   cycleLength: number,
   periodLength: number,
 ): PhaseInfo[] {
-  const clampedPeriod = Math.max(2, Math.min(periodLength, 10));
+  const clampedPeriod = Math.max(1, Math.min(Math.round(periodLength) || 5, 15));
   // Ovulation day, 1-based. Guard so it never collides with the period.
   const ovulationDay = Math.max(clampedPeriod + 2, cycleLength - 14);
   // Treat ovulation as a short 3-day window centred on the ovulation day.
@@ -43,7 +43,7 @@ export function getPhases(
     {
       key: 'ovulation',
       title: 'Ovulatory',
-      subtitle: 'Peak fertility & confidence',
+      subtitle: 'Estimated mid-cycle window',
       range: [ovStart, ovEnd],
     },
     {

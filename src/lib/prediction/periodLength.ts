@@ -1,9 +1,9 @@
 import type { CycleLog } from '@/types/models';
 import { daysBetween, fromISODate } from '@/lib/dates';
 
-/** The prediction engine supports periods of 2–10 days. */
-export const MIN_PERIOD_DAYS = 2;
-export const MAX_PERIOD_DAYS = 10;
+/** The app accepts periods of 1–15 days (a data-entry range, not a clinical one). */
+export const MIN_PERIOD_DAYS = 1;
+export const MAX_PERIOD_DAYS = 15;
 
 /**
  * Typical period length from the periods she has actually marked (start and

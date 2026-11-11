@@ -47,6 +47,8 @@ export async function restoreFromCloud(): Promise<boolean> {
     cycleRegularity: profile.cycleRegularity ?? keep?.cycleRegularity,
     healthContext: profile.healthContext ?? keep?.healthContext,
     cycleLengthRange: profile.cycleLengthRange ?? keep?.cycleLengthRange,
+    cycleLengthPreference: profile.cycleLengthPreference ?? keep?.cycleLengthPreference,
+    periodDurationPreference: profile.periodDurationPreference ?? keep?.periodDurationPreference,
   });
   cycleLogs.forEach((l) => app.addCycleLog(l));
   app.completeOnboarding();

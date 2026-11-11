@@ -18,8 +18,19 @@ export interface Profile {
   healthContext?: HealthContext;
   /** Optional self-reported recent cycle-length range, e.g. '29-35' or 'varies'. */
   cycleLengthRange?: string;
+  /**
+   * How she answered "How long is your usual cycle?". Only 'known' means
+   * avgCycleLength is her number; for 'varies' / 'unsure' it is just the
+   * engine's working default and is never shown or treated as hers.
+   * Absent = existing user (answered with a number before this existed).
+   */
+  cycleLengthPreference?: RhythmPreference;
+  /** Same, for "How long does your period usually last?" and avgPeriodLength. */
+  periodDurationPreference?: RhythmPreference;
   createdAt?: string;
 }
+
+export type RhythmPreference = 'known' | 'varies' | 'unsure';
 
 export type CycleRegularity = 'REGULAR' | 'VARIABLE' | 'IRREGULAR' | 'CHANGING' | 'UNKNOWN';
 export type HealthContext =
@@ -56,6 +67,8 @@ export interface Prediction {
   periodWindow: DateRange; // current/most-recent period span
   /** True when today has passed the expected next period start and no new period has been logged. */
   isOverdue: boolean;
+  /** Her recent completed cycles (2+), kept as a range — the estimate is never a guarantee. */
+  cycleRange?: { min: number; max: number; typical: number; count: number };
 }
 
 export interface PhaseInfo {

@@ -21,9 +21,17 @@ interface Props {
   hero: HeroGuidance;
   /** Opens the "edit period start date" flow. Omit to hide the edit affordance. */
   onEditPress?: () => void;
+  /**
+   * Not enough consistent history (or she said her cycle varies / she isn't
+   * sure): keep the day count and period editing, but no confident phase
+   * energy or focus claims — her check-in leads instead.
+   */
+  lowConfidence?: boolean;
+  /** Opens today's check-in (used by the low-confidence card). */
+  onCheckInPress?: () => void;
 }
 
-export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero, onEditPress }: Props) {
+export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero, onEditPress, lowConfidence, onCheckInPress }: Props) {
   const accent = phaseBanner[phase].accent;
   const bg = phaseBanner[phase].bg;
 
@@ -57,8 +65,33 @@ export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero, onEditPress 
             </Pressable>
           )}
         </View>
-        <Text style={[styles.phase, { color: accent }]}>{PHASE_TITLE[phase]} Phase</Text>
+        {lowConfidence ? (
+          <Text style={[styles.phaseSoft, { color: accent }]}>Your personal pattern may suggest the {PHASE_TITLE[phase].toLowerCase()} phase</Text>
+        ) : (
+          <Text style={[styles.phase, { color: accent }]}>{PHASE_TITLE[phase]} Phase</Text>
+        )}
       </View>
+
+      {lowConfidence ? (
+        <>
+          <View style={styles.divider} />
+          <Text style={styles.softTitle}>Not enough history yet — let's start with your check-in.</Text>
+          <Text style={styles.softBody}>
+            Your cycle can vary, so today's plan follows how you actually feel. Want to try a short focus session on
+            the one task that matters most, with a break after?
+          </Text>
+          {onCheckInPress && (
+            <Pressable
+              onPress={onCheckInPress}
+              style={[styles.softCta, { borderColor: `${accent}55` }]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.softCtaText, { color: accent }]}>Check in for today</Text>
+            </Pressable>
+          )}
+        </>
+      ) : (
+      <>
 
       <View style={styles.divider} />
 
@@ -82,6 +115,8 @@ export function EnergyHeroCard({ phase, dayOfCycle, capacity, hero, onEditPress 
         <View style={styles.guideDivider} />
         <GuideItem icon="clock" label="Save for later" value={hero.avoid} accent={accent} />
       </View>
+      </>
+      )}
     </View>
   );
 }
@@ -126,6 +161,11 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   phase: { fontFamily: fonts.headingBold, fontSize: 26 },
+  phaseSoft: { fontFamily: fonts.heading, fontSize: 19, lineHeight: 25 },
+  softTitle: { fontSize: 16, fontWeight: '700', color: dash.ink, lineHeight: 22 },
+  softBody: { fontSize: 14.5, color: dash.ink, lineHeight: 21, marginTop: 6 },
+  softCta: { alignSelf: 'flex-start', marginTop: 14, borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
+  softCtaText: { fontSize: 14, fontWeight: '700' },
   divider: { height: 1, backgroundColor: 'rgba(46,42,37,0.08)', marginVertical: 16 },
   energyRow: { flexDirection: 'row', alignItems: 'center' },
   energyText: { flex: 1 },

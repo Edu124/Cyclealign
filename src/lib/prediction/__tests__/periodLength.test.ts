@@ -18,8 +18,9 @@ describe('periodLengthFromLogs', () => {
     expect(periodLengthFromLogs([log('2026-10-01', null)], 6)).toBe(6);
   });
 
-  it('stays within what predictions support (2–10 days)', () => {
-    expect(periodLengthFromLogs([log('2026-10-01', '2026-10-14')], 5)).toBe(10);
-    expect(periodLengthFromLogs([log('2026-10-01', '2026-10-01')], 5)).toBe(2);
+  it('stays within the 1–15 day entry range', () => {
+    expect(periodLengthFromLogs([log('2026-10-01', '2026-10-14')], 5)).toBe(14);
+    expect(periodLengthFromLogs([log('2026-10-01', '2026-10-20')], 5)).toBe(15);
+    expect(periodLengthFromLogs([log('2026-10-01', '2026-10-01')], 5)).toBe(1);
   });
 });

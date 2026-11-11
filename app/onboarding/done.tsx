@@ -9,6 +9,7 @@ import { useAppStore } from '@/lib/stores/useAppStore';
 import { pushCycleLog, pushProfile } from '@/lib/sync';
 import { CycleLog, Profile } from '@/types/models';
 import { palette, spacing } from '@/theme';
+import { rhythmToProfile } from '@/lib/rhythm';
 
 export default function Done() {
   const draft = useOnboarding();
@@ -23,8 +24,7 @@ export default function Done() {
         name: draft.name.trim() || 'Friend',
         gender: draft.gender ?? 'prefer_not_to_say',
         birthDate: draft.birthDate ?? '',
-        avgCycleLength: draft.avgCycleLength,
-        avgPeriodLength: draft.avgPeriodLength,
+        ...rhythmToProfile(draft),
         role: draft.role ?? undefined,
       };
       const log: CycleLog = {

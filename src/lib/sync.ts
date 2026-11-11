@@ -16,7 +16,7 @@ export async function pushProfile(profile: Profile): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from('profiles').upsert({
+  const row = {
     id: user.id,
     name: profile.name,
     email: profile.email ?? null,
@@ -30,7 +30,30 @@ export async function pushProfile(profile: Profile): Promise<void> {
       health_context: profile.healthContext ?? null,
       cycle_length_range: profile.cycleLengthRange ?? null,
     }),
-  });
+  };
+  // Rhythm answers (migration 0018). Until that migration has run, the
+  // columns don't exist and the upsert is rejected — retry without them so a
+  // profile save never fails; the answers stay on the device meanwhile.
+  const rhythm = {
+    cycle_length_preference: profile.cycleLengthPreference ?? null,
+    period_duration_preference: profile.periodDurationPreference ?? null,
+  };
+  if (rhythmColumnsMissing) {
+    await supabase.from('profiles').upsert(row);
+    return;
+  }
+  const { error } = await supabase.from('profiles').upsert({ ...row, ...rhythm });
+  if (error && isMissingColumn(error)) {
+    rhythmColumnsMissing = true;
+    await supabase.from('profiles').upsert(row);
+  }
+}
+
+let rhythmColumnsMissing = false;
+
+/** PostgREST "column not found" (schema cache) or Postgres undefined_column. */
+export function isMissingColumn(error: { code?: string; message?: string }): boolean {
+  return error.code === 'PGRST204' || error.code === '42703' || /column .* (does not exist|not find)/i.test(error.message ?? '');
 }
 
 export async function pushCycleLog(log: CycleLog): Promise<void> {
@@ -154,6 +177,8 @@ export async function pullState(): Promise<{
     cycleRegularity: p.cycle_regularity ?? undefined,
     healthContext: p.health_context ?? undefined,
     cycleLengthRange: p.cycle_length_range ?? undefined,
+    cycleLengthPreference: p.cycle_length_preference ?? undefined,
+    periodDurationPreference: p.period_duration_preference ?? undefined,
     createdAt: p.created_at,
   } : null;
 

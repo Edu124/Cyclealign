@@ -33,7 +33,11 @@ export type EventStatus =
   | 'deep_link_failed'
   | 'opt_in'
   | 'opt_out'
-  | 'timezone_changed';
+  | 'timezone_changed'
+  | 'prompt_shown'
+  | 'prompt_accepted'
+  | 'prompt_later'
+  | 'prompt_never';
 
 export interface LoggedEvent {
   at: number;
