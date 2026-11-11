@@ -15,6 +15,7 @@ import { useGoogleSignIn } from '@/lib/hooks/useGoogleSignIn';
 import { useSettings } from '@/lib/stores/useSettings';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
+import { resetNotificationsForSignOut } from '@/lib/notify/service';
 
 export default function SignIn() {
   const [email, setEmail]       = useState('');
@@ -35,6 +36,7 @@ export default function SignIn() {
       useDailyLog.getState().reset();
       useAdaptivePrefs.getState().reset();
       useNutritionPrefs.getState().reset();
+      resetNotificationsForSignOut();
       router.replace('/onboarding/role');
     }
   }

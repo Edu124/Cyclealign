@@ -1,30 +1,29 @@
-import { PermissionsAndroid, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { StepScaffold } from '@/components/onboarding/StepScaffold';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
+import { useNotificationPrefs } from '@/lib/stores/useNotificationPrefs';
+import { recordEvents, requestPushPermission } from '@/lib/notify/service';
 import { palette, radius, spacing } from '@/theme';
 
-async function requestOSPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
-  if ((Platform.Version as number) < 33) return true;
-  const result = await PermissionsAndroid.request(
-    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-  );
-  return result === PermissionsAndroid.RESULTS.GRANTED;
-}
-
 export default function NotificationsStep() {
-  const { notificationEnabled, set } = useOnboarding();
+  const { set } = useOnboarding();
+  const setPrefs = useNotificationPrefs((s) => s.set);
 
+  // Her choice is saved (it used to reset on every app restart). The OS
+  // prompt only appears when she taps "Turn on".
   async function handleEnable() {
-    await requestOSPermission();
+    await requestPushPermission();
     set({ notificationEnabled: true });
+    setPrefs({ enabled: true });
+    recordEvents([{ at: Date.now(), status: 'opt_in', type: 'daily_guidance', detail: 'onboarding' }]);
     router.push('/onboarding/account');
   }
 
   function handleSkip() {
     set({ notificationEnabled: false });
+    setPrefs({ enabled: false });
     router.push('/onboarding/account');
   }
 
@@ -32,8 +31,8 @@ export default function NotificationsStep() {
     <StepScaffold
       step={6}
       total={6}
-      title="Your morning briefing"
-      subtitle="CycleALIGN sends you one insight every morning — your phase update, energy level, and top focus for the day."
+      title="Your daily message"
+      subtitle="One short, optional message a day, based on your estimated cycle and your check-ins, with one thing you can do."
       ctaLabel="Turn on notifications"
       onNext={handleEnable}
     >
@@ -44,13 +43,13 @@ export default function NotificationsStep() {
         </View>
         <View style={styles.bubbles}>
           <View style={[styles.bubble, styles.bubble1]}>
-            <Text style={styles.bubbleText}>🌿 Follicular · Day 9</Text>
+            <Text style={styles.bubbleText}>🌿 Plan one small win</Text>
           </View>
           <View style={[styles.bubble, styles.bubble2]}>
-            <Text style={styles.bubbleText}>High energy. Ideal for deep work.</Text>
+            <Text style={styles.bubbleText}>Pick one task to focus on today.</Text>
           </View>
           <View style={[styles.bubble, styles.bubble3]}>
-            <Text style={styles.bubbleText}>Top focus: Strategy & planning</Text>
+            <Text style={styles.bubbleText}>Adjust it to how you actually feel.</Text>
           </View>
         </View>
       </Animated.View>
@@ -58,9 +57,10 @@ export default function NotificationsStep() {
       {/* Feature list */}
       <Animated.View entering={FadeInDown.delay(350).duration(500)} style={styles.features}>
         {[
-          { icon: '⏰', text: 'Delivered every morning before you start your day' },
-          { icon: '🌙', text: 'Aligned to your current phase — never generic advice' },
-          { icon: '🔇', text: 'One notification per day, nothing else' },
+          { icon: '⏰', text: 'At 9 AM by default — change the time any time' },
+          { icon: '🌙', text: 'Uses your estimated phase and what you log, never guesses' },
+          { icon: '🔇', text: 'One a day, nothing between 9 PM and 8 AM' },
+          { icon: '🔒', text: 'Neutral wording on your lock screen by default' },
         ].map((f) => (
           <View key={f.text} style={styles.featureRow}>
             <Text style={styles.featureIcon}>{f.icon}</Text>

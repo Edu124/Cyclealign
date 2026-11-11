@@ -24,6 +24,7 @@ import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useSubscription } from '@/lib/stores/useSubscription';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/models';
+import { resetNotificationsForSignOut } from '@/lib/notify/service';
 
 interface Props {
   visible: boolean;
@@ -67,6 +68,7 @@ export function UserProfileModal({ visible, profile, onClose }: Props) {
     useAdaptivePrefs.getState().reset();
     useNutritionPrefs.getState().reset();
     useSubscription.getState().downgrade();
+    await resetNotificationsForSignOut();
     await signOut();
     router.replace('/');
   }

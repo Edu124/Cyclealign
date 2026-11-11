@@ -3,21 +3,14 @@ import * as Notifications from 'expo-notifications';
 import type { DailyLog, Prediction } from '@/types/models';
 import { capacityPhaseFor } from '@/lib/intelligence/capacity';
 import { STOREFRONT_META, Storefront } from './catalog';
+import { claimExtraSlot } from '@/lib/notify/service';
 
 /**
  * Retail Therapy trigger engine. Detects the rough-patch moment (PMS window +
  * a low check-in) and fires the feel-good flash sale. All local, all opt-in.
  */
 
-// Foreground notifications should still show a banner.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+// The foreground handler is installed once by lib/notify/service.
 
 const LOW_MOODS = ['rough', 'low'];
 
@@ -39,12 +32,15 @@ export function pickStorefront(prediction: Prediction): Storefront {
   return capacityPhaseFor(prediction) === 'menstrual' ? 'food' : 'boutique';
 }
 
+/**
+ * Only with OS permission she already gave (never prompts from here), and
+ * only within her notification choices, quiet hours and the daily cap.
+ */
 async function canNotify(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
   const { status } = await Notifications.getPermissionsAsync();
-  if (status === 'granted') return true;
-  const req = await Notifications.requestPermissionsAsync();
-  return req.status === 'granted';
+  if (status !== 'granted') return false;
+  return claimExtraSlot();
 }
 
 /** "70% off tonight" nudge — fires immediately when the rough patch is detected. */

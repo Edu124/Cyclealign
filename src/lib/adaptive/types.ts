@@ -60,6 +60,7 @@ export const SYMPTOMS: SymptomOption[] = [
   { id: 'cramps', label: 'Cramps' },
   { id: 'headache', label: 'Headache' },
   { id: 'bloating', label: 'Bloating' },
+  { id: 'cravings', label: 'Cravings' },
   { id: 'brain_fog', label: 'Brain fog' },
   { id: 'anxious', label: 'Anxious' },
   { id: 'hot_flashes', label: 'Hot flashes', perimenopause: true },

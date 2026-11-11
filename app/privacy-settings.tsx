@@ -9,6 +9,7 @@ import { useCalendar } from '@/lib/stores/useCalendar';
 import { signOut } from '@/lib/auth';
 import { deleteAccountData } from '@/lib/sync';
 import { dash, palette, spacing } from '@/theme';
+import { resetNotificationsForSignOut } from '@/lib/notify/service';
 
 type RadioOption = { value: SensitivityFilter; label: string; desc: string };
 
@@ -50,6 +51,7 @@ export default function PrivacySettings() {
             reset();
             resetOnboarding();
             disconnect();
+            await resetNotificationsForSignOut();
             await signOut();
             router.replace('/');
           },

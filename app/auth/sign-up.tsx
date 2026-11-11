@@ -11,6 +11,7 @@ import { signUpWithEmail } from '@/lib/auth';
 import { useSettings } from '@/lib/stores/useSettings';
 import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useOnboarding } from '@/lib/stores/useOnboarding';
+import { resetNotificationsForSignOut } from '@/lib/notify/service';
 
 export default function SignUp() {
   const [name, setName] = useState('');
@@ -38,6 +39,7 @@ export default function SignUp() {
       useDailyLog.getState().reset();
       useAdaptivePrefs.getState().reset();
       useNutritionPrefs.getState().reset();
+      resetNotificationsForSignOut();
       if (name.trim()) useOnboarding.getState().set({ name: name.trim() });
       router.replace('/onboarding/role');
       setLoading(false);

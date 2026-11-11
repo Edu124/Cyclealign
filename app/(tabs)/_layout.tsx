@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/ui/TabBarIcon';
 import { ExitFlowOverlay } from '@/components/exit/ExitFlowOverlay';
 import { ReferralCloseNudge } from '@/components/exit/ReferralCloseNudge';
+import { NotificationPopupHost } from '@/components/notify/NotificationPopupHost';
+import { useNotificationSync } from '@/lib/notify/useNotifications';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
 import { dash } from '@/theme';
 
@@ -17,6 +19,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   // Circle (community) is a V2 feature — the tab is hidden entirely in V1.
   const isV2 = useIsV2();
+  // One daily message + optional reminders, re-planned whenever her data changes.
+  useNotificationSync();
   // Grow the bottom padding with the device's real safe-area inset so the tab
   // bar never sits under (or overlaps) the phone's own nav buttons/gesture bar.
   const bottomPadding =
@@ -101,6 +105,8 @@ export default function TabsLayout() {
           backgrounding notification instead; the button in About → Refer a Friend
           is the direct, always-available entry point. */}
       <ReferralCloseNudge />
+      {/* In-app pop-up for today's message, and routing for tapped notifications. */}
+      <NotificationPopupHost />
     </>
   );
 }

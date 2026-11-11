@@ -23,6 +23,7 @@ import { useDailyLog } from '@/lib/stores/useDailyLog';
 import { useSubscription } from '@/lib/stores/useSubscription';
 import { pullState, pushCycleLog, pushProfile } from '@/lib/sync';
 import { isCompleteProfile } from '@/lib/restoreSession';
+import { useNotificationListeners } from '@/lib/notify/useNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -152,6 +153,7 @@ export default function RootLayout() {
   useWebPhoneFrame();
   useCloudHydration();
   useAuthDeepLink();
+  useNotificationListeners();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -197,6 +199,9 @@ export default function RootLayout() {
             <Stack.Screen name="nutrition/preferences" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="ai-coach"          options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="flash-sale"        options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="check-in"          options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="notification-settings" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="notification-debug" options={{ animation: 'slide_from_right' }} />
           </Stack>
           <UpdatePrompt />
         </QueryClientProvider>

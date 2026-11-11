@@ -8,14 +8,14 @@ import { Card, DateField, TabScreen } from '@/components/ui';
 import { palette, phaseColors, spacing } from '@/theme';
 import { useAppStore } from '@/lib/stores/useAppStore';
 import { useSettings } from '@/lib/stores/useSettings';
-import { useOnboarding } from '@/lib/stores/useOnboarding';
 import { usePrediction } from '@/lib/hooks/usePrediction';
 import { resolveMode } from '@/lib/adaptive/mode';
 import { CONTEXT_LABEL, REGULARITY_LABEL } from '@/components/adaptive/PersonalizeForm';
 import { useLifeStage } from '@/lib/hooks/useLifeStage';
 import { deleteAccountData, pushProfile } from '@/lib/sync';
 import { signOut } from '@/lib/auth';
-import { syncScheduledNotifications } from '@/lib/notifications';
+import { useNotificationPrefs } from '@/lib/stores/useNotificationPrefs';
+import { cancelAllNotifications, recordEvents, requestPushPermission, resetNotificationsForSignOut } from '@/lib/notify/service';
 import { isCurrentUserAdmin } from '@/lib/expertRequests';
 
 const PHASE_LABELS: Record<string, string> = {
@@ -53,13 +53,15 @@ export default function Profile() {
   const [birthDraft, setBirthDraft] = useState<string | null>(null);
 
   // Onboarding's "Maybe later — I'll enable from settings" skip promised this
-  // toggle would exist here; it didn't until now, so anyone who skipped had
-  // no way back in and got zero notifications, silently, forever.
-  const notificationsEnabled = useOnboarding((s) => s.notificationEnabled);
-  const setOnboarding = useOnboarding((s) => s.set);
+  // toggle would exist here. The choice is saved on the device; the full set of
+  // options (time, reminders, lock-screen privacy) lives in Notifications.
+  const notificationsEnabled = useNotificationPrefs((s) => s.enabled === true);
+  const setNotificationPrefs = useNotificationPrefs((s) => s.set);
   function toggleNotifications(v: boolean) {
-    setOnboarding({ notificationEnabled: v });
-    syncScheduledNotifications(resolveMode(profile) === 'regular' ? prediction : null, v);
+    setNotificationPrefs({ enabled: v });
+    recordEvents([{ at: Date.now(), status: v ? 'opt_in' : 'opt_out', type: 'daily_guidance' }]);
+    if (v) requestPushPermission();
+    else cancelAllNotifications();
   }
 
   // Admin-only entry point to the "Talk with an Expert" submissions.
@@ -98,6 +100,7 @@ export default function Profile() {
   async function handleSignOut() {
     await signOut();
     useAppStore.getState().reset();
+    await resetNotificationsForSignOut();
     router.replace('/onboarding/welcome');
   }
 
@@ -114,6 +117,7 @@ export default function Profile() {
             await deleteAccountData().catch(() => {});
             await signOut();
             useAppStore.getState().reset();
+            await resetNotificationsForSignOut();
             router.replace('/onboarding/welcome');
           },
         },
@@ -235,9 +239,11 @@ export default function Profile() {
             <View style={styles.settingText}>
               <Text style={styles.settingTitle}>Daily notifications</Text>
               <Text style={styles.settingDesc}>
-                Your morning briefing, mood-based suggestions, log reminders, and period
-                heads-ups.
+                One short daily message based on your estimated cycle and check-ins.
               </Text>
+              <Pressable onPress={() => router.push('/notification-settings')} hitSlop={8}>
+                <Text style={styles.settingLink}>Time, reminders & privacy ›</Text>
+              </Pressable>
             </View>
             <Switch
               value={notificationsEnabled}
@@ -484,6 +490,7 @@ const styles = StyleSheet.create({
   settingText: { flex: 1 },
   settingTitle: { fontSize: 15, fontWeight: '700', color: palette.ink },
   settingDesc: { fontSize: 12, color: palette.muted, marginTop: 3, lineHeight: 17 },
+  settingLink: { fontSize: 12.5, fontWeight: '700', color: palette.lavenderDeep, marginTop: 6 },
   versionToggle: {
     flexDirection: 'row',
     backgroundColor: palette.surfaceAlt,

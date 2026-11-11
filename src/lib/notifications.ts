@@ -1,124 +1,33 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
-import type { PhaseKey, Prediction } from '@/types/models';
+import { claimExtraSlot, installNotificationHandler } from '@/lib/notify/service';
 
 /**
- * Local notification engine — everything is scheduled on-device, no push
- * server involved. The recurring set is (re)computed from the user's current
- * prediction every time the dashboard mounts, so timings track her cycle.
- *
- * Copy rule from the client: never mention "phase" in food/mood messages —
- * "based on your mood" phrasing instead.
+ * One-off notifications outside the daily plan (welcome, order confirmation,
+ * the iOS referral nudge). The daily message and optional reminders are
+ * planned by lib/notify — the old fixed 08:45 / 12:30 / 20:30 repeats and the
+ * phase-change alert were retired by the Personalized Cycle Notifications spec
+ * (one primary message a day, quiet hours, a daily cap, estimate wording).
  */
 
 const isSupported = Platform.OS === 'ios' || Platform.OS === 'android';
 
-let handlerInstalled = false;
-function installHandler() {
-  if (handlerInstalled || !isSupported) return;
-  handlerInstalled = true;
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
-}
 
-/** Ask the OS for permission (no-op where unsupported). Returns granted. */
-export async function ensureNotificationPermission(): Promise<boolean> {
-  if (!isSupported) return false;
-  try {
-    installHandler();
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'CycleAlign',
-        importance: Notifications.AndroidImportance.DEFAULT,
-      });
-    }
-    const current = await Notifications.getPermissionsAsync();
-    if (current.granted) return true;
-    const asked = await Notifications.requestPermissionsAsync();
-    return asked.granted;
-  } catch {
-    return false;
-  }
-}
-
-/** Fire-and-forget immediate notification (welcome, order confirmations…). */
+/**
+ * Fire-and-forget immediate notification (welcome, order confirmations…).
+ * Only when she has already allowed notifications — this never triggers the
+ * OS prompt by itself.
+ */
 export async function notifyNow(title: string, body: string): Promise<void> {
   if (!isSupported) return;
   try {
-    const ok = await ensureNotificationPermission();
-    if (!ok) return;
+    installNotificationHandler();
+    if (!(await Notifications.getPermissionsAsync()).granted) return;
     await Notifications.scheduleNotificationAsync({
       content: { title, body },
       trigger: null,
     });
-  } catch {}
-}
-
-/**
- * Rebuild the recurring schedule. Cancels everything scheduled and re-plans:
- *  - 08:45 daily — morning briefing (energy + focus ready)
- *  - 12:30 daily — mood-based dish suggestions (no phase wording)
- *  - 20:30 daily — quick-log reminder
- *  - one-shot   — period heads-up two days before the predicted date
- * Call with null (or after opt-out) to clear everything.
- */
-export async function syncScheduledNotifications(
-  prediction: Prediction | null,
-  enabled: boolean,
-): Promise<void> {
-  if (!isSupported) return;
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    if (!enabled) return;
-    const ok = await ensureNotificationPermission();
-    if (!ok) return;
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Your day, decoded ✨',
-        body: "Today's energy forecast and top focus are ready on your dashboard.",
-      },
-      trigger: { type: SchedulableTriggerInputTypes.DAILY, hour: 8, minute: 45 },
-    });
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Cravings, sorted 🍜',
-        body: 'Based on your mood today, your dishes are ready — take a peek.',
-      },
-      trigger: { type: SchedulableTriggerInputTypes.DAILY, hour: 12, minute: 30 },
-    });
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'How was today? 💛',
-        body: '30 seconds: log your energy and mood — future you will thank you.',
-      },
-      trigger: { type: SchedulableTriggerInputTypes.DAILY, hour: 20, minute: 30 },
-    });
-
-    // Period heads-up: two days before the predicted start, 09:00 local.
-    if (prediction && prediction.daysUntilNextPeriod > 2) {
-      const headsUp = new Date();
-      headsUp.setDate(headsUp.getDate() + prediction.daysUntilNextPeriod - 2);
-      headsUp.setHours(9, 0, 0, 0);
-      if (headsUp.getTime() > Date.now()) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'A gentle heads-up 🌙',
-            body: 'Your period may arrive in a couple of days. A good moment to stock up and plan softer days.',
-          },
-          trigger: { type: SchedulableTriggerInputTypes.DATE, date: headsUp },
-        });
-      }
-    }
   } catch {}
 }
 
@@ -139,31 +48,6 @@ export function sendOrderNotification() {
   );
 }
 
-const PHASE_CHANGE_MESSAGE: Record<PhaseKey, { title: string; body: string }> = {
-  menstrual: {
-    title: "You've entered your Menstrual phase 🌙",
-    body: 'Energy dips today — gentle yoga or stretching can ease cramps and calm your nervous system. Be kind to yourself.',
-  },
-  follicular: {
-    title: "You've entered your Follicular phase 🌿",
-    body: "Energy's rising — a great day to start something new. Try a brisk walk or a fresh workout to match your momentum.",
-  },
-  ovulation: {
-    title: "You've entered your Ovulatory phase ☀️",
-    body: "You're at your peak — perfect for high-energy workouts, big conversations, or tackling your boldest task today.",
-  },
-  luteal: {
-    title: "You've entered your Luteal phase 🍂",
-    body: "Energy's winding down — yoga or a slow walk can help manage stress as progesterone rises. Protect your evenings.",
-  },
-};
-
-/** Fired once, the moment her cycle actually crosses into a new phase. */
-export function sendPhaseChangeNotification(phase: PhaseKey) {
-  const { title, body } = PHASE_CHANGE_MESSAGE[phase];
-  return notifyNow(title, body);
-}
-
 /**
  * iOS has no hook for "show UI at the instant of closing" — by the time the
  * app is told it's backgrounding, it can no longer present anything. A local
@@ -175,8 +59,9 @@ export function sendPhaseChangeNotification(phase: PhaseKey) {
 export async function scheduleReferralNudge(): Promise<string | null> {
   if (!isSupported) return null;
   try {
-    const ok = await ensureNotificationPermission();
-    if (!ok) return null;
+    // Never asks for permission itself, and shares quiet hours + the daily cap.
+    if (!(await Notifications.getPermissionsAsync()).granted) return null;
+    if (!claimExtraSlot(new Date(Date.now() + 8000))) return null;
     return await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Miss you already 🌙',

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { TabScreen } from '@/components/ui';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -25,8 +25,6 @@ import { useRetailTherapyTrigger } from '@/lib/retailTherapy/useRetailTherapyTri
 import { saleIsLive, useRetailTherapy } from '@/lib/stores/useRetailTherapy';
 import { STOREFRONT_META } from '@/lib/retailTherapy/catalog';
 import { useIsV2 } from '@/lib/hooks/useIsV2';
-import { useOnboarding } from '@/lib/stores/useOnboarding';
-import { sendPhaseChangeNotification, syncScheduledNotifications } from '@/lib/notifications';
 import { getMyInviteIfExists, publishAdaptiveStatus, publishDigestedStatus } from '@/lib/partnerSync';
 import { partnerMessageBucket } from '../../supabase/functions/_shared/partnerDigest';
 import {
@@ -53,8 +51,6 @@ export default function Today() {
   const addCycleLog = useAppStore((s) => s.addCycleLog);
   const editLastPeriodRange = useAppStore((s) => s.editLastPeriodRange);
   const lastPeriodLog = useAppStore((s) => s.cycleLogs[0] ?? null);
-  const lastNotifiedPhase = useAppStore((s) => s.lastNotifiedPhase);
-  const setLastNotifiedPhase = useAppStore((s) => s.setLastNotifiedPhase);
   const prediction = usePrediction();
   const dailyLogs = useDailyLog((s) => s.logs);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
@@ -67,27 +63,14 @@ export default function Today() {
   // V2-gated features (AI coach entry point).
   const isV2 = useIsV2();
 
-  // Keep the on-device notification schedule in sync with her cycle: daily
-  // briefing / dishes / log reminder + the period heads-up, recomputed
-  // whenever the prediction moves. Opt-out clears everything.
-  const notificationsEnabled = useOnboarding((s) => s.notificationEnabled);
+  // Notifications are planned in one place (lib/notify, mounted in the tabs
+  // layout). A "cycle setup" notification lands here with ?editPeriod=1.
+  const { editPeriod } = useLocalSearchParams<{ editPeriod?: string }>();
   useEffect(() => {
-    // No period / phase predictions for irregular or perimenopause users.
-    syncScheduledNotifications(mode === 'regular' ? prediction : null, notificationsEnabled);
-  }, [prediction?.dayOfCycle, prediction?.daysUntilNextPeriod, notificationsEnabled, mode]);
-
-  // Fire a one-time notification the moment her cycle crosses into a new
-  // phase. The very first run just records a baseline — it never fires on
-  // app open, only on an actual transition since the last one we saw.
-  useEffect(() => {
-    if (!prediction || !notificationsEnabled || mode !== 'regular') return;
-    if (lastNotifiedPhase && lastNotifiedPhase !== prediction.currentPhase) {
-      sendPhaseChangeNotification(prediction.currentPhase);
-    }
-    if (lastNotifiedPhase !== prediction.currentPhase) {
-      setLastNotifiedPhase(prediction.currentPhase);
-    }
-  }, [prediction?.currentPhase, notificationsEnabled]);
+    if (editPeriod !== '1') return;
+    if (lastPeriodLog) setEditDateOpen(true);
+    router.setParams({ editPeriod: undefined });
+  }, [editPeriod, lastPeriodLog?.id]);
 
   // Partner Sync: whenever her prediction or today's log changes, republish the
   // digested status onto her own link row (only if she's already connected to
